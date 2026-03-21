@@ -41,6 +41,12 @@
   }
 
   function handleMouse(state, input, camera, dt) {
+    if (state.pause && state.pause.open) {
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
     if (state.crafting && state.crafting.open) {
       state.breaking = null;
       input.mouse.justPressed = false;

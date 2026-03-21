@@ -45,14 +45,23 @@
       starvationTick: 0,
       regenTick: 0,
       zombieSpawnTick: 0,
+      zombieCaveSpawnTick: 0,
+      spiderSpawnTick: 0,
+      spiderCaveSpawnTick: 0,
       attackFlash: 0,
       fluidTick: 0,
+      autosaveTick: 0,
       breaking: null,
       crafting: {
         open: false,
         grid: Array.from({ length: 9 }, () => createSlot()),
         cursor: createSlot(),
         result: null,
+      },
+      pause: {
+        open: false,
+        confirmRestart: false,
+        statusText: '',
       },
     };
   }

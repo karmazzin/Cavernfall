@@ -20,9 +20,9 @@
     const preferred = preferredToolForBlock(blockId);
     if (!preferred || tool.toolType !== preferred) return base;
 
-    if (tool.toolType === 'sword') return tool.tier === 'stone' ? base * 0.18 : base * 0.32;
-    if (tool.tier === 'stone') return base * 0.4;
-    if (tool.tier === 'wood') return base * 0.65;
+    if (tool.toolType === 'sword') return tool.tier === 'stone' ? base * 0.25 : base * 0.5;
+    if (tool.tier === 'stone') return base * 0.25;
+    if (tool.tier === 'wood') return base * 0.5;
     return base;
   }
 

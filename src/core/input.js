@@ -15,6 +15,7 @@
         code === 'KeyE' ||
         code === 'KeyR' ||
         code === 'KeyY' ||
+        code === 'Escape' ||
         code.startsWith('Digit') ||
         code.startsWith('Numpad')
       );
@@ -27,6 +28,7 @@
 
       if (event.code === 'KeyE' && !state.gameOver) actions.eatFood();
       if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
+      if (event.code === 'Escape' && !event.repeat) actions.togglePause();
       if (state.gameOver && event.code === 'KeyR') actions.restart();
 
       let slotNumber = null;

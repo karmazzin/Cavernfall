@@ -55,7 +55,7 @@
   }
 
   function toggleCrafting(state) {
-    if (state.gameOver) return;
+    if (state.gameOver || (state.pause && state.pause.open)) return;
     if (ensureCraftingState(state).open) closeCrafting(state);
     else openCrafting(state);
   }

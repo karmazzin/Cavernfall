@@ -4,6 +4,8 @@
   const { rand, clamp, aabb } = Game.math;
   const { moveEntity } = Game.physics;
   const { phaseInfo } = Game.dayCycle;
+  const { BLOCK } = Game.blocks;
+  const { getBlock, blockSolid, getLocationInfo } = Game.world;
 
   function spawnZombieNearPlayer(state) {
     if (state.zombies.length >= MAX_ZOMBIES) return;
@@ -26,6 +28,39 @@
     });
   }
 
+  function spawnZombieInCave(state) {
+    if (state.zombies.length >= MAX_ZOMBIES) return;
+
+    const playerTx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const playerTy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const tx = clamp(playerTx + Math.floor(rand(-22, 23)), 2, WORLD_W - 3);
+      const feetTy = clamp(playerTy + Math.floor(rand(-14, 15)), 16, state.world.length - 3);
+      const headTy = feetTy - 1;
+      const location = getLocationInfo(state, tx, headTy);
+      if (!location.inCave) continue;
+      if (getBlock(state, tx, headTy) !== BLOCK.AIR) continue;
+      if (getBlock(state, tx, feetTy) !== BLOCK.AIR) continue;
+      if (!blockSolid(getBlock(state, tx, feetTy + 1))) continue;
+      if (Math.hypot(tx * TILE - state.player.x, headTy * TILE - state.player.y) < 120) continue;
+
+      state.zombies.push({
+        x: tx * TILE,
+        y: headTy * TILE,
+        w: 12,
+        h: 24,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        attackCd: 0,
+        hp: 3,
+        burnTimer: 0,
+      });
+      return;
+    }
+  }
+
   function updateZombies(state, dt) {
     const phase = phaseInfo(state).phase;
     const sunlight = phase === 'day' || phase === 'sunrise';
@@ -40,10 +75,19 @@
       state.zombieSpawnTick = 0;
     }
 
+    state.zombieCaveSpawnTick += dt;
+    if (state.zombieCaveSpawnTick >= 6) {
+      state.zombieCaveSpawnTick = 0;
+      spawnZombieInCave(state);
+    }
+
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
+      const zombieTx = Math.floor((zombie.x + zombie.w / 2) / TILE);
+      const zombieTy = Math.floor((zombie.y + zombie.h / 2) / TILE);
+      const inCave = getLocationInfo(state, zombieTx, zombieTy).inCave;
 
-      if (sunlight) {
+      if (sunlight && !inCave) {
         zombie.burnTimer += dt;
         if (zombie.burnTimer >= 0.45) {
           zombie.burnTimer = 0;
@@ -74,5 +118,5 @@
     }
   }
 
-  Game.zombiesEntity = { spawnZombieNearPlayer, updateZombies };
+  Game.zombiesEntity = { spawnZombieNearPlayer, spawnZombieInCave, updateZombies };
 })();

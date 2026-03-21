@@ -8,6 +8,7 @@
   const { drawBlock } = Game.worldRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
+  const { drawPauseOverlay } = Game.pauseRenderer;
 
   function draw(ctx, canvas, state, camera, input) {
     const phase = phaseInfo(state);
@@ -121,6 +122,7 @@
 
     drawUI(ctx, canvas, state, phase);
     drawCraftingOverlay(ctx, canvas, state, input);
+    drawPauseOverlay(ctx, canvas, state);
 
     if (state.gameOver) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';

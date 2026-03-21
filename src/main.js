@@ -14,12 +14,85 @@
   const { handleMouse } = Game.interaction;
   const { createCamera } = Game.camera;
   const { setupInput } = Game.input;
-  const { ensureCraftingState, handleCraftingPointer, toggleCrafting } = Game.crafting;
+  const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
+  const { saveGame, loadGame, clearSave } = Game.saveSystem;
   const { draw } = Game.renderer;
+  const { getPauseLayout } = Game.pauseRenderer;
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const state = createGameState();
+
+  function replaceState(nextState) {
+    for (const key of Object.keys(state)) delete state[key];
+    Object.assign(state, nextState);
+    ensureCraftingState(state);
+  }
+
+  function seedStarterInventory() {
+    addToInventory(state, BLOCK.DIRT, 20);
+    addToInventory(state, BLOCK.STONE, 10);
+    addToInventory(state, BLOCK.WOOD, 10);
+    addToInventory(state, BLOCK.PLANK, 12);
+  }
+
+  function startNewGame() {
+    const nextState = createGameState();
+    replaceState(nextState);
+    generateWorld(state);
+    spawnAnimals(state);
+    seedStarterInventory();
+  }
+
+  function contains(rect, x, y) {
+    return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+  }
+
+  function closePause() {
+    state.pause.open = false;
+    state.pause.confirmRestart = false;
+    state.pause.statusText = '';
+  }
+
+  function openPause() {
+    if (state.crafting.open) {
+      closeCrafting(state);
+      if (state.crafting.open) return;
+    }
+    state.pause.open = true;
+    state.pause.confirmRestart = false;
+    state.pause.statusText = '';
+  }
+
+  function togglePause() {
+    if (state.gameOver) return;
+    if (state.pause.open) closePause();
+    else openPause();
+  }
+
+  function handlePausePointer(input, canvasRef) {
+    if (!state.pause.open || !input.mouse.justPressed) return false;
+    const layout = getPauseLayout(canvasRef, state);
+    const { x, y } = input.mouse;
+    for (const button of layout.buttons) {
+      if (!contains(button, x, y)) continue;
+
+      if (button.id === 'continue') closePause();
+      if (button.id === 'save') state.pause.statusText = saveGame(state) ? 'Игра сохранена' : 'Сохранение не удалось';
+      if (button.id === 'restart') state.pause.confirmRestart = true;
+      if (button.id === 'restart_no') state.pause.confirmRestart = false;
+      if (button.id === 'restart_yes') {
+        clearSave();
+        startNewGame();
+      }
+
+      input.mouse.justPressed = false;
+      return true;
+    }
+
+    input.mouse.justPressed = false;
+    return true;
+  }
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -32,16 +105,29 @@
 
   const input = setupInput(canvas, state, {
     eatFood: () => eatFood(state),
-    restart: () => window.location.reload(),
+    restart: () => {
+      clearSave();
+      startNewGame();
+    },
     unlockAudio: () => Game.audio.unlock(),
     toggleCrafting: () => toggleCrafting(state),
+    togglePause,
   });
 
-  function update(dt) {
-    if (state.gameOver) return;
+  const loadedState = loadGame();
+  if (loadedState) replaceState(loadedState);
+  else startNewGame();
 
-    state.cycleTime += dt;
+  function update(dt) {
+    if (state.pause.open || state.gameOver) return;
+
+    if (!state.crafting.open) state.cycleTime += dt;
     if (state.attackFlash > 0) state.attackFlash -= dt;
+    state.autosaveTick += dt;
+    if (state.autosaveTick >= 60) {
+      saveGame(state);
+      state.autosaveTick = 0;
+    }
 
     updatePlayer(state, input, dt);
     updateAnimals(state, dt);
@@ -70,20 +156,14 @@
     if (state.player.health <= 0) state.gameOver = true;
   }
 
-  generateWorld(state);
-  spawnAnimals(state);
-  addToInventory(state, BLOCK.DIRT, 20);
-  addToInventory(state, BLOCK.STONE, 10);
-  addToInventory(state, BLOCK.WOOD, 10);
-  addToInventory(state, BLOCK.PLANK, 12);
-
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
 
     const camera = createCamera(state, canvas);
-    if (state.crafting.open) handleCraftingPointer(state, input, canvas);
+    if (state.pause.open) handlePausePointer(input, canvas);
+    else if (state.crafting.open) handleCraftingPointer(state, input, canvas);
     else handleMouse(state, input, camera, dt);
     update(dt);
     draw(ctx, canvas, state, camera, input);

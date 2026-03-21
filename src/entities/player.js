@@ -9,7 +9,7 @@
 
   function updatePlayer(state, input, dt) {
     const { player } = state;
-    const controlsLocked = state.crafting && state.crafting.open;
+    const controlsLocked = (state.crafting && state.crafting.open) || (state.pause && state.pause.open);
     const left = !controlsLocked && input.keys.has('KeyA');
     const right = !controlsLocked && input.keys.has('KeyD');
     const jump = !controlsLocked && (input.keys.has('KeyW') || input.keys.has('Space'));
