@@ -1,0 +1,27 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #111;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+canvas {
+  display: block;
+  background: #7ec8ff;
+  cursor: crosshair;
+}
+
+.help {
+  position: fixed;
+  right: 12px;
+  top: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10px 12px;
+  border-radius: 10px;
+  max-width: 340px;
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: none;
+}

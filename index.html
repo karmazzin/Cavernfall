@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2D Block World</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div class="help">
+    <b>Управление</b><br>
+    A / D — идти<br>
+    W / Пробел — прыгать / плыть вверх в воде<br>
+    ЛКМ по блоку — ломать / ставить выбранный блок<br>
+    ЛКМ по животному — ударить, выбить еду<br>
+    1..9 — выбор ячейки хотбара<br>
+    E — съесть 1 еду
+  </div>
+
+  <script defer src="./src/core/bootstrap.js"></script>
+  <script defer src="./src/config/constants.js"></script>
+  <script defer src="./src/world/blocks.js"></script>
+  <script defer src="./src/utils/math.js"></script>
+  <script defer src="./src/world/world.js"></script>
+  <script defer src="./src/core/state.js"></script>
+  <script defer src="./src/systems/dayCycle.js"></script>
+  <script defer src="./src/world/generation.js"></script>
+  <script defer src="./src/systems/physics.js"></script>
+  <script defer src="./src/systems/inventory.js"></script>
+  <script defer src="./src/entities/player.js"></script>
+  <script defer src="./src/entities/animals.js"></script>
+  <script defer src="./src/entities/zombies.js"></script>
+  <script defer src="./src/entities/food.js"></script>
+  <script defer src="./src/systems/survival.js"></script>
+  <script defer src="./src/world/fluids.js"></script>
+  <script defer src="./src/systems/interaction.js"></script>
+  <script defer src="./src/core/camera.js"></script>
+  <script defer src="./src/core/input.js"></script>
+  <script defer src="./src/render/worldRenderer.js"></script>
+  <script defer src="./src/render/uiRenderer.js"></script>
+  <script defer src="./src/render/renderer.js"></script>
+  <script defer src="./src/main.js"></script>
+</body>
+</html>
