@@ -43,7 +43,9 @@
       player.vy += GRAVITY * dt;
     }
 
+    player.stepUpHeight = player.inWater ? TILE : 0;
     moveEntity(state, player, dt);
+    player.stepUpHeight = 0;
     player.x = clamp(player.x, 0, WORLD_W * TILE - player.w);
 
     if (!wasOnGround && player.onGround && !player.inWater && preMoveVy > 700) {
