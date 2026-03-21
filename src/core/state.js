@@ -34,6 +34,7 @@
       surfaceAt: Array(WORLD_W).fill(SURFACE_BASE),
       animals: [],
       zombies: [],
+      spiders: [],
       foods: [],
       player: createPlayer(),
       gameOver: false,

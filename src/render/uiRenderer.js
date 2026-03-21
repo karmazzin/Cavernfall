@@ -1,6 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { TILE, HOTBAR_SIZE, BREATH_MAX, BREATH_CELL_SECONDS } = Game.constants;
+  const { getLocationInfo } = Game.world;
   const { drawBlock } = Game.worldRenderer;
 
   function drawHotbar(ctx, canvas, state) {
@@ -63,7 +64,9 @@
     ctx.fillText(`Еда: ${state.player.food}`, 24, 80);
 
     const tx = Math.floor((state.player.x + state.player.w / 2) / TILE);
-    const biome = state.biomeAt[tx] === 'forest' ? 'Лес' : state.biomeAt[tx] === 'lake' ? 'Озеро' : 'Равнина';
+    const ty = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    const biomeKey = getLocationInfo(state, tx, ty).biome;
+    const biome = biomeKey === 'forest' ? 'Лес' : biomeKey === 'lake' ? 'Озеро' : biomeKey === 'cave' ? 'Пещера' : 'Равнина';
     ctx.fillText(`Биом: ${biome}`, 160, 36);
     ctx.fillText(`Фаза: ${phase.phase === 'day' ? 'День' : phase.phase === 'night' ? 'Ночь' : phase.phase === 'sunset' ? 'Закат' : 'Рассвет'}`, 160, 58);
     ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, 160, 80);

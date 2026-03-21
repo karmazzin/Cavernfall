@@ -22,6 +22,7 @@
     const blockCenter = getBlock(state, centerTx, centerTy);
     const blockHead = getBlock(state, centerTx, headTy);
     const blockFeet = getBlock(state, centerTx, feetTy);
+    const inCobweb = blockCenter === BLOCK.COBWEB || blockHead === BLOCK.COBWEB || blockFeet === BLOCK.COBWEB;
 
     player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
     player.underwater = blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER;
@@ -41,6 +42,11 @@
         audio.playJump();
       }
       player.vy += GRAVITY * dt;
+    }
+
+    if (inCobweb) {
+      player.vx *= 0.5;
+      player.vy *= 0.5;
     }
 
     player.stepUpHeight = player.inWater ? TILE : 0;

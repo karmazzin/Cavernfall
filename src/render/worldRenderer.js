@@ -23,6 +23,26 @@
     } else if (id === BLOCK.LAVA) {
       ctx.fillStyle = 'rgba(255,255,0,0.25)';
       ctx.fillRect(x + 2, y + 2, TILE - 4, 3);
+    } else if (id === BLOCK.PLANK) {
+      ctx.fillStyle = '#8d5d34';
+      ctx.fillRect(x, y + 3, TILE, 2);
+      ctx.fillRect(x, y + 8, TILE, 2);
+      ctx.fillStyle = '#d0a06b';
+      ctx.fillRect(x + 4, y, 1, TILE);
+      ctx.fillRect(x + 10, y, 1, TILE);
+    } else if (id === BLOCK.COBWEB) {
+      ctx.strokeStyle = 'rgba(240,245,255,0.8)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 1, y + 1);
+      ctx.lineTo(x + TILE - 1, y + TILE - 1);
+      ctx.moveTo(x + TILE - 1, y + 1);
+      ctx.lineTo(x + 1, y + TILE - 1);
+      ctx.moveTo(x + TILE / 2, y + 1);
+      ctx.lineTo(x + TILE / 2, y + TILE - 1);
+      ctx.moveTo(x + 1, y + TILE / 2);
+      ctx.lineTo(x + TILE - 1, y + TILE / 2);
+      ctx.stroke();
     } else if (id === BLOCK.LEAF) {
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.fillRect(x + 3, y + 3, 3, 3);

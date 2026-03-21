@@ -55,6 +55,20 @@
       }
     }
 
+    for (let i = state.spiders.length - 1; i >= 0; i -= 1) {
+      const spider = state.spiders[i];
+      if (wx >= spider.x && wx <= spider.x + spider.w && wy >= spider.y && wy <= spider.y + spider.h) {
+        if (!spider.clickCd || spider.clickCd <= 0) {
+          spider.hp -= 1;
+          spider.clickCd = 0.25;
+          audio.playHit();
+          if (spider.hp <= 0) state.spiders.splice(i, 1);
+        }
+        input.mouse.justPressed = false;
+        return;
+      }
+    }
+
     for (let i = state.animals.length - 1; i >= 0; i -= 1) {
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {

@@ -3,7 +3,7 @@
   const { WORLD_H, WORLD_W } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { getBlock, setBlock, liquid, blockSolid } = Game.world;
-  const BURNABLE = new Set([BLOCK.WOOD, BLOCK.LEAF]);
+  const BURNABLE = new Set([BLOCK.WOOD, BLOCK.LEAF, BLOCK.PLANK]);
 
   function igniteNeighbors(state, tx, ty) {
     const neighbors = [[1, 0], [-1, 0], [0, 1], [0, -1]];

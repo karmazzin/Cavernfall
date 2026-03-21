@@ -8,7 +8,7 @@
   }
 
   function blockSolid(id) {
-    return id !== BLOCK.AIR && id !== BLOCK.WATER && id !== BLOCK.LAVA;
+    return id !== BLOCK.AIR && id !== BLOCK.WATER && id !== BLOCK.LAVA && id !== BLOCK.COBWEB;
   }
 
   function liquid(id) {
@@ -31,5 +31,18 @@
     return blockSolid(getBlock(state, tx, ty));
   }
 
-  Game.world = { createGrid, blockSolid, liquid, getBlock, setBlock, isSolidAtPixel };
+  function getLocationInfo(state, tx, ty) {
+    const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
+    const surfaceY = state.surfaceAt[safeTx];
+    const block = getBlock(state, tx, ty);
+    const airLike = block === BLOCK.AIR || block === BLOCK.COBWEB || liquid(block);
+    const inCave = ty >= surfaceY + 8 && airLike;
+    return {
+      biome: inCave ? 'cave' : state.biomeAt[safeTx],
+      inCave,
+      surfaceY,
+    };
+  }
+
+  Game.world = { createGrid, blockSolid, liquid, getBlock, setBlock, isSolidAtPixel, getLocationInfo };
 })();

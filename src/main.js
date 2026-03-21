@@ -6,6 +6,7 @@
   const { spawnAnimals, updateAnimals } = Game.animalsEntity;
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
+  const { updateSpiders } = Game.spidersEntity;
   const { updateFood } = Game.foodEntity;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
@@ -42,6 +43,7 @@
     updatePlayer(state, input, dt);
     updateAnimals(state, dt);
     updateZombies(state, dt);
+    updateSpiders(state, dt);
     updateFood(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
@@ -58,6 +60,9 @@
     for (const zombie of state.zombies) {
       if (zombie.clickCd) zombie.clickCd = Math.max(0, zombie.clickCd - dt);
     }
+    for (const spider of state.spiders) {
+      if (spider.clickCd) spider.clickCd = Math.max(0, spider.clickCd - dt);
+    }
 
     if (state.player.health <= 0) state.gameOver = true;
   }
@@ -67,6 +72,7 @@
   addToInventory(state, BLOCK.DIRT, 20);
   addToInventory(state, BLOCK.STONE, 10);
   addToInventory(state, BLOCK.WOOD, 10);
+  addToInventory(state, BLOCK.PLANK, 12);
 
   let last = performance.now();
   function loop(now) {

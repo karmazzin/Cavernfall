@@ -3,13 +3,18 @@
   const { TILE, CYCLE } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { clamp } = Game.math;
-  const { getBlock } = Game.world;
+  const { getBlock, getLocationInfo } = Game.world;
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock } = Game.worldRenderer;
   const { drawUI } = Game.uiRenderer;
 
   function draw(ctx, canvas, state, camera) {
     const phase = phaseInfo(state);
+    const playerTileX = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const playerTileY = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    const location = getLocationInfo(state, playerTileX, playerTileY);
+    const caveDarkness = location.inCave ? 0.82 : 0;
+    const darkness = Math.max(phase.darkness, caveDarkness);
     const skyTop = phase.phase === 'night'
       ? '#08111f'
       : phase.phase === 'sunset'
@@ -77,24 +82,33 @@
       ctx.fillRect(zombie.x - camera.x + 8, zombie.y - camera.y + 3, 2, 2);
     }
 
+    for (const spider of state.spiders) {
+      ctx.fillStyle = '#1b1b1f';
+      ctx.fillRect(spider.x - camera.x, spider.y - camera.y + 2, spider.w, spider.h - 2);
+      ctx.fillStyle = '#a32626';
+      ctx.fillRect(spider.x - camera.x + 3, spider.y - camera.y + 4, 2, 2);
+      ctx.fillRect(spider.x - camera.x + 9, spider.y - camera.y + 4, 2, 2);
+    }
+
     ctx.fillStyle = '#4aa3ff';
     ctx.fillRect(state.player.x - camera.x, state.player.y - camera.y, state.player.w, state.player.h);
     ctx.fillStyle = '#ffe0bd';
     ctx.fillRect(state.player.x - camera.x + 1, state.player.y - camera.y, 10, 8);
 
-    if (phase.darkness > 0) {
-      ctx.fillStyle = `rgba(0, 0, 30, ${phase.darkness})`;
+    if (darkness > 0) {
+      ctx.fillStyle = `rgba(0, 0, 30, ${darkness})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       const lightX = state.player.x - camera.x + state.player.w / 2;
       const lightY = state.player.y - camera.y + state.player.h / 2;
-      const light = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, 180);
+      const lightRadius = location.inCave ? 130 : 180;
+      const light = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, lightRadius);
       light.addColorStop(0, 'rgba(0,0,0,0)');
-      light.addColorStop(1, `rgba(0,0,0,${phase.darkness})`);
+      light.addColorStop(1, `rgba(0,0,0,${darkness})`);
       ctx.save();
       ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = light;
       ctx.beginPath();
-      ctx.arc(lightX, lightY, 180, 0, Math.PI * 2);
+      ctx.arc(lightX, lightY, lightRadius, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
