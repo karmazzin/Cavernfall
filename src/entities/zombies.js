@@ -21,11 +21,14 @@
       vy: 0,
       onGround: false,
       attackCd: 0,
+      hp: 3,
+      burnTimer: 0,
     });
   }
 
-  function updateZombies(state, canvas, dt) {
+  function updateZombies(state, dt) {
     const phase = phaseInfo(state).phase;
+    const sunlight = phase === 'day' || phase === 'sunrise';
 
     if (phase === 'night') {
       state.zombieSpawnTick += dt;
@@ -39,6 +42,17 @@
 
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
+
+      if (sunlight) {
+        zombie.burnTimer += dt;
+        if (zombie.burnTimer >= 0.45) {
+          zombie.burnTimer = 0;
+          zombie.hp -= 1;
+        }
+      } else {
+        zombie.burnTimer = 0;
+      }
+
       const dx = state.player.x - zombie.x;
       zombie.vx = Math.sign(dx) * 75;
       if (Math.abs(dx) < 4) zombie.vx = 0;
@@ -49,13 +63,12 @@
       zombie.attackCd -= dt;
       if (aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.7;
-        state.player.totalZombieHits += 1;
         state.player.health = Math.max(0, state.player.health - 1);
         state.attackFlash = 0.25;
-        if (state.player.totalZombieHits >= 10 || state.player.health <= 0) state.gameOver = true;
+        if (state.player.health <= 0) state.gameOver = true;
       }
 
-      if (phase !== 'night' && Math.abs(state.player.x - zombie.x) > canvas.width) {
+      if (zombie.hp <= 0) {
         state.zombies.splice(i, 1);
       }
     }

@@ -3,6 +3,18 @@
   const { WORLD_H, WORLD_W } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { getBlock, setBlock, liquid, blockSolid } = Game.world;
+  const BURNABLE = new Set([BLOCK.WOOD, BLOCK.LEAF]);
+
+  function igniteNeighbors(state, tx, ty) {
+    const neighbors = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const [dx, dy] of neighbors) {
+      const nx = tx + dx;
+      const ny = ty + dy;
+      if (BURNABLE.has(getBlock(state, nx, ny))) {
+        setBlock(state, nx, ny, BLOCK.AIR);
+      }
+    }
+  }
 
   function reactFluidsAt(state, tx, ty) {
     const id = getBlock(state, tx, ty);
@@ -17,6 +29,8 @@
         return;
       }
     }
+
+    if (id === BLOCK.LAVA) igniteNeighbors(state, tx, ty);
   }
 
   function updateFluids(state) {

@@ -5,6 +5,7 @@
   const { rand, aabb } = Game.math;
   const { getBlock, setBlock } = Game.world;
   const { selectedBlockId, consumeSelectedBlock, addToInventory } = Game.inventory;
+  const audio = Game.audio;
 
   function screenToTile(mx, my, camera) {
     return {
@@ -15,7 +16,8 @@
 
   function canPlaceBlock(state, tx, ty, id) {
     if (!PLACEABLE.has(id)) return false;
-    if (getBlock(state, tx, ty) !== BLOCK.AIR) return false;
+    const targetBlock = getBlock(state, tx, ty);
+    if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER) return false;
 
     const blockPx = tx * TILE;
     const blockPy = ty * TILE;
@@ -39,12 +41,27 @@
       return;
     }
 
+    for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
+      const zombie = state.zombies[i];
+      if (wx >= zombie.x && wx <= zombie.x + zombie.w && wy >= zombie.y && wy <= zombie.y + zombie.h) {
+        if (!zombie.clickCd || zombie.clickCd <= 0) {
+          zombie.hp -= 1;
+          zombie.clickCd = 0.25;
+          audio.playHit();
+          if (zombie.hp <= 0) state.zombies.splice(i, 1);
+        }
+        input.mouse.justPressed = false;
+        return;
+      }
+    }
+
     for (let i = state.animals.length - 1; i >= 0; i -= 1) {
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {
         if (!animal.clickCd || animal.clickCd <= 0) {
           animal.hp -= 1;
           animal.clickCd = 0.25;
+          audio.playHit();
           if (animal.hp <= 0) {
             state.foods.push({ x: animal.x, y: animal.y, w: 10, h: 10, amount: Math.floor(rand(1, 3)), t: 0 });
             state.animals.splice(i, 1);
@@ -55,10 +72,6 @@
       }
     }
 
-    for (const animal of state.animals) {
-      if (animal.clickCd) animal.clickCd = Math.max(0, animal.clickCd - dt);
-    }
-
     if (dist > 110) {
       state.breaking = null;
       input.mouse.justPressed = false;
@@ -67,7 +80,7 @@
 
     const block = getBlock(state, tx, ty);
 
-    if (block === BLOCK.AIR) {
+    if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
         const id = selectedBlockId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
@@ -82,6 +95,7 @@
 
     if (!state.breaking || state.breaking.tx !== tx || state.breaking.ty !== ty) {
       state.breaking = { tx, ty, progress: 0, need: BREAK_TIME[block] ?? Infinity, blockId: block };
+      audio.playDig();
     }
 
     if (!Number.isFinite(state.breaking.need)) {
@@ -91,6 +105,7 @@
 
     state.breaking.progress += dt;
     if (state.breaking.progress >= state.breaking.need) {
+      audio.playDig();
       addToInventory(state, block);
       setBlock(state, tx, ty, BLOCK.AIR);
       state.breaking = null;

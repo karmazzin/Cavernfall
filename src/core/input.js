@@ -5,19 +5,37 @@
     const keys = new Set();
     const mouse = { x: 0, y: 0, down: false, justPressed: false };
 
+    function isGameControl(code) {
+      return (
+        code === 'Space' ||
+        code === 'KeyW' ||
+        code === 'KeyA' ||
+        code === 'KeyS' ||
+        code === 'KeyD' ||
+        code === 'KeyE' ||
+        code === 'KeyR' ||
+        code.startsWith('Digit') ||
+        code.startsWith('Numpad')
+      );
+    }
+
     function onKeyDown(event) {
-      const key = event.key.toLowerCase();
-      keys.add(key);
+      if (isGameControl(event.code)) event.preventDefault();
+      keys.add(event.code);
+      actions.unlockAudio();
 
-      if (key === 'e' && !state.gameOver) actions.eatFood();
-      if (state.gameOver && key === 'r') actions.restart();
+      if (event.code === 'KeyE' && !state.gameOver) actions.eatFood();
+      if (state.gameOver && event.code === 'KeyR') actions.restart();
 
-      const slotNumber = Number(event.key);
+      let slotNumber = null;
+      if (event.code.startsWith('Digit')) slotNumber = Number(event.code.slice(5));
+      if (event.code.startsWith('Numpad')) slotNumber = Number(event.code.slice(6));
       if (slotNumber >= 1 && slotNumber <= 9) state.player.selectedSlot = slotNumber - 1;
     }
 
     function onKeyUp(event) {
-      keys.delete(event.key.toLowerCase());
+      if (isGameControl(event.code)) event.preventDefault();
+      keys.delete(event.code);
     }
 
     function onMouseMove(event) {
@@ -27,6 +45,7 @@
     }
 
     function onMouseDown() {
+      actions.unlockAudio();
       mouse.down = true;
       mouse.justPressed = true;
     }

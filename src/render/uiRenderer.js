@@ -59,12 +59,11 @@
     ctx.fillStyle = '#fff';
     ctx.font = '16px Arial';
     ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/10`, 24, 36);
-    ctx.fillText(`Голод: ${Math.ceil(state.player.hunger)}/100`, 24, 58);
+    ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, 24, 58);
     ctx.fillText(`Еда: ${state.player.food}`, 24, 80);
-    ctx.fillText(`Удары зомби: ${state.player.totalZombieHits}/10`, 24, 102);
 
     const tx = Math.floor((state.player.x + state.player.w / 2) / TILE);
-    const biome = state.biomeAt[tx] === 'forest' ? 'Лес' : 'Равнина';
+    const biome = state.biomeAt[tx] === 'forest' ? 'Лес' : state.biomeAt[tx] === 'lake' ? 'Озеро' : 'Равнина';
     ctx.fillText(`Биом: ${biome}`, 160, 36);
     ctx.fillText(`Фаза: ${phase.phase === 'day' ? 'День' : phase.phase === 'night' ? 'Ночь' : phase.phase === 'sunset' ? 'Закат' : 'Рассвет'}`, 160, 58);
     ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, 160, 80);
@@ -77,7 +76,7 @@
     ctx.fillStyle = '#444';
     ctx.fillRect(24, 148, 240, 12);
     ctx.fillStyle = '#ffb300';
-    ctx.fillRect(24, 148, 240 * (state.player.hunger / 100), 12);
+    ctx.fillRect(24, 148, 240 * (state.player.satiety / 100), 12);
 
     drawBreath(ctx, state);
     drawHotbar(ctx, canvas, state);

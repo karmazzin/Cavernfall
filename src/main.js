@@ -7,7 +7,7 @@
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
   const { updateFood } = Game.foodEntity;
-  const { updateHunger, updateBreath } = Game.survival;
+  const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood } = Game.inventory;
   const { handleMouse } = Game.interaction;
@@ -30,6 +30,7 @@
   const input = setupInput(canvas, state, {
     eatFood: () => eatFood(state),
     restart: () => window.location.reload(),
+    unlockAudio: () => Game.audio.unlock(),
   });
 
   function update(dt) {
@@ -40,9 +41,9 @@
 
     updatePlayer(state, input, dt);
     updateAnimals(state, dt);
-    updateZombies(state, canvas, dt);
+    updateZombies(state, dt);
     updateFood(state, dt);
-    updateHunger(state, dt);
+    updateSatiety(state, input, dt);
     updateBreath(state, dt);
 
     state.fluidTick += dt;
@@ -54,6 +55,11 @@
     for (const animal of state.animals) {
       if (animal.clickCd) animal.clickCd = Math.max(0, animal.clickCd - dt);
     }
+    for (const zombie of state.zombies) {
+      if (zombie.clickCd) zombie.clickCd = Math.max(0, zombie.clickCd - dt);
+    }
+
+    if (state.player.health <= 0) state.gameOver = true;
   }
 
   generateWorld(state);

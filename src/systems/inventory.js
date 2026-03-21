@@ -7,7 +7,7 @@
   function eatFood(state) {
     if (state.player.food > 0) {
       state.player.food -= 1;
-      state.player.hunger = clamp(state.player.hunger + 35, 0, 100);
+      state.player.satiety = clamp(state.player.satiety + 35, 0, 100);
     }
   }
 
