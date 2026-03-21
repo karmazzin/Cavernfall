@@ -3,7 +3,7 @@
 
   function setupInput(canvas, state, actions) {
     const keys = new Set();
-    const mouse = { x: 0, y: 0, down: false, justPressed: false };
+    const mouse = { x: 0, y: 0, down: false, justPressed: false, button: 0 };
 
     function isGameControl(code) {
       return (
@@ -14,6 +14,7 @@
         code === 'KeyD' ||
         code === 'KeyE' ||
         code === 'KeyR' ||
+        code === 'KeyY' ||
         code.startsWith('Digit') ||
         code.startsWith('Numpad')
       );
@@ -25,6 +26,7 @@
       actions.unlockAudio();
 
       if (event.code === 'KeyE' && !state.gameOver) actions.eatFood();
+      if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
       if (state.gameOver && event.code === 'KeyR') actions.restart();
 
       let slotNumber = null;
@@ -44,20 +46,27 @@
       mouse.y = event.clientY - rect.top;
     }
 
-    function onMouseDown() {
+    function onMouseDown(event) {
+      event.preventDefault();
       actions.unlockAudio();
       mouse.down = true;
       mouse.justPressed = true;
+      mouse.button = event.button;
     }
 
     function onMouseUp() {
       mouse.down = false;
     }
 
+    function onContextMenu(event) {
+      event.preventDefault();
+    }
+
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('mouseup', onMouseUp);
 
     return { keys, mouse };

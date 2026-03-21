@@ -1,11 +1,25 @@
 (() => {
   const Game = window.MC2D;
   const { TILE } = Game.constants;
-  const { BLOCK, BREAK_TIME, PLACEABLE } = Game.blocks;
+  const { BLOCK, PLACEABLE } = Game.blocks;
   const { rand, aabb } = Game.math;
   const { getBlock, setBlock } = Game.world;
-  const { selectedBlockId, consumeSelectedBlock, addToInventory } = Game.inventory;
+  const {
+    selectedPlaceableId,
+    consumeSelectedPlaceable,
+    addToInventory,
+    selectedToolId,
+    selectedToolSlot,
+    damageSlotTool,
+  } = Game.inventory;
+  const { getBreakTime, getAttackDamage } = Game.tools;
+  const { spawnFood } = Game.animalsEntity;
   const audio = Game.audio;
+
+  function useSelectedTool(state, amount = 1) {
+    const slot = selectedToolSlot(state);
+    if (slot) damageSlotTool(slot, amount);
+  }
 
   function screenToTile(mx, my, camera) {
     return {
@@ -27,6 +41,12 @@
   }
 
   function handleMouse(state, input, camera, dt) {
+    if (state.crafting && state.crafting.open) {
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
     const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
     const wx = input.mouse.x + camera.x;
     const wy = input.mouse.y + camera.y;
@@ -45,9 +65,10 @@
       const zombie = state.zombies[i];
       if (wx >= zombie.x && wx <= zombie.x + zombie.w && wy >= zombie.y && wy <= zombie.y + zombie.h) {
         if (!zombie.clickCd || zombie.clickCd <= 0) {
-          zombie.hp -= 1;
+          zombie.hp -= getAttackDamage(selectedToolId(state));
           zombie.clickCd = 0.25;
           audio.playHit();
+          useSelectedTool(state);
           if (zombie.hp <= 0) state.zombies.splice(i, 1);
         }
         input.mouse.justPressed = false;
@@ -59,9 +80,10 @@
       const spider = state.spiders[i];
       if (wx >= spider.x && wx <= spider.x + spider.w && wy >= spider.y && wy <= spider.y + spider.h) {
         if (!spider.clickCd || spider.clickCd <= 0) {
-          spider.hp -= 1;
+          spider.hp -= getAttackDamage(selectedToolId(state));
           spider.clickCd = 0.25;
           audio.playHit();
+          useSelectedTool(state);
           if (spider.hp <= 0) state.spiders.splice(i, 1);
         }
         input.mouse.justPressed = false;
@@ -73,11 +95,12 @@
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {
         if (!animal.clickCd || animal.clickCd <= 0) {
-          animal.hp -= 1;
+          animal.hp -= getAttackDamage(selectedToolId(state));
           animal.clickCd = 0.25;
           audio.playHit();
+          useSelectedTool(state);
           if (animal.hp <= 0) {
-            state.foods.push({ x: animal.x, y: animal.y, w: 10, h: 10, amount: Math.floor(rand(1, 3)), t: 0 });
+            spawnFood(state, animal.x, animal.y, Math.floor(rand(1, 3)));
             state.animals.splice(i, 1);
           }
         }
@@ -96,9 +119,9 @@
 
     if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
-        const id = selectedBlockId(state);
+        const id = selectedPlaceableId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
-          const used = consumeSelectedBlock(state);
+          const used = consumeSelectedPlaceable(state);
           if (used) setBlock(state, tx, ty, used);
         }
       }
@@ -108,7 +131,7 @@
     }
 
     if (!state.breaking || state.breaking.tx !== tx || state.breaking.ty !== ty) {
-      state.breaking = { tx, ty, progress: 0, need: BREAK_TIME[block] ?? Infinity, blockId: block };
+      state.breaking = { tx, ty, progress: 0, need: getBreakTime(block, selectedToolId(state)), blockId: block };
       audio.playDig();
     }
 
@@ -122,6 +145,7 @@
       audio.playDig();
       addToInventory(state, block);
       setBlock(state, tx, ty, BLOCK.AIR);
+      useSelectedTool(state);
       state.breaking = null;
     }
 

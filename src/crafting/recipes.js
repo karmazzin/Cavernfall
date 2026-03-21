@@ -1,0 +1,152 @@
+(() => {
+  const Game = window.MC2D;
+  const { BLOCK } = Game.blocks;
+  const { ITEM } = Game.items;
+
+  const RECIPES = [
+    {
+      name: 'Доски',
+      pattern: [[BLOCK.WOOD]],
+      result: { id: BLOCK.PLANK, count: 4 },
+    },
+    {
+      name: 'Палки',
+      pattern: [
+        [BLOCK.PLANK],
+        [BLOCK.PLANK],
+      ],
+      result: { id: ITEM.STICK, count: 4 },
+    },
+    {
+      name: 'Деревянная кирка',
+      pattern: [
+        [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.WOODEN_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Деревянный топор',
+      pattern: [
+        [BLOCK.PLANK, BLOCK.PLANK, null],
+        [BLOCK.PLANK, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.WOODEN_AXE, count: 1 },
+    },
+    {
+      name: 'Деревянная лопата',
+      pattern: [
+        [null, BLOCK.PLANK, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.WOODEN_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Деревянный меч',
+      pattern: [
+        [null, BLOCK.PLANK, null],
+        [null, BLOCK.PLANK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.WOODEN_SWORD, count: 1 },
+    },
+    {
+      name: 'Каменная кирка',
+      pattern: [
+        [BLOCK.STONE, BLOCK.STONE, BLOCK.STONE],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STONE_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Каменный топор',
+      pattern: [
+        [BLOCK.STONE, BLOCK.STONE, null],
+        [BLOCK.STONE, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STONE_AXE, count: 1 },
+    },
+    {
+      name: 'Каменная лопата',
+      pattern: [
+        [null, BLOCK.STONE, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STONE_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Каменный меч',
+      pattern: [
+        [null, BLOCK.STONE, null],
+        [null, BLOCK.STONE, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STONE_SWORD, count: 1 },
+    },
+  ];
+
+  function trimPattern(pattern) {
+    const rows = pattern
+      .map((row) => row.slice())
+      .filter((row) => row.some((cell) => cell !== null && cell !== undefined));
+
+    if (rows.length === 0) return [];
+
+    let minX = rows[0].length;
+    let maxX = -1;
+    for (const row of rows) {
+      for (let x = 0; x < row.length; x += 1) {
+        if (row[x] !== null && row[x] !== undefined) {
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+        }
+      }
+    }
+
+    return rows.map((row) => row.slice(minX, maxX + 1));
+  }
+
+  function gridToPattern(gridSlots) {
+    const rows = [];
+    for (let y = 0; y < 3; y += 1) {
+      const row = [];
+      for (let x = 0; x < 3; x += 1) {
+        const slot = gridSlots[y * 3 + x];
+        row.push(slot && slot.count > 0 ? slot.id : null);
+      }
+      rows.push(row);
+    }
+    return trimPattern(rows);
+  }
+
+  function patternsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let y = 0; y < a.length; y += 1) {
+      if (a[y].length !== b[y].length) return false;
+      for (let x = 0; x < a[y].length; x += 1) {
+        if (a[y][x] !== b[y][x]) return false;
+      }
+    }
+    return true;
+  }
+
+  function findMatchingRecipe(gridSlots) {
+    const pattern = gridToPattern(gridSlots);
+    if (pattern.length === 0) return null;
+
+    for (const recipe of RECIPES) {
+      if (patternsEqual(pattern, trimPattern(recipe.pattern))) {
+        return { recipe, result: recipe.result };
+      }
+    }
+    return null;
+  }
+
+  Game.craftingRecipes = { RECIPES, findMatchingRecipe };
+})();

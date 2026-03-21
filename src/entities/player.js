@@ -9,9 +9,10 @@
 
   function updatePlayer(state, input, dt) {
     const { player } = state;
-    const left = input.keys.has('KeyA');
-    const right = input.keys.has('KeyD');
-    const jump = input.keys.has('KeyW') || input.keys.has('Space');
+    const controlsLocked = state.crafting && state.crafting.open;
+    const left = !controlsLocked && input.keys.has('KeyA');
+    const right = !controlsLocked && input.keys.has('KeyD');
+    const jump = !controlsLocked && (input.keys.has('KeyW') || input.keys.has('Space'));
     const wasOnGround = player.onGround;
     const preMoveVy = player.vy;
 
@@ -32,7 +33,7 @@
     if (right) player.vx += PLAYER_SPEED;
 
     if (player.inWater) {
-      const diving = input.keys.has('KeyS');
+      const diving = !controlsLocked && input.keys.has('KeyS');
       if (jump) player.vy = -SWIM_SPEED;
       else if (diving) player.vy = SWIM_SPEED;
       else player.vy *= 0.85;

@@ -1,0 +1,68 @@
+(() => {
+  const Game = window.MC2D;
+  const { ITEM, isBlockItem, getItemDefinition, getMaxDurability } = Game.items;
+  const { drawBlock } = Game.worldRenderer;
+
+  function drawToolHandle(ctx, x, y, size) {
+    ctx.fillStyle = '#7a5432';
+    ctx.fillRect(x + size * 0.44, y + size * 0.28, size * 0.12, size * 0.54);
+  }
+
+  function drawItem(ctx, itemId, x, y, size = 24) {
+    if (itemId == null) return;
+
+    if (isBlockItem(itemId)) {
+      drawBlock(ctx, itemId, x, y);
+      return;
+    }
+
+    const def = getItemDefinition(itemId);
+    if (!def) return;
+
+    if (itemId === ITEM.STICK) {
+      ctx.fillStyle = '#8d623b';
+      ctx.fillRect(x + size * 0.46, y + size * 0.18, size * 0.12, size * 0.62);
+      return;
+    }
+
+    drawToolHandle(ctx, x, y, size);
+
+    if (def.toolType === 'pickaxe') {
+      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.fillRect(x + size * 0.18, y + size * 0.12, size * 0.64, size * 0.14);
+      ctx.fillRect(x + size * 0.26, y + size * 0.22, size * 0.14, size * 0.12);
+      ctx.fillRect(x + size * 0.60, y + size * 0.22, size * 0.14, size * 0.12);
+    } else if (def.toolType === 'axe') {
+      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.fillRect(x + size * 0.18, y + size * 0.10, size * 0.32, size * 0.28);
+      ctx.fillRect(x + size * 0.44, y + size * 0.16, size * 0.12, size * 0.1);
+    } else if (def.toolType === 'shovel') {
+      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.50, y + size * 0.22, size * 0.16, size * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (def.toolType === 'sword') {
+      ctx.fillStyle = def.tier === 'stone' ? '#c4ccd9' : '#d4b382';
+      ctx.fillRect(x + size * 0.42, y + size * 0.08, size * 0.16, size * 0.48);
+      ctx.fillStyle = '#7a5432';
+      ctx.fillRect(x + size * 0.26, y + size * 0.54, size * 0.48, size * 0.08);
+    }
+  }
+
+  function drawDurabilityBar(ctx, slot, x, y, w) {
+    if (!slot || slot.id == null) return;
+    const maxDurability = getMaxDurability(slot.id);
+    if (maxDurability <= 0) return;
+
+    const ratio = Math.max(0, Math.min(1, (slot.durability ?? maxDurability) / maxDurability));
+    const barW = Math.max(12, w - 8);
+    const color = ratio > 0.5 ? '#67d35f' : ratio > 0.22 ? '#e0c14d' : '#df5b5b';
+
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(x + 4, y - 8, barW, 5);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 5, y - 7, (barW - 2) * ratio, 3);
+  }
+
+  Game.itemRenderer = { drawItem, drawDurabilityBar };
+})();

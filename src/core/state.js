@@ -2,6 +2,7 @@
   const Game = window.MC2D;
   const { WORLD_W, SURFACE_BASE, TILE, HOTBAR_SIZE, BREATH_TOTAL } = Game.constants;
   const { createGrid } = Game.world;
+  const { createSlot } = Game.inventory;
 
   function createPlayer() {
     return {
@@ -16,7 +17,8 @@
       satiety: 100,
       food: 0,
       selectedSlot: 0,
-      hotbar: Array.from({ length: HOTBAR_SIZE }, () => ({ id: null, count: 0 })),
+      inventory: Array.from({ length: 27 }, () => createSlot()),
+      hotbar: Array.from({ length: HOTBAR_SIZE }, () => createSlot()),
       breath: BREATH_TOTAL,
       inWater: false,
       underwater: false,
@@ -46,6 +48,12 @@
       attackFlash: 0,
       fluidTick: 0,
       breaking: null,
+      crafting: {
+        open: false,
+        grid: Array.from({ length: 9 }, () => createSlot()),
+        cursor: createSlot(),
+        result: null,
+      },
     };
   }
 

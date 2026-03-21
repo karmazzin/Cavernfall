@@ -5,6 +5,10 @@
   const { rand } = Game.math;
   const { getBlock, blockSolid, liquid } = Game.world;
 
+  function spawnFood(state, x, y, amount) {
+    state.foods.push({ x, y, w: 10, h: 10, amount, t: 0 });
+  }
+
   function spawnAnimals(state) {
     state.animals.length = 0;
 
@@ -69,5 +73,5 @@
     }
   }
 
-  Game.animalsEntity = { spawnAnimals, updateAnimals };
+  Game.animalsEntity = { spawnAnimals, updateAnimals, spawnFood };
 })();

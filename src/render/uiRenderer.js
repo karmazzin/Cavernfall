@@ -2,7 +2,8 @@
   const Game = window.MC2D;
   const { TILE, HOTBAR_SIZE, BREATH_MAX, BREATH_CELL_SECONDS } = Game.constants;
   const { getLocationInfo } = Game.world;
-  const { drawBlock } = Game.worldRenderer;
+  const { getItemDefinition } = Game.items;
+  const { drawItem, drawDurabilityBar } = Game.itemRenderer;
 
   function drawHotbar(ctx, canvas, state) {
     const box = 44;
@@ -24,10 +25,13 @@
       ctx.fillText(String(i + 1), x + 4, y + 13);
 
       if (slot.id && slot.count > 0) {
-        drawBlock(ctx, slot.id, x + 10, y + 10);
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px Arial';
-        ctx.fillText(String(slot.count), x + 22, y + 36);
+        drawItem(ctx, slot.id, x + 10, y + 10, 24);
+        if (slot.count > 1) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '12px Arial';
+          ctx.fillText(String(slot.count), x + 22, y + 36);
+        }
+        drawDurabilityBar(ctx, slot, x, y + box, box);
       }
     }
   }

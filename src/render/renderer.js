@@ -7,8 +7,9 @@
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock } = Game.worldRenderer;
   const { drawUI } = Game.uiRenderer;
+  const { drawCraftingOverlay } = Game.craftingRenderer;
 
-  function draw(ctx, canvas, state, camera) {
+  function draw(ctx, canvas, state, camera, input) {
     const phase = phaseInfo(state);
     const playerTileX = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const playerTileY = Math.floor((state.player.y + state.player.h / 2) / TILE);
@@ -119,6 +120,7 @@
     }
 
     drawUI(ctx, canvas, state, phase);
+    drawCraftingOverlay(ctx, canvas, state, input);
 
     if (state.gameOver) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';

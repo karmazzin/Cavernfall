@@ -14,6 +14,7 @@
   const { handleMouse } = Game.interaction;
   const { createCamera } = Game.camera;
   const { setupInput } = Game.input;
+  const { ensureCraftingState, handleCraftingPointer, toggleCrafting } = Game.crafting;
   const { draw } = Game.renderer;
 
   const canvas = document.getElementById('game');
@@ -27,11 +28,13 @@
 
   window.addEventListener('resize', resize);
   resize();
+  ensureCraftingState(state);
 
   const input = setupInput(canvas, state, {
     eatFood: () => eatFood(state),
     restart: () => window.location.reload(),
     unlockAudio: () => Game.audio.unlock(),
+    toggleCrafting: () => toggleCrafting(state),
   });
 
   function update(dt) {
@@ -80,9 +83,10 @@
     last = now;
 
     const camera = createCamera(state, canvas);
-    handleMouse(state, input, camera, dt);
+    if (state.crafting.open) handleCraftingPointer(state, input, canvas);
+    else handleMouse(state, input, camera, dt);
     update(dt);
-    draw(ctx, canvas, state, camera);
+    draw(ctx, canvas, state, camera, input);
     requestAnimationFrame(loop);
   }
 
