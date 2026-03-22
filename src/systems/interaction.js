@@ -1,6 +1,6 @@
 (() => {
   const Game = window.MC2D;
-  const { TILE } = Game.constants;
+  const { TILE, VIEW_ZOOM } = Game.constants;
   const { BLOCK, PLACEABLE } = Game.blocks;
   const { rand, aabb } = Game.math;
   const { ITEM } = Game.items;
@@ -17,6 +17,8 @@
   const { getBreakTime, getAttackDamage } = Game.tools;
   const { spawnFood, ANIMAL_STATE, setWalk } = Game.animalsEntity;
   const { ensureFurnaceAt, removeFurnaceAt } = Game.furnaceSystem;
+  const { removeChestAt } = Game.chestSystem;
+  const { onColonyBlockBroken, hitDwarf, removeDwarf, getNearestTrader } = Game.dwarvesEntity;
   const audio = Game.audio;
 
   function isCreative(state) {
@@ -26,6 +28,7 @@
   function getBlockDrop(blockId) {
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
     if (blockId === BLOCK.GOLD_ORE) return { id: ITEM.RAW_GOLD, count: 1 };
+    if (blockId === BLOCK.DEEP_ORE) return { id: ITEM.DEEP_CRYSTAL, count: 1 };
     return { id: blockId, count: 1 };
   }
 
@@ -36,8 +39,8 @@
 
   function screenToTile(mx, my, camera) {
     return {
-      tx: Math.floor((mx + camera.x) / TILE),
-      ty: Math.floor((my + camera.y) / TILE),
+      tx: Math.floor((mx / VIEW_ZOOM + camera.x) / TILE),
+      ty: Math.floor((my / VIEW_ZOOM + camera.y) / TILE),
     };
   }
 
@@ -67,8 +70,8 @@
     }
 
     const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
-    const wx = input.mouse.x + camera.x;
-    const wy = input.mouse.y + camera.y;
+    const wx = input.mouse.x / VIEW_ZOOM + camera.x;
+    const wy = input.mouse.y / VIEW_ZOOM + camera.y;
     const dist = Math.hypot(
       tx * TILE + TILE / 2 - (state.player.x + state.player.w / 2),
       ty * TILE + TILE / 2 - (state.player.y + state.player.h / 2)
@@ -136,6 +139,29 @@
       }
     }
 
+    for (let i = state.dwarves.length - 1; i >= 0; i -= 1) {
+      const dwarf = state.dwarves[i];
+      if (wx >= dwarf.x && wx <= dwarf.x + dwarf.w && wy >= dwarf.y && wy <= dwarf.y + dwarf.h) {
+        const settlement = state.dwarfColony && state.dwarfColony.settlements
+          ? state.dwarfColony.settlements.find((entry) => entry.id === dwarf.settlementId)
+          : null;
+        if (input.mouse.justPressed && settlement && !settlement.hostileToPlayer && (settlement.alertLevel || 0) === 0) {
+          Game.crafting.openTrade(state, dwarf.settlementId);
+          input.mouse.justPressed = false;
+          return;
+        }
+        if (!dwarf.clickCd || dwarf.clickCd <= 0) {
+          hitDwarf(state, dwarf, getAttackDamage(selectedToolId(state)));
+          dwarf.clickCd = 0.25;
+          audio.playHit();
+          useSelectedTool(state);
+          if (dwarf.hp <= 0) removeDwarf(state, i, true);
+        }
+        input.mouse.justPressed = false;
+        return;
+      }
+    }
+
     if (dist > 110) {
       state.breaking = null;
       input.mouse.justPressed = false;
@@ -143,6 +169,13 @@
     }
 
     const block = getBlock(state, tx, ty);
+
+    if (block === BLOCK.CHEST && input.mouse.justPressed) {
+      Game.crafting.openChest(state, tx, ty);
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
 
     if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
@@ -164,10 +197,19 @@
       if (!input.mouse.justPressed) return;
       const drop = getBlockDrop(block);
       addToInventory(state, drop.id, drop.count);
+      onColonyBlockBroken(state, tx, ty);
       if (block === BLOCK.FURNACE) {
         const furnace = removeFurnaceAt(state, tx, ty);
         if (furnace) {
           for (const slot of [furnace.input, furnace.fuel, furnace.output]) {
+            if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
+          }
+        }
+      }
+      if (block === BLOCK.CHEST) {
+        const chest = removeChestAt(state, tx, ty);
+        if (chest) {
+          for (const slot of chest.slots) {
             if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
           }
         }
@@ -193,10 +235,19 @@
       audio.playDig();
       const drop = getBlockDrop(block);
       addToInventory(state, drop.id, drop.count);
+      onColonyBlockBroken(state, tx, ty);
       if (block === BLOCK.FURNACE) {
         const furnace = removeFurnaceAt(state, tx, ty);
         if (furnace) {
           for (const slot of [furnace.input, furnace.fuel, furnace.output]) {
+            if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
+          }
+        }
+      }
+      if (block === BLOCK.CHEST) {
+        const chest = removeChestAt(state, tx, ty);
+        if (chest) {
+          for (const slot of chest.slots) {
             if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
           }
         }

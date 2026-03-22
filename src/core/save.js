@@ -34,6 +34,18 @@
     return result;
   }
 
+  function normalizeChests(chests) {
+    const result = {};
+    if (!chests || typeof chests !== 'object') return result;
+    for (const [key, chest] of Object.entries(chests)) {
+      result[key] = {
+        slots: normalizeSlotArray(chest.slots, 12),
+        ownerSettlementId: chest.ownerSettlementId || null,
+      };
+    }
+    return result;
+  }
+
   function snapshotState(state) {
     return {
       worldMeta: state.worldMeta,
@@ -43,7 +55,10 @@
       animals: state.animals,
       zombies: state.zombies,
       spiders: state.spiders,
+      dwarves: state.dwarves,
+      dwarfColony: state.dwarfColony,
       foods: state.foods,
+      chests: state.chests,
       furnaces: state.furnaces,
       player: state.player,
       gameOver: state.gameOver,
@@ -149,7 +164,21 @@
       state.animals = Array.isArray(data.animals) ? data.animals : state.animals;
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
+      state.dwarves = Array.isArray(data.dwarves) ? data.dwarves : state.dwarves;
+      state.dwarfColony = data.dwarfColony && typeof data.dwarfColony === 'object'
+        ? {
+            homes: Array.isArray(data.dwarfColony.homes) ? data.dwarfColony.homes : [],
+            stockpiles: Array.isArray(data.dwarfColony.stockpiles) ? data.dwarfColony.stockpiles : [],
+            halls: Array.isArray(data.dwarfColony.halls) ? data.dwarfColony.halls : [],
+            shafts: Array.isArray(data.dwarfColony.shafts) ? data.dwarfColony.shafts : [],
+            worksites: Array.isArray(data.dwarfColony.worksites) ? data.dwarfColony.worksites : [],
+            nodes: Array.isArray(data.dwarfColony.nodes) ? data.dwarfColony.nodes : [],
+            edges: Array.isArray(data.dwarfColony.edges) ? data.dwarfColony.edges : [],
+            settlements: Array.isArray(data.dwarfColony.settlements) ? data.dwarfColony.settlements : [],
+          }
+        : state.dwarfColony;
       state.foods = Array.isArray(data.foods) ? data.foods : state.foods;
+      state.chests = normalizeChests(data.chests);
       state.furnaces = normalizeFurnaces(data.furnaces);
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
@@ -174,6 +203,7 @@
       state.crafting.grid = Array.from({ length: 9 }, () => createSlot());
       state.crafting.cursor = createSlot();
       state.crafting.result = null;
+      state.crafting.chestOpenKey = null;
       state.pause.open = false;
       state.pause.confirmRestart = false;
       state.pause.statusText = '';

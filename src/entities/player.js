@@ -14,6 +14,7 @@
 
   function updatePlayer(state, input, dt) {
     const { player } = state;
+    if (player.facing !== -1 && player.facing !== 1) player.facing = 1;
     const controlsLocked = (state.crafting && state.crafting.open) || (state.pause && state.pause.open);
     const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
     const left = !controlsLocked && input.keys.has('KeyA');
@@ -41,6 +42,8 @@
     player.vx = 0;
     if (left) player.vx -= PLAYER_SPEED;
     if (right) player.vx += PLAYER_SPEED;
+    if (player.vx < -1) player.facing = -1;
+    else if (player.vx > 1) player.facing = 1;
 
     if (creativeFlight) {
       const flyingDown = !controlsLocked && input.keys.has('KeyS');

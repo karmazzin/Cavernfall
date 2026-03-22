@@ -11,6 +11,7 @@
     RAW_GOLD: 'raw_gold',
     GOLD_INGOT: 'gold_ingot',
     COIN: 'coin',
+    DEEP_CRYSTAL: 'deep_crystal',
     WOODEN_PICKAXE: 'wooden_pickaxe',
     WOODEN_AXE: 'wooden_axe',
     WOODEN_SHOVEL: 'wooden_shovel',
@@ -39,6 +40,9 @@
     [BLOCK.GOLD_ORE]: 'Золотая руда',
     [BLOCK.PILLAR]: 'Столб',
     [BLOCK.LADDER]: 'Лестница',
+    [BLOCK.DEEPSTONE]: 'Глубинный камень',
+    [BLOCK.DEEP_ORE]: 'Глубинная руда',
+    [BLOCK.CHEST]: 'Сундук',
   };
 
   const ITEM_DEFS = {
@@ -49,6 +53,7 @@
     [ITEM.RAW_GOLD]: { id: ITEM.RAW_GOLD, label: 'Рудное золото', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.GOLD_INGOT]: { id: ITEM.GOLD_INGOT, label: 'Золотой слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.COIN]: { id: ITEM.COIN, label: 'Монета', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.DEEP_CRYSTAL]: { id: ITEM.DEEP_CRYSTAL, label: 'Глубинный кристалл', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WOODEN_PICKAXE]: {
       id: ITEM.WOODEN_PICKAXE,
       label: 'Деревянная кирка',

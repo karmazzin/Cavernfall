@@ -3,9 +3,15 @@
 
   Game.constants = {
     TILE: 16,
+    VIEW_ZOOM: 1.2,
     WORLD_W: 840,
-    WORLD_H: 140,
+    WORLD_H: 128,
     SURFACE_BASE: 28,
+    UPPER_CAVE_START: 36,
+    UPPER_CAVE_END: 68,
+    DWARF_START: 69,
+    DWARF_END: 98,
+    DEEP_START: 99,
     GRAVITY: 1500,
     PLAYER_SPEED: 210,
     JUMP_SPEED: 520,

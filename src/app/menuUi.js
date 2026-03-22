@@ -17,7 +17,10 @@
   function renderMain() {
     return `
       <div class="menu-card menu-hero">
-        <div class="menu-logo">Cavern Fall</div>
+        <h1 class="menu-logo" aria-label="Cavern Fall">
+          <span>Cavern</span>
+          <span>Fall</span>
+        </h1>
         <div class="menu-subtitle">Подземное выживание, шахты, озёра, вулканы</div>
         <div class="menu-actions">
           <button class="menu-btn menu-btn-primary" data-menu-action="open-new">Создать Новый Мир</button>

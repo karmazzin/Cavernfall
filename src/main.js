@@ -9,6 +9,7 @@
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
   const { updateSpiders } = Game.spidersEntity;
+  const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
@@ -278,6 +279,7 @@
     updateAnimals(state, dt);
     updateZombies(state, dt);
     updateSpiders(state, dt);
+    updateDwarves(state, dt);
     updateFood(state, dt);
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
@@ -297,6 +299,9 @@
     }
     for (const spider of state.spiders) {
       if (spider.clickCd) spider.clickCd = Math.max(0, spider.clickCd - dt);
+    }
+    for (const dwarf of state.dwarves) {
+      if (dwarf.clickCd) dwarf.clickCd = Math.max(0, dwarf.clickCd - dt);
     }
 
     if (!isCreativeMode() && state.player.health <= 0) state.gameOver = true;

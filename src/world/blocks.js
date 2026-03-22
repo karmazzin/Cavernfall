@@ -20,6 +20,9 @@
     GOLD_ORE: 15,
     PILLAR: 16,
     LADDER: 17,
+    DEEPSTONE: 18,
+    DEEP_ORE: 19,
+    CHEST: 20,
   };
 
   const BLOCK_COLORS = {
@@ -40,6 +43,9 @@
     [BLOCK.GOLD_ORE]: '#9a8a60',
     [BLOCK.PILLAR]: '#9b6b3f',
     [BLOCK.LADDER]: '#c59a63',
+    [BLOCK.DEEPSTONE]: '#4a505b',
+    [BLOCK.DEEP_ORE]: '#6a4b86',
+    [BLOCK.CHEST]: '#8b5a2b',
   };
 
   const BREAK_TIME = {
@@ -53,6 +59,9 @@
     [BLOCK.COAL_ORE]: 4,
     [BLOCK.BLACKSTONE]: 5,
     [BLOCK.GOLD_ORE]: 4.6,
+    [BLOCK.DEEPSTONE]: 5.4,
+    [BLOCK.DEEP_ORE]: 5.8,
+    [BLOCK.CHEST]: 1.1,
     [BLOCK.PILLAR]: 1.2,
     [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
@@ -71,6 +80,9 @@
     BLOCK.PLANK,
     BLOCK.PILLAR,
     BLOCK.BLACKSTONE,
+    BLOCK.DEEPSTONE,
+    BLOCK.DEEP_ORE,
+    BLOCK.CHEST,
     BLOCK.TORCH,
     BLOCK.FURNACE,
   ]);

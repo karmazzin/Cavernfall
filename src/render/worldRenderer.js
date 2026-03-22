@@ -3,9 +3,11 @@
   const { TILE } = Game.constants;
   const { BLOCK, BLOCK_COLORS } = Game.blocks;
 
-  function drawBlock(ctx, id, x, y) {
-    ctx.fillStyle = BLOCK_COLORS[id] || '#000';
-    ctx.fillRect(x, y, TILE, TILE);
+  function drawBlock(ctx, id, x, y, time = 0) {
+    if (id !== BLOCK.TORCH) {
+      ctx.fillStyle = BLOCK_COLORS[id] || '#000';
+      ctx.fillRect(x, y, TILE, TILE);
+    }
 
     if (id === BLOCK.GRASS) {
       ctx.fillStyle = '#6bd36b';
@@ -39,13 +41,38 @@
       ctx.fillRect(x + 9, y + 2, 4, 3);
       ctx.fillStyle = '#1b1b20';
       ctx.fillRect(x + 5, y + 9, 6, 4);
+    } else if (id === BLOCK.DEEPSTONE) {
+      ctx.fillStyle = '#484f59';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#5d6570';
+      ctx.fillRect(x + 2, y + 2, 4, 4);
+      ctx.fillRect(x + 10, y + 4, 3, 3);
+      ctx.fillStyle = '#2a3037';
+      ctx.fillRect(x + 6, y + 9, 5, 4);
+    } else if (id === BLOCK.DEEP_ORE) {
+      ctx.fillStyle = '#4a505b';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7a58b3';
+      ctx.fillRect(x + 3, y + 3, 3, 4);
+      ctx.fillRect(x + 9, y + 4, 4, 3);
+      ctx.fillRect(x + 7, y + 10, 3, 3);
+      ctx.fillStyle = 'rgba(245,236,255,0.18)';
+      ctx.fillRect(x + 4, y + 4, 1, 2);
     } else if (id === BLOCK.TORCH) {
-      ctx.fillStyle = '#6f4726';
+      const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);
+      const flameW = 3 + Math.round(flicker * 2);
+      const flameX = x + 8 - Math.floor(flameW / 2);
+      const flameY = y + 3 - Math.round(flicker);
+      ctx.fillStyle = '#74451f';
       ctx.fillRect(x + 7, y + 6, 2, 8);
+      ctx.fillStyle = '#986132';
+      ctx.fillRect(x + 6, y + 11, 4, 2);
       ctx.fillStyle = '#ffb347';
-      ctx.fillRect(x + 5, y + 3, 6, 4);
-      ctx.fillStyle = 'rgba(255,230,120,0.35)';
-      ctx.fillRect(x + 4, y + 2, 8, 5);
+      ctx.fillRect(flameX, flameY + 1, flameW, 4);
+      ctx.fillStyle = '#ff7a21';
+      ctx.fillRect(flameX + 1, flameY, Math.max(2, flameW - 2), 3);
+      ctx.fillStyle = '#fff0b8';
+      ctx.fillRect(x + 7, flameY + 1, 2, 2);
     } else if (id === BLOCK.WATER) {
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.fillRect(x, y + 2, TILE, 2);
@@ -75,6 +102,14 @@
       ctx.fillRect(x + 5, y + 3, 6, 2);
       ctx.fillRect(x + 5, y + 7, 6, 2);
       ctx.fillRect(x + 5, y + 11, 6, 2);
+    } else if (id === BLOCK.CHEST) {
+      ctx.fillStyle = '#8b5a2b';
+      ctx.fillRect(x + 1, y + 4, TILE - 2, TILE - 5);
+      ctx.fillStyle = '#b77a42';
+      ctx.fillRect(x + 2, y + 5, TILE - 4, 4);
+      ctx.fillStyle = '#5a3818';
+      ctx.fillRect(x + 1, y + 9, TILE - 2, 1);
+      ctx.fillRect(x + 7, y + 8, 2, 4);
     } else if (id === BLOCK.COBWEB) {
       ctx.strokeStyle = 'rgba(240,245,255,0.8)';
       ctx.lineWidth = 1;

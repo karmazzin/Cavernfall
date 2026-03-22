@@ -154,6 +154,19 @@
     return addItem(state, itemId, amount, getStorageSlots(state), durability);
   }
 
+  function removeItem(state, itemId, amount = 1) {
+    let left = amount;
+    for (const slot of getStorageSlots(state)) {
+      if (isSlotEmpty(slot) || slot.id !== itemId) continue;
+      const take = Math.min(left, slot.count);
+      slot.count -= take;
+      normalizeSlot(slot);
+      left -= take;
+      if (left <= 0) return true;
+    }
+    return false;
+  }
+
   function removeFromSlot(slot, amount = 1) {
     if (isSlotEmpty(slot)) return null;
     const removedId = slot.id;
@@ -214,6 +227,7 @@
     addItem,
     eatFood,
     addToInventory,
+    removeItem,
     removeFromSlot,
     consumeSelectedPlaceable,
     selectedPlaceableId,

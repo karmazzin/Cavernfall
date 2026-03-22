@@ -75,6 +75,8 @@
     if (biomeKey === 'forest') return 'Лес';
     if (biomeKey === 'lake') return 'Озеро';
     if (biomeKey === 'cave') return 'Пещера';
+    if (biomeKey === 'dwarf_caves') return 'Пещеры гномов';
+    if (biomeKey === 'deep') return 'Глубины';
     if (biomeKey === 'mountains') return 'Горы';
     if (biomeKey === 'volcano') return 'Вулкан';
     return 'Равнина';

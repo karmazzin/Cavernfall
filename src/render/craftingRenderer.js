@@ -6,6 +6,7 @@
   const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
+  const { TRADE_OFFERS, canAfford } = Game.tradeSystem;
 
   function drawSlot(ctx, rect, slot, highlighted = false) {
     ctx.fillStyle = highlighted ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.45)';
@@ -168,11 +169,72 @@
     }
   }
 
+  function getChestSlotRects(layout) {
+    const rects = [];
+    const panel = layout.chest.panel;
+    const slot = layout.mobile ? 28 : 38;
+    const gap = layout.mobile ? 4 : 6;
+    const startX = panel.x + 14;
+    const startY = panel.y + 36;
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 4; col += 1) rects.push({ x: startX + col * (slot + gap), y: startY + row * (slot + gap), w: slot, h: slot });
+    }
+    return rects;
+  }
+
+  function drawChestPanel(ctx, layout, activeChest) {
+    const panel = layout.chest.panel;
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panel.x, panel.y, panel.w, panel.h);
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${layout.mobile ? 14 : 18}px Arial`;
+    ctx.fillText('Сундук', panel.x + 12, panel.y + 22);
+    const slots = getChestSlotRects(layout);
+    for (let i = 0; i < slots.length; i += 1) drawSlot(ctx, slots[i], activeChest.chest.slots[i]);
+  }
+
+  function drawTradePanel(ctx, layout, state, trader) {
+    const panel = layout.trade.panel;
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(panel.x, panel.y, panel.w, panel.h);
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${layout.mobile ? 14 : 18}px Arial`;
+    ctx.fillText('Торговля', panel.x + 12, panel.y + 22);
+    ctx.font = `${layout.mobile ? 10 : 12}px Arial`;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText('Спокойный гном рядом', panel.x + 12, panel.y + 38);
+    const offerHeight = layout.mobile ? 26 : 34;
+    const startX = panel.x + 10;
+    const startY = panel.y + 46;
+    for (let i = 0; i < TRADE_OFFERS.length; i += 1) {
+      const offer = TRADE_OFFERS[i];
+      const y = startY + i * (offerHeight + 6);
+      ctx.fillStyle = canAfford(state, offer) ? 'rgba(88,122,88,0.28)' : 'rgba(100,100,100,0.18)';
+      ctx.fillRect(startX, y, panel.w - 20, offerHeight);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.strokeRect(startX, y, panel.w - 20, offerHeight);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`${offer.cost} мон. -> ${offer.label}`, startX + 8, y + (layout.mobile ? 17 : 22));
+    }
+    if (state.crafting.tradeStatus) {
+      ctx.fillStyle = '#ffd36e';
+      ctx.fillText(state.crafting.tradeStatus, panel.x + 12, panel.y + panel.h - 10);
+    }
+  }
+
   function drawCraftingOverlay(ctx, canvas, state, input) {
     if (!state.crafting || !state.crafting.open) return;
 
     const layout = getCraftingLayout(canvas, state);
     const activeFurnace = getNearestFurnace(state, 5);
+    const activeChest = Game.crafting.getActiveChest(state);
+    const trader = Game.crafting.getActiveTrader(state);
     const creative = isCreativeMode(state);
     ctx.fillStyle = 'rgba(0,0,0,0.62)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -266,6 +328,8 @@
 
     drawRecipeHints(ctx, layout);
     if (activeFurnace) drawFurnacePanel(ctx, layout, activeFurnace);
+    if (activeChest) drawChestPanel(ctx, layout, activeChest);
+    if (trader) drawTradePanel(ctx, layout, state, trader);
 
     if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
       const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };

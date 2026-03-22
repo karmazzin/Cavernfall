@@ -1,12 +1,13 @@
 (() => {
   const Game = window.MC2D;
-  const { TILE, CYCLE } = Game.constants;
+  const { TILE, CYCLE, WORLD_W, WORLD_H, VIEW_ZOOM } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { clamp } = Game.math;
   const { getBlock, getLocationInfo } = Game.world;
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawDwarf } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -40,7 +41,18 @@
     ctx.fill();
   }
 
-  function drawDarknessMask(ctx, canvas, state, camera, location, darkness) {
+  function applyLightCone(ctx, x, y, angle, spread, innerRadius, radius, strength = 1) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.arc(x, y, radius, angle - spread / 2, angle + spread / 2);
+    ctx.closePath();
+    ctx.clip();
+    applyLight(ctx, x, y, innerRadius, radius, strength);
+    ctx.restore();
+  }
+
+  function drawDarknessMask(ctx, canvas, state, camera, input, location, darkness) {
     const maskCtx = ensureDarknessMask(canvas);
     maskCtx.clearRect(0, 0, canvas.width, canvas.height);
     maskCtx.globalCompositeOperation = 'source-over';
@@ -53,13 +65,22 @@
     const holdingTorch = heldItem && heldItem.id === BLOCK.TORCH;
     const baseRadius = location.inCave ? 205 : 255;
     const baseStrength = location.inCave ? 0.78 : 0.62;
+    const nearRadius = location.inCave ? 58 : 68;
+    const nearStrength = location.inCave ? 0.56 : 0.48;
     const heldTorchRadius = holdingTorch ? (location.inCave ? 310 : 350) : 0;
     const heldTorchStrength = location.inCave ? 1 : 0.92;
     const worldLights = getLightSourcesInView(state, camera, canvas);
+    const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
+    const cursorX = input && input.mouse ? input.mouse.x / VIEW_ZOOM : lightX + state.player.dir * 32;
+    const cursorY = input && input.mouse ? input.mouse.y / VIEW_ZOOM : lightY;
+    const lookAngle = Math.atan2(cursorY - lightY, cursorX - lightX);
+    const coneSpread = Math.PI * 0.4089;
 
     maskCtx.save();
     maskCtx.globalCompositeOperation = 'destination-out';
-    applyLight(maskCtx, lightX, lightY, 28, baseRadius, baseStrength);
+    applyLight(maskCtx, lightX, lightY, 22, nearRadius, nearStrength);
+    if (holdingTorch || touchMode) applyLight(maskCtx, lightX, lightY, 28, baseRadius, baseStrength);
+    else applyLightCone(maskCtx, lightX, lightY, lookAngle, coneSpread, 30, baseRadius, baseStrength);
     if (heldTorchRadius > 0) applyLight(maskCtx, lightX, lightY, 38, heldTorchRadius, heldTorchStrength);
     for (const light of worldLights) {
       applyLight(maskCtx, light.x, light.y, light.inner, light.radius, light.strength || 1);
@@ -69,7 +90,52 @@
     ctx.drawImage(darknessMaskCanvas, 0, 0);
   }
 
+  function getHoveredChest(state, camera, input, canvas) {
+    if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.ui && state.ui.controlMode === 'touch') return null;
+    if (input.mouse.x < 0 || input.mouse.y < 0 || input.mouse.x > canvas.width || input.mouse.y > canvas.height) return null;
+    const tx = Math.floor((input.mouse.x / VIEW_ZOOM + camera.x) / TILE);
+    const ty = Math.floor((input.mouse.y / VIEW_ZOOM + camera.y) / TILE);
+    if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return null;
+    if (getBlock(state, tx, ty) !== BLOCK.CHEST) return null;
+    const dist = Math.hypot(
+      tx * TILE + TILE / 2 - (state.player.x + state.player.w / 2),
+      ty * TILE + TILE / 2 - (state.player.y + state.player.h / 2)
+    );
+    if (dist > 110) return null;
+    return { tx, ty, sx: tx * TILE - camera.x, sy: ty * TILE - camera.y };
+  }
+
+  function drawChestHint(ctx, chest) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 225, 150, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(chest.sx + 1, chest.sy + 1, TILE - 2, TILE - 2);
+    ctx.fillStyle = 'rgba(255, 215, 120, 0.14)';
+    ctx.fillRect(chest.sx + 1, chest.sy + 1, TILE - 2, TILE - 2);
+
+    const label = 'Открыть сундук';
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = chest.sx + TILE / 2 - boxW / 2;
+    const boxY = chest.sy - 24;
+    ctx.fillStyle = 'rgba(15, 12, 8, 0.9)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(255, 220, 150, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#fff2cf';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, chest.sx + TILE / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
   function draw(ctx, canvas, state, camera, input) {
+    const time = performance.now() / 1000;
+    const view = { width: canvas.width / VIEW_ZOOM, height: canvas.height / VIEW_ZOOM };
     const phase = phaseInfo(state);
     const playerTileX = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const playerTileY = Math.floor((state.player.y + state.player.h / 2) / TILE);
@@ -98,17 +164,23 @@
     ctx.arc(celestialX, celestialY, 24, 0, Math.PI * 2);
     ctx.fill();
 
-    const startX = Math.floor(camera.x / TILE);
-    const endX = Math.ceil((camera.x + canvas.width) / TILE);
-    const startY = Math.floor(camera.y / TILE);
-    const endY = Math.ceil((camera.y + canvas.height) / TILE);
+    ctx.save();
+    ctx.scale(VIEW_ZOOM, VIEW_ZOOM);
+
+    const startX = Math.max(0, Math.floor(camera.x / TILE));
+    const endX = Math.min(WORLD_W - 1, Math.ceil((camera.x + view.width) / TILE));
+    const startY = Math.max(0, Math.floor(camera.y / TILE));
+    const endY = Math.min(WORLD_H - 1, Math.ceil((camera.y + view.height) / TILE));
 
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
         const id = getBlock(state, x, y);
-        if (id !== BLOCK.AIR) drawBlock(ctx, id, x * TILE - camera.x, y * TILE - camera.y);
+        if (id !== BLOCK.AIR) drawBlock(ctx, id, x * TILE - camera.x, y * TILE - camera.y, time);
       }
     }
+
+    const hoveredChest = getHoveredChest(state, camera, input, canvas);
+    if (hoveredChest) drawChestHint(ctx, hoveredChest);
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - camera.x;
@@ -131,39 +203,16 @@
       }
     }
 
-    for (const animal of state.animals) {
-      ctx.fillStyle = '#fff5df';
-      const bodyY = animal.y - camera.y + (animal.grazing ? 1 : 0);
-      const headY = animal.y - camera.y + (animal.grazing ? 4 : 2);
-      ctx.fillRect(animal.x - camera.x, bodyY, animal.w, animal.h);
-      ctx.fillStyle = '#3a2d20';
-      ctx.fillRect(animal.x - camera.x + (animal.dir > 0 ? 8 : 2), headY, 2, 2);
-    }
+    for (const animal of state.animals) drawSheep(ctx, animal, camera, time);
+    for (const zombie of state.zombies) drawZombie(ctx, zombie, camera, time);
+    for (const spider of state.spiders) drawSpider(ctx, spider, camera, time);
+    for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
 
-    for (const zombie of state.zombies) {
-      ctx.fillStyle = '#4b8f4b';
-      ctx.fillRect(zombie.x - camera.x, zombie.y - camera.y, zombie.w, zombie.h);
-      ctx.fillStyle = '#203020';
-      ctx.fillRect(zombie.x - camera.x + 2, zombie.y - camera.y + 3, 2, 2);
-      ctx.fillRect(zombie.x - camera.x + 8, zombie.y - camera.y + 3, 2, 2);
-    }
+    drawPlayer(ctx, state, camera, time);
 
-    for (const spider of state.spiders) {
-      ctx.fillStyle = '#1b1b1f';
-      ctx.fillRect(spider.x - camera.x, spider.y - camera.y + 2, spider.w, spider.h - 2);
-      ctx.fillStyle = '#a32626';
-      ctx.fillRect(spider.x - camera.x + 3, spider.y - camera.y + 4, 2, 2);
-      ctx.fillRect(spider.x - camera.x + 9, spider.y - camera.y + 4, 2, 2);
-    }
+    if (darkness > 0) drawDarknessMask(ctx, view, state, camera, input, location, darkness);
 
-    ctx.fillStyle = '#4aa3ff';
-    ctx.fillRect(state.player.x - camera.x, state.player.y - camera.y, state.player.w, state.player.h);
-    ctx.fillStyle = '#ffe0bd';
-    ctx.fillRect(state.player.x - camera.x + 1, state.player.y - camera.y, 10, 8);
-
-    if (darkness > 0) {
-      drawDarknessMask(ctx, canvas, state, camera, location, darkness);
-    }
+    ctx.restore();
 
     if (state.attackFlash > 0) {
       ctx.fillStyle = `rgba(255,0,0,${state.attackFlash * 0.5})`;

@@ -3,7 +3,7 @@ html, body {
   padding: 0;
   overflow: hidden;
   background: #111;
-  font-family: Arial, sans-serif;
+  font-family: "Marcellus", serif;
   color: white;
   touch-action: none;
 }
@@ -51,21 +51,49 @@ body {
 .menu-hero {
   text-align: center;
   padding: 52px 48px;
+  background:
+    radial-gradient(circle at top, rgba(242, 195, 123, 0.16), transparent 46%),
+    radial-gradient(circle at bottom, rgba(103, 53, 24, 0.32), transparent 52%),
+    rgba(18, 14, 11, 0.82);
 }
 
 .menu-logo {
-  font-size: clamp(44px, 9vw, 92px);
-  line-height: 0.95;
+  margin: 0;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.08em;
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(44px, 9vw, 96px);
+  line-height: 0.88;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #f5e0b8;
-  text-shadow: 0 3px 0 #5c3518, 0 8px 24px rgba(0, 0, 0, 0.45);
+  text-shadow:
+    0 2px 0 #fff2cf,
+    0 5px 0 #8d5428,
+    0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.menu-logo span {
+  display: block;
+  padding: 0 0.14em;
+  background: linear-gradient(180deg, #fff4d6 0%, #f0c982 45%, #bf7138 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.menu-logo span:last-child {
+  letter-spacing: 0.16em;
+  transform: translateX(0.08em);
 }
 
 .menu-subtitle {
   margin-top: 18px;
   font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: rgba(255, 248, 236, 0.82);
 }
 

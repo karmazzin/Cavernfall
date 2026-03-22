@@ -101,6 +101,21 @@
       return;
     }
 
+    if (itemId === ITEM.DEEP_CRYSTAL) {
+      ctx.fillStyle = '#7b5ac9';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.12);
+      ctx.lineTo(x + size * 0.72, y + size * 0.34);
+      ctx.lineTo(x + size * 0.62, y + size * 0.74);
+      ctx.lineTo(x + size * 0.38, y + size * 0.74);
+      ctx.lineTo(x + size * 0.28, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(238,224,255,0.35)';
+      ctx.fillRect(x + size * 0.46, y + size * 0.24, size * 0.08, size * 0.18);
+      return;
+    }
+
     if (itemId === ITEM.RAW_MUTTON) {
       ctx.fillStyle = '#cf6f7e';
       ctx.beginPath();

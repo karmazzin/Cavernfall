@@ -13,7 +13,10 @@
   } = Game.inventory;
   const { findMatchingRecipe } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
+  const { getNearestChest, getChestAt } = Game.chestSystem;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
+  const { TRADE_OFFERS, performTrade } = Game.tradeSystem;
+  const { onChestLootTaken, getNearestTrader } = Game.dwarvesEntity;
 
   function ensureCraftingState(state) {
     if (state.crafting) return state.crafting;
@@ -23,6 +26,9 @@
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
+      chestOpenKey: null,
+      tradeSettlementId: null,
+      tradeStatus: '',
     };
     return state.crafting;
   }
@@ -54,7 +60,49 @@
     returnSlotToStorage(state, crafting.cursor);
     if (!isSlotEmpty(crafting.cursor) || crafting.grid.some((slot) => !isSlotEmpty(slot))) return;
     crafting.open = false;
+    crafting.chestOpenKey = null;
+    crafting.tradeSettlementId = null;
+    crafting.tradeStatus = '';
     updateCraftingResult(state);
+  }
+
+  function openChest(state, tx, ty) {
+    const crafting = ensureCraftingState(state);
+    crafting.chestOpenKey = `${tx},${ty}`;
+    crafting.tradeSettlementId = null;
+    crafting.tradeStatus = '';
+    openCrafting(state);
+  }
+
+  function openTrade(state, settlementId) {
+    const crafting = ensureCraftingState(state);
+    crafting.tradeSettlementId = settlementId;
+    crafting.chestOpenKey = null;
+    crafting.tradeStatus = '';
+    openCrafting(state);
+  }
+
+  function getActiveChest(state) {
+    const crafting = ensureCraftingState(state);
+    if (!crafting.chestOpenKey) return null;
+    const [tx, ty] = crafting.chestOpenKey.split(',').map(Number);
+    if (!Number.isFinite(tx) || !Number.isFinite(ty)) return null;
+    const chest = getChestAt(state, tx, ty);
+    if (!chest) return null;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const chestCx = tx * Game.constants.TILE + Game.constants.TILE / 2;
+    const chestCy = ty * Game.constants.TILE + Game.constants.TILE / 2;
+    if (Math.hypot(chestCx - playerCx, chestCy - playerCy) > 5 * Game.constants.TILE) return null;
+    return { key: crafting.chestOpenKey, tx, ty, chest };
+  }
+
+  function getActiveTrader(state) {
+    const crafting = ensureCraftingState(state);
+    if (!crafting.tradeSettlementId) return null;
+    const trader = getNearestTrader(state, 86);
+    if (!trader || trader.settlement.id !== crafting.tradeSettlementId) return null;
+    return trader;
   }
 
   function toggleCrafting(state) {
@@ -160,12 +208,37 @@
           ? slotRect(panel.x + panel.w - 70, panel.y + 128, slot + 6)
           : slotRect(panel.x + 1008, panel.y + 174, 56),
       },
+      chest: {
+        panel: mobile
+          ? slotRect(panel.x + panel.w - 158, panel.y + 232, 144, 154)
+          : slotRect(panel.x + 828, panel.y + 326, 260, 180),
+      },
+      trade: {
+        panel: mobile
+          ? slotRect(panel.x + panel.w - 158, panel.y + 394, 144, Math.max(108, panel.h - 404))
+          : slotRect(panel.x + 828, panel.y + 324, 260, 204),
+      },
       creative: {
         area: mobile
           ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 90 }
           : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
       },
     };
+  }
+
+  function getChestSlotRects(layout) {
+    const rects = [];
+    const panel = layout.chest.panel;
+    const slot = layout.mobile ? 28 : 38;
+    const gap = layout.mobile ? 4 : 6;
+    const startX = panel.x + 14;
+    const startY = panel.y + 36;
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 4; col += 1) {
+        rects.push(slotRect(startX + col * (slot + gap), startY + row * (slot + gap), slot));
+      }
+    }
+    return rects;
   }
 
   function canMergeInto(slot, stack) {
@@ -325,6 +398,8 @@
     const layout = getCraftingLayout(canvas, state);
     const { x, y, button } = input.mouse;
     const activeFurnace = getNearestFurnace(state, 5);
+    const activeChest = getActiveChest(state);
+    const trader = getActiveTrader(state);
     const creative = isCreativeMode(state);
 
     if (contains(layout.tabs.craft, x, y)) {
@@ -419,6 +494,33 @@
       }
     }
 
+    if (activeChest) {
+      const chestRects = getChestSlotRects(layout);
+      const beforeCount = activeChest.chest.slots.reduce((sum, slot) => sum + (slot && slot.count ? slot.count : 0), 0);
+      for (let i = 0; i < chestRects.length; i += 1) {
+        if (!contains(chestRects[i], x, y)) continue;
+        handleSlotClick(crafting, activeChest.chest.slots[i], button);
+        const afterCount = activeChest.chest.slots.reduce((sum, slot) => sum + (slot && slot.count ? slot.count : 0), 0);
+        if (afterCount < beforeCount) onChestLootTaken(state, activeChest.chest.ownerSettlementId);
+        input.mouse.justPressed = false;
+        return true;
+      }
+    }
+
+    if (trader) {
+      const offers = TRADE_OFFERS;
+      const offerHeight = layout.mobile ? 26 : 34;
+      const startX = layout.trade.panel.x + 10;
+      const startY = layout.trade.panel.y + 30;
+      for (let i = 0; i < offers.length; i += 1) {
+        const rect = slotRect(startX, startY + i * (offerHeight + 6), layout.trade.panel.w - 20, offerHeight);
+        if (!contains(rect, x, y)) continue;
+        crafting.tradeStatus = performTrade(state, offers[i].id) ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
+        input.mouse.justPressed = false;
+        return true;
+      }
+    }
+
     if (layout.mobile && !contains(layout.panel, x, y)) {
       closeCrafting(state);
       input.mouse.justPressed = false;
@@ -433,9 +535,13 @@
     ensureCraftingState,
     updateCraftingResult,
     openCrafting,
+    openChest,
+    openTrade,
     closeCrafting,
     toggleCrafting,
     getCraftingLayout,
+    getActiveChest,
+    getActiveTrader,
     handleCraftingPointer,
   };
 })();

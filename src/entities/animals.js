@@ -74,6 +74,7 @@
             panicSpeed: rand(52, 68),
             targetVx: 0,
             hopCd: 0,
+            obstacleTimer: 0,
             clickCd: 0,
             edgeCooldown: 0,
             commitTimer: 0,
@@ -130,9 +131,13 @@
       const canStepDownOneBlock = !blockSolid(groundAhead) && blockSolid(groundOneBelowAhead) && !liquid(groundOneBelowAhead);
       const realEdgeAhead = !blockSolid(groundAhead) && !canStepDownOneBlock && !dangerousAhead;
 
-      if (blocked && animal.onGround && animal.hopCd <= 0) {
-        animal.vy = animal.state === ANIMAL_STATE.PANIC ? -300 : -250;
-        animal.hopCd = 0.45;
+      if (blocked && animal.onGround && !realEdgeAhead && !dangerousAhead) animal.obstacleTimer += dt;
+      else animal.obstacleTimer = 0;
+
+      if (blocked && animal.onGround && animal.hopCd <= 0 && animal.obstacleTimer > (animal.state === ANIMAL_STATE.PANIC ? 0.1 : 0.18)) {
+        animal.vy = animal.state === ANIMAL_STATE.PANIC ? -300 : -235;
+        animal.hopCd = animal.state === ANIMAL_STATE.PANIC ? 0.55 : 0.8;
+        animal.obstacleTimer = 0;
       }
 
       if ((realEdgeAhead || dangerousAhead || badGround) && animal.edgeCooldown <= 0 && animal.commitTimer <= 0) {
