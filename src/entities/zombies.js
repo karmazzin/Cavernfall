@@ -6,6 +6,7 @@
   const { phaseInfo } = Game.dayCycle;
   const { BLOCK } = Game.blocks;
   const { getBlock, blockSolid, getLocationInfo } = Game.world;
+  const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
 
   function spawnZombieNearPlayer(state) {
     if (state.zombies.length >= MAX_ZOMBIES) return;
@@ -26,6 +27,7 @@
       hp: 3,
       burnTimer: 0,
     });
+    ensureMobState(state.zombies[state.zombies.length - 1]);
   }
 
   function spawnZombieInCave(state) {
@@ -57,6 +59,7 @@
         hp: 3,
         burnTimer: 0,
       });
+      ensureMobState(state.zombies[state.zombies.length - 1]);
       return;
     }
   }
@@ -83,9 +86,11 @@
 
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
+      ensureMobState(zombie);
       const zombieTx = Math.floor((zombie.x + zombie.w / 2) / TILE);
       const zombieTy = Math.floor((zombie.y + zombie.h / 2) / TILE);
       const inCave = getLocationInfo(state, zombieTx, zombieTy).inCave;
+      updateMobMediumState(state, zombie);
 
       if (sunlight && !inCave) {
         zombie.burnTimer += dt;
@@ -97,12 +102,21 @@
         zombie.burnTimer = 0;
       }
 
+      const wasOnGround = zombie.onGround;
+      const preMoveVy = zombie.vy;
       const dx = state.player.x - zombie.x;
       zombie.vx = Math.sign(dx) * 75;
       if (Math.abs(dx) < 4) zombie.vx = 0;
-      zombie.vy += GRAVITY * dt;
-      if (state.player.y + 8 < zombie.y && zombie.onGround) zombie.vy = -430;
+      if (zombie.inWater) {
+        zombie.dir = getWaterEscapeDir(state, zombie, zombie.vx >= 0 ? 1 : -1);
+        zombie.vx = zombie.dir * 95;
+        zombie.vy = -220;
+      } else {
+        zombie.vy += GRAVITY * dt;
+        if (state.player.y + 8 < zombie.y && zombie.onGround) zombie.vy = -430;
+      }
       moveEntity(state, zombie, dt);
+      applyMobEnvironmentDamage(state, zombie, dt, wasOnGround, preMoveVy);
 
       zombie.attackCd -= dt;
       if (aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {

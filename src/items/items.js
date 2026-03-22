@@ -5,6 +5,7 @@
 
   const ITEM = {
     STICK: 'stick',
+    RAW_MUTTON: 'raw_mutton',
     WOODEN_PICKAXE: 'wooden_pickaxe',
     WOODEN_AXE: 'wooden_axe',
     WOODEN_SHOVEL: 'wooden_shovel',
@@ -30,6 +31,7 @@
 
   const ITEM_DEFS = {
     [ITEM.STICK]: { id: ITEM.STICK, label: 'Палка', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.RAW_MUTTON]: { id: ITEM.RAW_MUTTON, label: 'Сырая баранина', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 20 },
     [ITEM.WOODEN_PICKAXE]: {
       id: ITEM.WOODEN_PICKAXE,
       label: 'Деревянная кирка',
@@ -150,10 +152,16 @@
     return def && def.kind === 'tool' ? def.durability || 0 : 0;
   }
 
+  function getFoodRestore(itemId) {
+    const def = getItemDefinition(itemId);
+    return def && def.kind === 'food' ? def.foodRestore || 0 : 0;
+  }
+
   Game.items = {
     ITEM,
     getItemDefinition,
     getMaxDurability,
+    getFoodRestore,
     isBlockItem,
     isPlaceableItem,
     isTool,

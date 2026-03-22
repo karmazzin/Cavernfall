@@ -6,11 +6,12 @@
   const { moveEntity } = Game.physics;
   const { BLOCK } = Game.blocks;
   const { phaseInfo } = Game.dayCycle;
+  const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
 
   const MAX_SPIDERS = 14;
 
   function createSpider(tx, ty) {
-    return {
+    const spider = {
       x: tx * TILE + 1,
       y: ty * TILE + 4,
       w: 14,
@@ -24,6 +25,8 @@
       moveTimer: rand(0.4, 1.5),
       dir: Math.random() < 0.5 ? -1 : 1,
     };
+    ensureMobState(spider);
+    return spider;
   }
 
   function spawnSpiderOnSurface(state) {
@@ -78,23 +81,31 @@
 
     for (let i = state.spiders.length - 1; i >= 0; i -= 1) {
       const spider = state.spiders[i];
+      ensureMobState(spider);
       const dx = state.player.x - spider.x;
       const dy = state.player.y - spider.y;
       const distance = Math.hypot(dx, dy);
+      updateMobMediumState(state, spider);
 
       spider.moveTimer -= dt;
       spider.attackCd -= dt;
 
-      const chasing = distance < 170;
-      if (chasing) {
-        spider.dir = dx < 0 ? -1 : 1;
-        spider.vx = spider.dir * 95;
+      if (spider.inWater) {
+        spider.dir = getWaterEscapeDir(state, spider, spider.dir);
+        spider.vx = spider.dir * 88;
+        spider.vy = -230;
       } else {
-        if (spider.moveTimer <= 0) {
-          spider.moveTimer = rand(0.8, 2);
-          spider.dir = Math.random() < 0.5 ? -1 : 1;
+        const chasing = distance < 170;
+        if (chasing) {
+          spider.dir = dx < 0 ? -1 : 1;
+          spider.vx = spider.dir * 95;
+        } else {
+          if (spider.moveTimer <= 0) {
+            spider.moveTimer = rand(0.8, 2);
+            spider.dir = Math.random() < 0.5 ? -1 : 1;
+          }
+          spider.vx = spider.dir * 36;
         }
-        spider.vx = spider.dir * 36;
       }
 
       const frontX = spider.x + (spider.dir > 0 ? spider.w + 1 : -1);
@@ -103,10 +114,14 @@
       const aheadBlock = getBlock(state, txFront, tyFeet - 1);
       const groundAhead = getBlock(state, txFront, tyFeet);
 
-      spider.vy += GRAVITY * dt;
-      if ((blockSolid(aheadBlock) || !blockSolid(groundAhead)) && spider.onGround) spider.vy = -280;
-
+      const wasOnGround = spider.onGround;
+      const preMoveVy = spider.vy;
+      if (!spider.inWater) {
+        spider.vy += GRAVITY * dt;
+        if ((blockSolid(aheadBlock) || !blockSolid(groundAhead)) && spider.onGround) spider.vy = -280;
+      }
       moveEntity(state, spider, dt);
+      applyMobEnvironmentDamage(state, spider, dt, wasOnGround, preMoveVy);
 
       if (aabb(spider.x, spider.y, spider.w, spider.h, state.player.x, state.player.y, state.player.w, state.player.h) && spider.attackCd <= 0) {
         spider.attackCd = 0.9;

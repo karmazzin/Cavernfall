@@ -8,7 +8,14 @@
   }
 
   function blockSolid(id) {
-    return id !== BLOCK.AIR && id !== BLOCK.WATER && id !== BLOCK.LAVA && id !== BLOCK.COBWEB;
+    return (
+      id !== BLOCK.AIR &&
+      id !== BLOCK.WATER &&
+      id !== BLOCK.LAVA &&
+      id !== BLOCK.COBWEB &&
+      id !== BLOCK.WOOD &&
+      id !== BLOCK.LEAF
+    );
   }
 
   function liquid(id) {

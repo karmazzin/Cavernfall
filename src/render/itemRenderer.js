@@ -25,6 +25,18 @@
       return;
     }
 
+    if (itemId === ITEM.RAW_MUTTON) {
+      ctx.fillStyle = '#cf6f7e';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.48, y + size * 0.42, size * 0.26, size * 0.2, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f2c2c9';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.55, y + size * 0.36, size * 0.11, size * 0.08, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
     drawToolHandle(ctx, x, y, size);
 
     if (def.toolType === 'pickaxe') {

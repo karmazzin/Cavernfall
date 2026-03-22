@@ -6,6 +6,7 @@
   const { getBlock, getLocationInfo } = Game.world;
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock } = Game.worldRenderer;
+  const { drawItem } = Game.itemRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -63,17 +64,22 @@
     }
 
     for (const food of state.foods) {
-      ctx.fillStyle = '#d88b39';
-      ctx.fillRect(food.x - camera.x, food.y - camera.y, food.w, food.h);
-      ctx.fillStyle = '#7a3c0b';
-      ctx.fillRect(food.x - camera.x + 2, food.y - camera.y + 2, 4, 4);
+      if (food.itemId != null) drawItem(ctx, food.itemId, food.x - camera.x, food.y - camera.y, 14);
+      else {
+        ctx.fillStyle = '#d88b39';
+        ctx.fillRect(food.x - camera.x, food.y - camera.y, food.w, food.h);
+        ctx.fillStyle = '#7a3c0b';
+        ctx.fillRect(food.x - camera.x + 2, food.y - camera.y + 2, 4, 4);
+      }
     }
 
     for (const animal of state.animals) {
       ctx.fillStyle = '#fff5df';
-      ctx.fillRect(animal.x - camera.x, animal.y - camera.y, animal.w, animal.h);
+      const bodyY = animal.y - camera.y + (animal.grazing ? 1 : 0);
+      const headY = animal.y - camera.y + (animal.grazing ? 4 : 2);
+      ctx.fillRect(animal.x - camera.x, bodyY, animal.w, animal.h);
       ctx.fillStyle = '#3a2d20';
-      ctx.fillRect(animal.x - camera.x + (animal.dir > 0 ? 8 : 2), animal.y - camera.y + 2, 2, 2);
+      ctx.fillRect(animal.x - camera.x + (animal.dir > 0 ? 8 : 2), headY, 2, 2);
     }
 
     for (const zombie of state.zombies) {

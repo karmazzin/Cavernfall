@@ -1,7 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { clamp } = Game.math;
-  const { getItemDefinition, isPlaceableItem, getPlacedBlockId, isTool, getMaxDurability } = Game.items;
+  const { getItemDefinition, isPlaceableItem, getPlacedBlockId, isTool, getMaxDurability, getFoodRestore } = Game.items;
 
   function createSlot(id = null, count = 0, durability = null) {
     return { id, count, durability };
@@ -78,11 +78,34 @@
     return [...state.player.hotbar, ...state.player.inventory];
   }
 
-  function eatFood(state) {
-    if (state.player.food > 0) {
-      state.player.food -= 1;
-      state.player.satiety = clamp(state.player.satiety + 35, 0, 100);
+  function countItem(state, itemId) {
+    let total = 0;
+    for (const slot of getStorageSlots(state)) {
+      if (!isSlotEmpty(slot) && slot.id === itemId) total += slot.count;
     }
+    return total;
+  }
+
+  function findConsumableSlot(state) {
+    const selected = state.player.hotbar[state.player.selectedSlot];
+    if (!isSlotEmpty(selected) && getFoodRestore(selected.id) > 0) return selected;
+
+    for (const slot of state.player.hotbar) {
+      if (!isSlotEmpty(slot) && getFoodRestore(slot.id) > 0) return slot;
+    }
+    for (const slot of state.player.inventory) {
+      if (!isSlotEmpty(slot) && getFoodRestore(slot.id) > 0) return slot;
+    }
+    return null;
+  }
+
+  function eatFood(state) {
+    const slot = findConsumableSlot(state);
+    if (!slot) return false;
+    const restore = getFoodRestore(slot.id);
+    removeFromSlot(slot, 1);
+    state.player.satiety = clamp(state.player.satiety + restore, 0, 100);
+    return true;
   }
 
   function addItemStackToSlots(slots, stack) {
@@ -185,6 +208,7 @@
     normalizeSlot,
     getItemStackLimit,
     getStorageSlots,
+    countItem,
     addItemStackToSlots,
     addItemToSlots,
     addItem,

@@ -3,6 +3,7 @@
   const { TILE } = Game.constants;
   const { BLOCK, PLACEABLE } = Game.blocks;
   const { rand, aabb } = Game.math;
+  const { ITEM } = Game.items;
   const { getBlock, setBlock } = Game.world;
   const {
     selectedPlaceableId,
@@ -13,7 +14,7 @@
     damageSlotTool,
   } = Game.inventory;
   const { getBreakTime, getAttackDamage } = Game.tools;
-  const { spawnFood } = Game.animalsEntity;
+  const { spawnFood, ANIMAL_STATE, setWalk } = Game.animalsEntity;
   const audio = Game.audio;
 
   function useSelectedTool(state, amount = 1) {
@@ -103,10 +104,18 @@
         if (!animal.clickCd || animal.clickCd <= 0) {
           animal.hp -= getAttackDamage(selectedToolId(state));
           animal.clickCd = 0.25;
+          animal.state = ANIMAL_STATE.PANIC;
+          animal.stateTimer = rand(2.2, 3.8);
+          animal.dir = animal.x < state.player.x ? -1 : 1;
+          animal.grazing = false;
+          animal.edgeCooldown = 0.35;
+          setWalk(animal, true);
+          animal.state = ANIMAL_STATE.PANIC;
+          animal.stateTimer = rand(2.2, 3.8);
           audio.playHit();
           useSelectedTool(state);
           if (animal.hp <= 0) {
-            spawnFood(state, animal.x, animal.y, Math.floor(rand(1, 3)));
+            spawnFood(state, animal.x, animal.y, ITEM.RAW_MUTTON, Math.floor(rand(1, 3)));
             state.animals.splice(i, 1);
           }
         }

@@ -2,7 +2,6 @@
   const Game = window.MC2D;
   const { TILE, HOTBAR_SIZE, BREATH_MAX, BREATH_CELL_SECONDS } = Game.constants;
   const { getLocationInfo } = Game.world;
-  const { getItemDefinition } = Game.items;
   const { drawItem, drawDurabilityBar } = Game.itemRenderer;
 
   function drawHotbar(ctx, canvas, state) {
@@ -65,7 +64,6 @@
     ctx.font = '16px Arial';
     ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/10`, 24, 36);
     ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, 24, 58);
-    ctx.fillText(`Еда: ${state.player.food}`, 24, 80);
 
     const tx = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const ty = Math.floor((state.player.y + state.player.h / 2) / TILE);
