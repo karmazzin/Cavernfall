@@ -8,18 +8,12 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <div id="menuRoot" class="menu-root"></div>
 
   <div class="touch-controls" id="touchControls" aria-hidden="true">
     <div class="touch-cluster touch-left">
-      <div class="touch-dpad">
-        <div class="touch-dpad-row touch-dpad-top">
-          <button type="button" class="touch-btn touch-hold touch-jump" data-key="KeyW">^</button>
-        </div>
-        <div class="touch-dpad-row">
-          <button type="button" class="touch-btn touch-hold" data-key="KeyA">&lt;</button>
-          <button type="button" class="touch-btn touch-hold" data-key="KeyS">v</button>
-          <button type="button" class="touch-btn touch-hold" data-key="KeyD">&gt;</button>
-        </div>
+      <div class="touch-stick" id="touchStick" aria-hidden="true">
+        <div class="touch-stick-knob" id="touchStickKnob"></div>
       </div>
     </div>
     <div class="touch-cluster touch-right">
@@ -31,6 +25,7 @@
 
   <script defer src="./src/core/bootstrap.js"></script>
   <script defer src="./src/core/audio.js"></script>
+  <script defer src="./src/core/random.js"></script>
   <script defer src="./src/config/constants.js"></script>
   <script defer src="./src/world/blocks.js"></script>
   <script defer src="./src/items/items.js"></script>
@@ -38,6 +33,7 @@
   <script defer src="./src/world/world.js"></script>
   <script defer src="./src/systems/inventory.js"></script>
   <script defer src="./src/core/state.js"></script>
+  <script defer src="./src/core/appState.js"></script>
   <script defer src="./src/core/save.js"></script>
   <script defer src="./src/systems/dayCycle.js"></script>
   <script defer src="./src/world/generation.js"></script>
@@ -45,6 +41,7 @@
   <script defer src="./src/systems/tools.js"></script>
   <script defer src="./src/crafting/recipes.js"></script>
   <script defer src="./src/systems/furnace.js"></script>
+  <script defer src="./src/systems/creativeInventory.js"></script>
   <script defer src="./src/systems/crafting.js"></script>
   <script defer src="./src/entities/mobUtils.js"></script>
   <script defer src="./src/entities/player.js"></script>
@@ -62,7 +59,9 @@
   <script defer src="./src/render/uiRenderer.js"></script>
   <script defer src="./src/render/craftingRenderer.js"></script>
   <script defer src="./src/render/pauseRenderer.js"></script>
+  <script defer src="./src/render/menuRenderer.js"></script>
   <script defer src="./src/render/renderer.js"></script>
+  <script defer src="./src/app/menuUi.js"></script>
   <script defer src="./src/main.js"></script>
 </body>
 </html>

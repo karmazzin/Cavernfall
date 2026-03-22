@@ -10,6 +10,10 @@
 
   const MAX_SPIDERS = 14;
 
+  function isCreative(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
+
   function createSpider(tx, ty) {
     const spider = {
       x: tx * TILE + 1,
@@ -62,6 +66,7 @@
   }
 
   function updateSpiders(state, dt) {
+    const creative = isCreative(state);
     const phase = phaseInfo(state).phase;
     if (phase === 'night') {
       state.spiderSpawnTick += dt;
@@ -95,7 +100,7 @@
         spider.vx = spider.dir * 88;
         spider.vy = -230;
       } else {
-        const chasing = distance < 170;
+        const chasing = !creative && distance < 170;
         if (chasing) {
           spider.dir = dx < 0 ? -1 : 1;
           spider.vx = spider.dir * 95;
@@ -123,7 +128,7 @@
       moveEntity(state, spider, dt);
       applyMobEnvironmentDamage(state, spider, dt, wasOnGround, preMoveVy);
 
-      if (aabb(spider.x, spider.y, spider.w, spider.h, state.player.x, state.player.y, state.player.w, state.player.h) && spider.attackCd <= 0) {
+      if (!creative && aabb(spider.x, spider.y, spider.w, spider.h, state.player.x, state.player.y, state.player.w, state.player.h) && spider.attackCd <= 0) {
         spider.attackCd = 0.9;
         state.player.health = Math.max(0, state.player.health - 1);
         state.attackFlash = 0.18;

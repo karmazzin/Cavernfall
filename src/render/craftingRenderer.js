@@ -5,6 +5,7 @@
   const { getItemDefinition } = Game.items;
   const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
+  const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
 
   function drawSlot(ctx, rect, slot, highlighted = false) {
     ctx.fillStyle = highlighted ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.45)';
@@ -172,6 +173,7 @@
 
     const layout = getCraftingLayout(canvas, state);
     const activeFurnace = getNearestFurnace(state, 5);
+    const creative = isCreativeMode(state);
     ctx.fillStyle = 'rgba(0,0,0,0.62)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -184,6 +186,49 @@
     ctx.fillStyle = '#fff';
     ctx.font = `bold ${layout.mobile ? 18 : 24}px Arial`;
     ctx.fillText('Крафт и инвентарь', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + (layout.mobile ? 30 : 42));
+
+    const activeTab = state.crafting.tab || 'craft';
+    for (const [tabId, rect] of Object.entries(layout.tabs)) {
+      if (tabId === 'creative' && !creative) continue;
+      ctx.fillStyle = activeTab === tabId ? 'rgba(227,155,86,0.25)' : 'rgba(255,255,255,0.05)';
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.strokeStyle = activeTab === tabId ? 'rgba(227,155,86,0.8)' : 'rgba(255,255,255,0.18)';
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${layout.mobile ? 12 : 14}px Arial`;
+      ctx.fillText(tabId === 'creative' ? 'Творческий' : 'Крафт', rect.x + 10, rect.y + 18);
+    }
+
+    if (creative && activeTab === 'creative') {
+      const area = layout.creative.area;
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(area.x, area.y, area.w, area.h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.strokeRect(area.x, area.y, area.w, area.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${layout.mobile ? 16 : 18}px Arial`;
+      ctx.fillText('Творческий инвентарь', area.x + 12, area.y + 26);
+
+      const entries = getCreativeEntries();
+      const cols = layout.mobile ? 6 : 8;
+      const cell = layout.mobile ? 34 : 44;
+      const gap = layout.mobile ? 6 : 8;
+      const startX = area.x + 12;
+      const startY = area.y + 48;
+      for (let i = 0; i < entries.length; i += 1) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const rect = { x: startX + col * (cell + gap), y: startY + row * (cell + gap), w: cell, h: cell };
+        if (rect.y + rect.h > area.y + area.h - 8) break;
+        drawSlot(ctx, rect, entries[i]);
+      }
+
+      if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
+        const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };
+        drawSlot(ctx, cursorRect, state.crafting.cursor, true);
+      }
+      return;
+    }
 
     drawSectionTitle(ctx, 'Сетка крафта', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + (layout.mobile ? 52 : 64), layout.mobile);
     for (let i = 0; i < layout.grid.length; i += 1) drawSlot(ctx, layout.grid[i], state.crafting.grid[i]);

@@ -12,6 +12,202 @@ body {
   position: relative;
 }
 
+.menu-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.menu-root.is-hidden {
+  display: none;
+}
+
+.menu-shell {
+  width: min(100%, 1040px);
+  display: flex;
+  justify-content: center;
+  min-height: 100%;
+  align-items: center;
+}
+
+.menu-card {
+  width: min(100%, 720px);
+  background: rgba(18, 14, 11, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  color: #fff8ec;
+  max-height: calc(100vh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.menu-hero {
+  text-align: center;
+  padding: 52px 48px;
+}
+
+.menu-logo {
+  font-size: clamp(44px, 9vw, 92px);
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f5e0b8;
+  text-shadow: 0 3px 0 #5c3518, 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.menu-subtitle {
+  margin-top: 18px;
+  font-size: 18px;
+  color: rgba(255, 248, 236, 0.82);
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.menu-actions-inline {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.menu-btn,
+.menu-mode-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff8ec;
+  min-height: 46px;
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.menu-btn-primary {
+  background: linear-gradient(180deg, #e39b56 0%, #b85d24 100%);
+  border-color: rgba(255, 215, 176, 0.4);
+  color: #22140b;
+}
+
+.menu-btn-danger {
+  background: rgba(160, 44, 34, 0.5);
+}
+
+.menu-form-card,
+.menu-load-card {
+  padding: 28px;
+}
+
+.menu-panel-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.menu-field span {
+  font-size: 14px;
+  color: rgba(255, 248, 236, 0.76);
+}
+
+.menu-field input {
+  min-height: 44px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 16px;
+}
+
+.menu-mode-row {
+  display: flex;
+  gap: 10px;
+}
+
+.menu-mode-btn.is-active {
+  background: rgba(227, 155, 86, 0.26);
+  border-color: rgba(227, 155, 86, 0.7);
+}
+
+.menu-hint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 248, 236, 0.76);
+  margin-bottom: 18px;
+}
+
+.world-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.world-card {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.world-preview {
+  width: 180px;
+  height: 102px;
+  object-fit: cover;
+  background: #1b1b1b;
+}
+
+.world-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 248, 236, 0.54);
+  font-size: 14px;
+}
+
+.world-name {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.world-line {
+  font-size: 14px;
+  color: rgba(255, 248, 236, 0.8);
+  margin-top: 4px;
+}
+
+.world-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.menu-empty {
+  padding: 18px;
+  color: rgba(255, 248, 236, 0.7);
+}
+
 canvas {
   display: block;
   width: 100vw;
@@ -36,7 +232,8 @@ body.touch-mode .touch-controls {
   display: block;
 }
 
-body.ui-overlay-hidden .touch-controls {
+body.ui-overlay-hidden .touch-controls,
+body.menu-open .touch-controls {
   display: none;
 }
 
@@ -58,16 +255,29 @@ body.ui-overlay-hidden .touch-controls {
   align-items: stretch;
 }
 
-.touch-dpad {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
+.touch-stick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 10, 10, 0.42);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
 }
 
-.touch-dpad-row {
-  display: flex;
-  gap: 8px;
+.touch-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
 .touch-btn {
@@ -84,27 +294,173 @@ body.ui-overlay-hidden .touch-controls {
   backdrop-filter: blur(4px);
 }
 
-.touch-dpad .touch-btn {
-  min-width: 56px;
-  min-height: 56px;
-  font-size: 24px;
-}
-
 .touch-btn.is-active {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
 @media (max-width: 520px) {
+  .menu-root {
+    padding: calc(8px + env(safe-area-inset-top)) 10px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .menu-hero {
+    padding: 26px 16px;
+  }
+
+  .menu-form-card,
+  .menu-load-card {
+    padding: 16px;
+  }
+
+  .menu-logo {
+    font-size: clamp(34px, 10vw, 56px);
+  }
+
+  .menu-subtitle {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .menu-panel-title {
+    font-size: 22px;
+    margin-bottom: 14px;
+  }
+
+  .menu-actions {
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .menu-btn,
+  .menu-mode-btn {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 15px;
+  }
+
+  .menu-actions-inline,
+  .menu-mode-row {
+    flex-direction: column;
+  }
+
+  .world-card {
+    grid-template-columns: 1fr;
+  }
+
+  .world-preview,
+  .world-preview-placeholder {
+    width: 100%;
+    height: 150px;
+  }
+
+  .world-actions {
+    min-width: 100%;
+  }
+
   .touch-btn {
     min-width: 56px;
     min-height: 48px;
     font-size: 14px;
   }
 
-  .touch-dpad .touch-btn {
-    min-width: 50px;
-    min-height: 50px;
-    font-size: 22px;
+  .touch-stick {
+    width: 112px;
+    height: 112px;
+  }
+
+  .touch-stick-knob {
+    width: 46px;
+    height: 46px;
+    margin-left: -23px;
+    margin-top: -23px;
+  }
+}
+
+@media (max-height: 760px) {
+  .menu-root {
+    align-items: flex-start;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .menu-shell {
+    align-items: flex-start;
+  }
+
+  .menu-card {
+    max-height: calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .menu-hero {
+    padding: 28px 22px;
+  }
+
+  .menu-logo {
+    font-size: clamp(34px, 7vw, 60px);
+  }
+
+  .menu-subtitle {
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .menu-actions {
+    margin-top: 16px;
+    gap: 10px;
+  }
+
+  .world-list {
+    max-height: min(44vh, 360px);
+  }
+}
+
+@media (max-height: 620px) {
+  .menu-hero {
+    padding: 20px 18px;
+  }
+
+  .menu-logo {
+    font-size: clamp(30px, 6vw, 46px);
+  }
+
+  .menu-subtitle {
+    font-size: 13px;
+  }
+
+  .menu-form-card,
+  .menu-load-card {
+    padding: 14px;
+  }
+
+  .menu-panel-title {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .menu-field {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .menu-field input {
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 15px;
+  }
+
+  .menu-btn,
+  .menu-mode-btn {
+    min-height: 38px;
+    font-size: 14px;
+  }
+
+  .world-list {
+    max-height: min(40vh, 280px);
+  }
+
+  .world-preview,
+  .world-preview-placeholder {
+    height: 120px;
   }
 }

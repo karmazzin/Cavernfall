@@ -5,6 +5,9 @@
     const keys = new Set();
     const mouse = { x: 0, y: 0, down: false, justPressed: false, button: 0 };
     const touchControls = document.getElementById('touchControls');
+    const touchStick = document.getElementById('touchStick');
+    const touchStickKnob = document.getElementById('touchStickKnob');
+    const touchState = { active: false, pointerId: null };
 
     function detectTouchMode() {
       return window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 900;
@@ -22,6 +25,7 @@
         code === 'KeyS' ||
         code === 'KeyD' ||
         code === 'KeyE' ||
+        code === 'KeyF' ||
         code === 'KeyR' ||
         code === 'KeyY' ||
         code === 'Escape' ||
@@ -30,16 +34,20 @@
       );
     }
 
+    function isTypingTarget(target) {
+      if (!target) return false;
+      const tag = target.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+    }
+
     function ensureUiState() {
       if (!state.ui) state.ui = {};
       state.ui.controlMode = isTouchMode() ? 'touch' : 'desktop';
-      state.ui.helpCollapsed = true;
     }
 
     function updateModeUi() {
       ensureUiState();
       document.body.classList.toggle('touch-mode', isTouchMode());
-      document.body.classList.remove('help-collapsed');
       if (touchControls) touchControls.setAttribute('aria-hidden', String(!isTouchMode()));
     }
 
@@ -50,6 +58,11 @@
       keys.delete('KeyS');
       mouse.down = false;
       mouse.justPressed = false;
+      touchState.active = false;
+      touchState.pointerId = null;
+      if (touchStickKnob) {
+        touchStickKnob.style.transform = 'translate(0px, 0px)';
+      }
     }
 
     function updateFullscreenLabel() {
@@ -94,11 +107,13 @@
     }
 
     function onKeyDown(event) {
+      if (isTypingTarget(event.target)) return;
       if (isGameControl(event.code)) event.preventDefault();
       keys.add(event.code);
       actions.unlockAudio();
 
       if (event.code === 'KeyE' && !state.gameOver) actions.eatFood();
+      if (event.code === 'KeyF' && !event.repeat) actions.toggleCreativeFlight();
       if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
       if (event.code === 'Escape' && !event.repeat) actions.togglePause();
       if (state.gameOver && event.code === 'KeyR') actions.restart();
@@ -110,6 +125,7 @@
     }
 
     function onKeyUp(event) {
+      if (isTypingTarget(event.target)) return;
       if (isGameControl(event.code)) event.preventDefault();
       keys.delete(event.code);
     }
@@ -195,6 +211,74 @@
       });
     }
 
+    function applyStickVector(dx, dy) {
+      const deadZone = 0.25;
+      keys.delete('KeyA');
+      keys.delete('KeyD');
+      keys.delete('KeyW');
+      keys.delete('KeyS');
+
+      if (dx <= -deadZone) keys.add('KeyA');
+      if (dx >= deadZone) keys.add('KeyD');
+      if (dy <= -deadZone) keys.add('KeyW');
+      if (dy >= deadZone) keys.add('KeyS');
+    }
+
+    function bindTouchStick() {
+      if (!touchStick || !touchStickKnob) return;
+
+      function updateStick(clientX, clientY) {
+        const rect = touchStick.getBoundingClientRect();
+        const radius = rect.width / 2;
+        const knobRadius = touchStickKnob.offsetWidth / 2;
+        const centerX = rect.left + radius;
+        const centerY = rect.top + radius;
+        let dx = clientX - centerX;
+        let dy = clientY - centerY;
+        const maxDistance = Math.max(8, radius - knobRadius - 6);
+        const distance = Math.hypot(dx, dy);
+        if (distance > maxDistance) {
+          const ratio = maxDistance / distance;
+          dx *= ratio;
+          dy *= ratio;
+        }
+        touchStickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+        applyStickVector(dx / maxDistance, dy / maxDistance);
+      }
+
+      function releaseStick() {
+        clearTouchState();
+      }
+
+      touchStick.addEventListener('pointerdown', (event) => {
+        if (!isTouchMode()) return;
+        event.preventDefault();
+        actions.unlockAudio();
+        touchState.active = true;
+        touchState.pointerId = event.pointerId;
+        touchStick.setPointerCapture(event.pointerId);
+        updateStick(event.clientX, event.clientY);
+      });
+
+      touchStick.addEventListener('pointermove', (event) => {
+        if (!touchState.active || event.pointerId !== touchState.pointerId) return;
+        event.preventDefault();
+        updateStick(event.clientX, event.clientY);
+      });
+
+      touchStick.addEventListener('pointerup', (event) => {
+        if (event.pointerId !== touchState.pointerId) return;
+        event.preventDefault();
+        releaseStick();
+      });
+
+      touchStick.addEventListener('pointercancel', (event) => {
+        if (event.pointerId !== touchState.pointerId) return;
+        event.preventDefault();
+        releaseStick();
+      });
+    }
+
     document.addEventListener('fullscreenchange', updateFullscreenLabel);
     window.addEventListener('resize', () => {
       clearTouchState();
@@ -205,6 +289,7 @@
       for (const button of touchControls.querySelectorAll('[data-key]')) bindHoldButton(button, button.dataset.key);
       for (const button of touchControls.querySelectorAll('[data-action]')) bindActionButton(button, button.dataset.action);
     }
+    bindTouchStick();
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);

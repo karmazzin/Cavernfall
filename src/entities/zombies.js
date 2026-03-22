@@ -8,6 +8,10 @@
   const { getBlock, blockSolid, getLocationInfo } = Game.world;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
 
+  function isCreative(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
+
   function spawnZombieNearPlayer(state) {
     if (state.zombies.length >= MAX_ZOMBIES) return;
 
@@ -65,6 +69,7 @@
   }
 
   function updateZombies(state, dt) {
+    const creative = isCreative(state);
     const phase = phaseInfo(state).phase;
     const sunlight = phase === 'day' || phase === 'sunrise';
 
@@ -105,7 +110,7 @@
       const wasOnGround = zombie.onGround;
       const preMoveVy = zombie.vy;
       const dx = state.player.x - zombie.x;
-      zombie.vx = Math.sign(dx) * 75;
+      zombie.vx = creative ? 0 : Math.sign(dx) * 75;
       if (Math.abs(dx) < 4) zombie.vx = 0;
       if (zombie.inWater) {
         zombie.dir = getWaterEscapeDir(state, zombie, zombie.vx >= 0 ? 1 : -1);
@@ -113,13 +118,13 @@
         zombie.vy = -220;
       } else {
         zombie.vy += GRAVITY * dt;
-        if (state.player.y + 8 < zombie.y && zombie.onGround) zombie.vy = -430;
+        if (!creative && state.player.y + 8 < zombie.y && zombie.onGround) zombie.vy = -430;
       }
       moveEntity(state, zombie, dt);
       applyMobEnvironmentDamage(state, zombie, dt, wasOnGround, preMoveVy);
 
       zombie.attackCd -= dt;
-      if (aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {
+      if (!creative && aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.7;
         state.player.health = Math.max(0, state.player.health - 1);
         state.attackFlash = 0.25;

@@ -1,12 +1,14 @@
 (() => {
   const Game = window.MC2D;
-  const SAVE_KEY = 'mc2d-save-v1';
+  const INDEX_KEY = 'cavernfall-world-index-v2';
+  const WORLD_PREFIX = 'cavernfall-world-';
+  const LEGACY_SAVE_KEY = 'mc2d-save-v1';
   const { HOTBAR_SIZE } = Game.constants;
   const { createGameState } = Game.state;
   const { createSlot, normalizeSlot } = Game.inventory;
 
   function normalizeSlotArray(slots, size) {
-    const result = Array.from({ length: size }, (_, index) => {
+    return Array.from({ length: size }, (_, index) => {
       const raw = slots && slots[index] ? slots[index] : createSlot();
       return normalizeSlot({
         id: raw.id ?? null,
@@ -14,7 +16,6 @@
         durability: raw.durability ?? null,
       });
     });
-    return result;
   }
 
   function normalizeFurnaces(furnaces) {
@@ -35,6 +36,7 @@
 
   function snapshotState(state) {
     return {
+      worldMeta: state.worldMeta,
       world: state.world,
       biomeAt: state.biomeAt,
       surfaceAt: state.surfaceAt,
@@ -58,22 +60,89 @@
     };
   }
 
-  function saveGame(state) {
+  function worldStorageKey(id) {
+    return `${WORLD_PREFIX}${id}`;
+  }
+
+  function readIndex() {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(snapshotState(state)));
+      const raw = localStorage.getItem(INDEX_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeIndex(index) {
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+  }
+
+  function generateWorldId() {
+    return `world-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e8).toString(36)}`;
+  }
+
+  function createWorldMeta(data) {
+    const now = Date.now();
+    return {
+      id: generateWorldId(),
+      name: data.name || 'Новый мир',
+      seed: data.seed || '',
+      mode: data.mode || 'survival',
+      createdAt: now,
+      updatedAt: now,
+      preview: data.preview || null,
+    };
+  }
+
+  function upsertIndexMeta(meta) {
+    const index = readIndex().filter((entry) => entry && entry.id !== meta.id);
+    index.unshift({
+      id: meta.id,
+      name: meta.name,
+      seed: meta.seed,
+      mode: meta.mode,
+      createdAt: meta.createdAt,
+      updatedAt: meta.updatedAt,
+      preview: meta.preview || null,
+    });
+    writeIndex(index);
+  }
+
+  function listWorlds() {
+    return readIndex().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+
+  function saveWorld(state, preview = null) {
+    if (!state.worldMeta || !state.worldMeta.id) return false;
+    try {
+      const nextMeta = {
+        ...state.worldMeta,
+        updatedAt: Date.now(),
+        preview: preview ?? state.worldMeta.preview ?? null,
+      };
+      state.worldMeta = nextMeta;
+      localStorage.setItem(worldStorageKey(nextMeta.id), JSON.stringify(snapshotState(state)));
+      upsertIndexMeta(nextMeta);
       return true;
     } catch (error) {
       return false;
     }
   }
 
-  function loadGame() {
+  function loadWorld(worldId) {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      const raw = localStorage.getItem(worldStorageKey(worldId));
       if (!raw) return null;
       const data = JSON.parse(raw);
-      const state = createGameState();
+      const state = createGameState(data.worldMeta || { id: worldId });
 
+      state.worldMeta = {
+        ...state.worldMeta,
+        ...(data.worldMeta || {}),
+        id: worldId,
+      };
       state.world = Array.isArray(data.world) ? data.world : state.world;
       state.biomeAt = Array.isArray(data.biomeAt) ? data.biomeAt : state.biomeAt;
       state.surfaceAt = Array.isArray(data.surfaceAt) ? data.surfaceAt : state.surfaceAt;
@@ -101,6 +170,7 @@
       }
 
       state.crafting.open = false;
+      state.crafting.tab = 'craft';
       state.crafting.grid = Array.from({ length: 9 }, () => createSlot());
       state.crafting.cursor = createSlot();
       state.crafting.result = null;
@@ -114,14 +184,33 @@
     }
   }
 
-  function clearSave() {
+  function deleteWorld(worldId) {
     try {
-      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(worldStorageKey(worldId));
+      const nextIndex = readIndex().filter((entry) => entry && entry.id !== worldId);
+      writeIndex(nextIndex);
       return true;
     } catch (error) {
       return false;
     }
   }
 
-  Game.saveSystem = { saveGame, loadGame, clearSave };
+  function migrateLegacySave() {
+    try {
+      if (readIndex().length > 0) return;
+      const raw = localStorage.getItem(LEGACY_SAVE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const meta = createWorldMeta({ name: 'Старый мир', seed: '', mode: 'survival', preview: null });
+      if (!data.worldMeta) data.worldMeta = meta;
+      data.worldMeta = { ...meta, ...(data.worldMeta || {}), id: meta.id };
+      localStorage.setItem(worldStorageKey(meta.id), JSON.stringify(data));
+      upsertIndexMeta(data.worldMeta);
+      localStorage.removeItem(LEGACY_SAVE_KEY);
+    } catch (error) {
+      // ignore migration failures
+    }
+  }
+
+  Game.saveSystem = { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave };
 })();

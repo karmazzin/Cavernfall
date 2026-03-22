@@ -23,6 +23,7 @@
       inWater: false,
       underwater: false,
       onLadder: false,
+      creativeFlight: false,
       stepSoundTimer: 0,
       swimSoundTimer: 0,
       lavaSoundTimer: 0,
@@ -30,8 +31,16 @@
     };
   }
 
-  function createGameState() {
+  function createGameState(worldMeta = null) {
     return {
+      worldMeta: {
+        id: worldMeta && worldMeta.id ? worldMeta.id : null,
+        name: worldMeta && worldMeta.name ? worldMeta.name : 'Новый мир',
+        seed: worldMeta && worldMeta.seed ? worldMeta.seed : '',
+        mode: worldMeta && worldMeta.mode ? worldMeta.mode : 'survival',
+        createdAt: worldMeta && worldMeta.createdAt ? worldMeta.createdAt : Date.now(),
+        updatedAt: worldMeta && worldMeta.updatedAt ? worldMeta.updatedAt : Date.now(),
+      },
       world: createGrid(),
       biomeAt: Array(WORLD_W).fill('plains'),
       surfaceAt: Array(WORLD_W).fill(SURFACE_BASE),
@@ -56,6 +65,7 @@
       breaking: null,
       crafting: {
         open: false,
+        tab: 'craft',
         grid: Array.from({ length: 9 }, () => createSlot()),
         cursor: createSlot(),
         result: null,
@@ -69,7 +79,6 @@
       },
       ui: {
         controlMode: 'desktop',
-        helpCollapsed: false,
         fps: 0,
         fpsFrames: 0,
         fpsAccum: 0,

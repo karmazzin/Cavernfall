@@ -2,7 +2,20 @@
   const Game = window.MC2D;
   const { BREATH_CELL_SECONDS, BREATH_TOTAL } = Game.constants;
 
+  function isCreative(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
+
   function updateSatiety(state, input, dt) {
+    if (isCreative(state)) {
+      state.player.health = 10;
+      state.player.satiety = 100;
+      state.starvationTick = 0;
+      state.regenTick = 0;
+      state.satietyTick = 0;
+      return;
+    }
+
     const active =
       input.mouse.down ||
       input.keys.has('KeyA') ||
@@ -45,6 +58,11 @@
   }
 
   function updateBreath(state, dt) {
+    if (isCreative(state)) {
+      state.player.breath = BREATH_TOTAL;
+      return;
+    }
+
     if (state.player.underwater) {
       state.player.breath = Math.max(0, state.player.breath - dt);
       if (state.player.breath <= 0) {

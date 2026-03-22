@@ -13,11 +13,13 @@
   } = Game.inventory;
   const { findMatchingRecipe } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
+  const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
 
   function ensureCraftingState(state) {
     if (state.crafting) return state.crafting;
     state.crafting = {
       open: false,
+      tab: 'craft',
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
@@ -88,6 +90,11 @@
           y: Math.floor((canvas.height - 560) / 2),
         };
 
+    const tabs = {
+      craft: { x: panel.x + 16, y: panel.y + 36, w: mobile ? 88 : 108, h: 28 },
+      creative: { x: panel.x + (mobile ? 110 : 132), y: panel.y + 36, w: mobile ? 118 : 142, h: 28 },
+    };
+
     const grid = [];
     const gridStartX = panel.x + (mobile ? 16 : 32);
     const gridStartY = panel.y + (mobile ? 70 : 76);
@@ -117,6 +124,7 @@
       mobile,
       compact,
       slot,
+      tabs,
       grid,
       result: mobile
         ? slotRect(panel.x + panel.w - slot - 18, panel.y + 104, slot + 8)
@@ -151,6 +159,11 @@
         output: mobile
           ? slotRect(panel.x + panel.w - 70, panel.y + 128, slot + 6)
           : slotRect(panel.x + 1008, panel.y + 174, 56),
+      },
+      creative: {
+        area: mobile
+          ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 90 }
+          : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
       },
     };
   }
@@ -288,6 +301,23 @@
     }
   }
 
+  function getCreativeTargetSlots(state) {
+    const selected = state.player.hotbar[state.player.selectedSlot];
+    const rest = getStorageSlots(state).filter((slot) => slot !== selected);
+    return [selected, ...rest];
+  }
+
+  function giveCreativeEntry(state, entry, button) {
+    const crafting = ensureCraftingState(state);
+    if (button === 2) {
+      copySlot(crafting.cursor, entry);
+      return;
+    }
+
+    const leftover = addItemStackToSlots(getCreativeTargetSlots(state), cloneSlot(entry));
+    if (!isSlotEmpty(leftover)) copySlot(crafting.cursor, leftover);
+  }
+
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
     if (!crafting.open || !input.mouse.justPressed) return false;
@@ -295,6 +325,47 @@
     const layout = getCraftingLayout(canvas, state);
     const { x, y, button } = input.mouse;
     const activeFurnace = getNearestFurnace(state, 5);
+    const creative = isCreativeMode(state);
+
+    if (contains(layout.tabs.craft, x, y)) {
+      crafting.tab = 'craft';
+      input.mouse.justPressed = false;
+      return true;
+    }
+
+    if (creative && contains(layout.tabs.creative, x, y)) {
+      crafting.tab = 'creative';
+      input.mouse.justPressed = false;
+      return true;
+    }
+
+    if (creative && crafting.tab === 'creative') {
+      const entries = getCreativeEntries();
+      const cols = layout.mobile ? 6 : 8;
+      const cell = layout.mobile ? 34 : 44;
+      const gap = layout.mobile ? 6 : 8;
+      const startX = layout.creative.area.x + 12;
+      const startY = layout.creative.area.y + 48;
+      for (let i = 0; i < entries.length; i += 1) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const rect = slotRect(startX + col * (cell + gap), startY + row * (cell + gap), cell);
+        if (!contains(rect, x, y)) continue;
+        giveCreativeEntry(state, entries[i], button);
+        input.mouse.justPressed = false;
+        return true;
+      }
+    }
+
+    if (crafting.tab !== 'craft') {
+      if (layout.mobile && !contains(layout.panel, x, y)) {
+        closeCrafting(state);
+        input.mouse.justPressed = false;
+        return true;
+      }
+      input.mouse.justPressed = false;
+      return true;
+    }
 
     for (let i = 0; i < layout.grid.length; i += 1) {
       if (contains(layout.grid[i], x, y)) {

@@ -2,7 +2,8 @@
   const Game = window.MC2D;
 
   function rand(a, b) {
-    return Math.random() * (b - a) + a;
+    const random = Game.random && typeof Game.random.random === 'function' ? Game.random.random() : Math.random();
+    return random * (b - a) + a;
   }
 
   function randi(a, b) {

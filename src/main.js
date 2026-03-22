@@ -2,7 +2,9 @@
   const Game = window.MC2D;
   const { BLOCK } = Game.blocks;
   const { createGameState } = Game.state;
+  const { createAppState } = Game.appState;
   const { generateWorld, retrofitWorldFeatures } = Game.generation;
+  const { withSeed, makeSeed } = Game.random;
   const { spawnAnimals, updateAnimals } = Game.animalsEntity;
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
@@ -13,22 +15,65 @@
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood } = Game.inventory;
   const { handleMouse } = Game.interaction;
-  const { createCamera } = Game.camera;
+  const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
-  const { saveGame, loadGame, clearSave } = Game.saveSystem;
+  const { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave } = Game.saveSystem;
   const { draw } = Game.renderer;
+  const { drawMenuBackground } = Game.menuRenderer;
+  const { createMenuUi } = Game.menuUi;
   const { getPauseLayout } = Game.pauseRenderer;
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const menuRoot = document.getElementById('menuRoot');
   const state = createGameState();
+  const app = createAppState();
+
+  function isCreativeMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
+
+  function toggleCreativeFlight() {
+    if (app.screen !== 'playing' || !isCreativeMode()) return;
+    if (state.ui && state.ui.controlMode === 'touch') return;
+    state.player.creativeFlight = !state.player.creativeFlight;
+  }
+
+  function syncBodyUiState() {
+    const playing = app.screen === 'playing';
+    const overlayHidden = !!(playing && (state.pause.open || (state.crafting && state.crafting.open)));
+    document.body.classList.toggle('ui-overlay-hidden', overlayHidden);
+    document.body.classList.toggle('menu-open', !playing);
+  }
+
+  function refreshWorldList() {
+    app.worlds = listWorlds();
+    menu.render(app);
+  }
 
   function replaceState(nextState) {
     for (const key of Object.keys(state)) delete state[key];
     Object.assign(state, nextState);
     ensureCraftingState(state);
     input.syncUiState();
+    syncBodyUiState();
+  }
+
+  function capturePreview() {
+    try {
+      return canvas.toDataURL('image/jpeg', 0.72);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveCurrentWorld() {
+    if (app.screen !== 'playing' || !state.worldMeta || !state.worldMeta.id) return false;
+    const preview = capturePreview();
+    const result = saveWorld(state, preview);
+    if (result) refreshWorldList();
+    return result;
   }
 
   function seedStarterInventory() {
@@ -38,12 +83,59 @@
     addToInventory(state, BLOCK.PLANK, 12);
   }
 
-  function startNewGame() {
-    const nextState = createGameState();
+  function buildNewWorldState(meta) {
+    const nextState = createGameState(meta);
     replaceState(nextState);
-    generateWorld(state);
+    withSeed(meta.seed, () => generateWorld(state));
     spawnAnimals(state);
-    seedStarterInventory();
+    if (meta.mode !== 'creative') seedStarterInventory();
+  }
+
+  function startNewWorld(options) {
+    const seed = options.seed && options.seed.trim() ? options.seed.trim() : makeSeed();
+    const meta = createWorldMeta({
+      name: options.name && options.name.trim() ? options.name.trim() : 'Новый мир',
+      mode: options.mode || 'survival',
+      seed,
+      preview: null,
+    });
+    buildNewWorldState(meta);
+    app.currentWorldId = meta.id;
+    app.screen = 'playing';
+    app.pendingInitialSave = true;
+    menu.render(app);
+    syncBodyUiState();
+  }
+
+  function loadExistingWorld(worldId) {
+    const loadedState = loadWorld(worldId);
+    if (!loadedState) return false;
+    replaceState(loadedState);
+    retrofitWorldFeatures(state);
+    app.currentWorldId = worldId;
+    app.screen = 'playing';
+    app.pendingInitialSave = false;
+    menu.render(app);
+    syncBodyUiState();
+    return true;
+  }
+
+  function resetCurrentWorld() {
+    if (!state.worldMeta) return;
+    buildNewWorldState({ ...state.worldMeta, updatedAt: Date.now() });
+    app.currentWorldId = state.worldMeta.id;
+    app.screen = 'playing';
+    app.pendingInitialSave = true;
+    menu.render(app);
+    syncBodyUiState();
+  }
+
+  function exitToMainMenu() {
+    saveCurrentWorld();
+    closePause();
+    app.screen = 'menu';
+    menu.render(app);
+    syncBodyUiState();
   }
 
   function contains(rect, x, y) {
@@ -55,6 +147,7 @@
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
     state.pause.statusText = '';
+    syncBodyUiState();
   }
 
   function openPause() {
@@ -66,38 +159,38 @@
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
     state.pause.statusText = '';
+    syncBodyUiState();
   }
 
   function togglePause() {
-    if (state.gameOver) return;
+    if (app.screen !== 'playing' || state.gameOver) return;
     if (state.pause.open) closePause();
     else openPause();
   }
 
-  function handlePausePointer(input, canvasRef) {
-    if (!state.pause.open || !input.mouse.justPressed) return false;
+  function handlePausePointer(inputRef, canvasRef) {
+    if (!state.pause.open || !inputRef.mouse.justPressed) return false;
     const layout = getPauseLayout(canvasRef, state);
-    const { x, y } = input.mouse;
+    const { x, y } = inputRef.mouse;
     for (const button of layout.buttons) {
       if (!contains(button, x, y)) continue;
 
       if (button.id === 'continue') closePause();
       if (button.id === 'controls') state.pause.showControls = true;
       if (button.id === 'controls_back') state.pause.showControls = false;
-      if (button.id === 'save') state.pause.statusText = saveGame(state) ? 'Игра сохранена' : 'Сохранение не удалось';
+      if (button.id === 'save') state.pause.statusText = saveCurrentWorld() ? 'Игра сохранена' : 'Сохранение не удалось';
       if (button.id === 'fullscreen') input.toggleFullscreen();
       if (button.id === 'restart') state.pause.confirmRestart = true;
       if (button.id === 'restart_no') state.pause.confirmRestart = false;
-      if (button.id === 'restart_yes') {
-        clearSave();
-        startNewGame();
-      }
+      if (button.id === 'restart_yes') resetCurrentWorld();
+      if (button.id === 'exit_to_menu') exitToMainMenu();
 
-      input.mouse.justPressed = false;
+      inputRef.mouse.justPressed = false;
+      syncBodyUiState();
       return true;
     }
 
-    input.mouse.justPressed = false;
+    inputRef.mouse.justPressed = false;
     return true;
   }
 
@@ -110,25 +203,57 @@
   resize();
   ensureCraftingState(state);
 
+  const menu = createMenuUi(menuRoot, {
+    onInput(field, value) {
+      app.newWorld[field] = value;
+    },
+    onModeChange(mode) {
+      app.newWorld.mode = mode;
+      menu.render(app);
+    },
+    onAction(action, worldId) {
+      if (action === 'open-new') app.screen = 'new-world';
+      if (action === 'open-load') {
+        refreshWorldList();
+        app.screen = 'load-worlds';
+      }
+      if (action === 'back-main') app.screen = 'menu';
+      if (action === 'create-world') startNewWorld(app.newWorld);
+      if (action === 'load-world' && worldId) loadExistingWorld(worldId);
+      if (action === 'delete-world' && worldId) {
+        deleteWorld(worldId);
+        refreshWorldList();
+        app.screen = 'load-worlds';
+      }
+      menu.render(app);
+      syncBodyUiState();
+    },
+  });
+
   const input = setupInput(canvas, state, {
-    eatFood: () => eatFood(state),
+    eatFood: () => {
+      if (app.screen === 'playing') eatFood(state);
+    },
     restart: () => {
-      clearSave();
-      startNewGame();
+      if (app.screen === 'playing') resetCurrentWorld();
     },
     unlockAudio: () => Game.audio.unlock(),
-    toggleCrafting: () => toggleCrafting(state),
+    toggleCreativeFlight,
+    toggleCrafting: () => {
+      if (app.screen !== 'playing') return;
+      toggleCrafting(state);
+      syncBodyUiState();
+    },
     togglePause,
   });
 
-  const loadedState = loadGame();
-  if (loadedState) {
-    replaceState(loadedState);
-    retrofitWorldFeatures(state);
-  } else startNewGame();
+  migrateLegacySave();
+  refreshWorldList();
+  menu.render(app);
+  syncBodyUiState();
 
   function update(dt) {
-    document.body.classList.toggle('ui-overlay-hidden', !!(state.pause.open || (state.crafting && state.crafting.open)));
+    syncBodyUiState();
 
     state.ui.fpsFrames += 1;
     state.ui.fpsAccum += dt;
@@ -138,13 +263,14 @@
       state.ui.fpsAccum = 0;
     }
 
+    if (app.screen !== 'playing') return;
     if (state.pause.open || state.gameOver) return;
 
     if (!state.crafting.open) state.cycleTime += dt;
     if (state.attackFlash > 0) state.attackFlash -= dt;
     state.autosaveTick += dt;
     if (state.autosaveTick >= 60) {
-      saveGame(state);
+      saveCurrentWorld();
       state.autosaveTick = 0;
     }
 
@@ -173,24 +299,48 @@
       if (spider.clickCd) spider.clickCd = Math.max(0, spider.clickCd - dt);
     }
 
-    if (state.player.health <= 0) state.gameOver = true;
+    if (!isCreativeMode() && state.player.health <= 0) state.gameOver = true;
   }
 
+  const camera = createCamera(state, canvas);
   let last = performance.now();
+
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
 
-    const camera = createCamera(state, canvas);
-    if (state.gameOver && state.ui && state.ui.controlMode === 'touch' && input.mouse.justPressed) {
-      clearSave();
-      startNewGame();
-      input.mouse.justPressed = false;
-    } else if (state.pause.open) handlePausePointer(input, canvas);
-    else if (state.crafting.open) handleCraftingPointer(state, input, canvas);
-    else handleMouse(state, input, camera, dt);
+    if (app.screen !== 'playing') {
+      update(dt);
+      drawMenuBackground(ctx, canvas, state);
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    updateCamera(camera, state, canvas);
+
+    if (state.pause.open) {
+      if (handlePausePointer(input, canvas)) {
+        updateCamera(camera, state, canvas);
+        draw(ctx, canvas, state, camera, input);
+        requestAnimationFrame(loop);
+        return;
+      }
+    } else if (state.crafting.open) {
+      handleCraftingPointer(state, input, canvas);
+      syncBodyUiState();
+    } else {
+      handleMouse(state, input, camera, dt);
+    }
+
     update(dt);
+    updateCamera(camera, state, canvas);
     draw(ctx, canvas, state, camera, input);
+
+    if (app.pendingInitialSave) {
+      saveCurrentWorld();
+      app.pendingInitialSave = false;
+    }
+
     requestAnimationFrame(loop);
   }
 

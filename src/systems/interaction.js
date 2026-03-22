@@ -7,6 +7,7 @@
   const { getBlock, setBlock } = Game.world;
   const {
     selectedPlaceableId,
+    selectedItemId,
     consumeSelectedPlaceable,
     addToInventory,
     selectedToolId,
@@ -17,6 +18,10 @@
   const { spawnFood, ANIMAL_STATE, setWalk } = Game.animalsEntity;
   const { ensureFurnaceAt, removeFurnaceAt } = Game.furnaceSystem;
   const audio = Game.audio;
+
+  function isCreative(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
 
   function getBlockDrop(blockId) {
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
@@ -37,7 +42,7 @@
   }
 
   function canPlaceBlock(state, tx, ty, id) {
-    if (!PLACEABLE.has(id)) return false;
+    if (!PLACEABLE.has(id) && !(isCreative(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
     const targetBlock = getBlock(state, tx, ty);
     if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER) return false;
 
@@ -141,15 +146,33 @@
 
     if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
-        const id = selectedPlaceableId(state);
+        const id = isCreative(state) ? selectedItemId(state) : selectedPlaceableId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
-          const used = consumeSelectedPlaceable(state);
+          const used = isCreative(state) ? id : consumeSelectedPlaceable(state);
           if (used) {
             setBlock(state, tx, ty, used);
             if (used === BLOCK.FURNACE) ensureFurnaceAt(state, tx, ty);
           }
         }
       }
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (isCreative(state)) {
+      if (!input.mouse.justPressed) return;
+      const drop = getBlockDrop(block);
+      addToInventory(state, drop.id, drop.count);
+      if (block === BLOCK.FURNACE) {
+        const furnace = removeFurnaceAt(state, tx, ty);
+        if (furnace) {
+          for (const slot of [furnace.input, furnace.fuel, furnace.output]) {
+            if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
+          }
+        }
+      }
+      setBlock(state, tx, ty, BLOCK.AIR);
       state.breaking = null;
       input.mouse.justPressed = false;
       return;

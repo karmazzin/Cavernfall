@@ -86,8 +86,9 @@
 
   function drawUI(ctx, canvas, state, phase) {
     const mobile = isMobileUi(canvas, state);
+    const creative = !!(state.worldMeta && state.worldMeta.mode === 'creative');
     const panelW = mobile ? Math.min(canvas.width - 24, 252) : 280;
-    const panelH = mobile ? 82 : 110;
+    const panelH = creative ? (mobile ? 54 : 72) : mobile ? 82 : 110;
     const panelX = 12;
     const panelY = mobile ? 12 : 12;
 
@@ -96,32 +97,39 @@
 
     ctx.fillStyle = '#fff';
     ctx.font = `${mobile ? 12 : 16}px Arial`;
-    ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/10`, panelX + 12, panelY + 20);
-    ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, panelX + 12, panelY + 38);
+    if (!creative) {
+      ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/10`, panelX + 12, panelY + 20);
+      ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, panelX + 12, panelY + 38);
+    } else {
+      const flight = (mobile || state.player.creativeFlight) ? 'вкл' : 'выкл';
+      ctx.fillText(`Творческий • Полет: ${flight}`, panelX + 12, panelY + 26);
+    }
 
     const tx = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const ty = Math.floor((state.player.y + state.player.h / 2) / TILE);
     const biome = biomeLabel(getLocationInfo(state, tx, ty).biome);
     const infoX = mobile ? panelX + 132 : panelX + 148;
     const infoY1 = mobile ? panelY + 20 : panelY + 24;
-    const infoY2 = mobile ? panelY + 38 : panelY + 46;
+    const infoY2 = mobile ? panelY + (creative ? 36 : 38) : panelY + (creative ? 46 : 46);
     ctx.font = `${mobile ? 11 : 16}px Arial`;
     ctx.fillText(`Биом: ${biome}`, infoX, infoY1);
     ctx.fillText(`Фаза: ${phaseLabel(phase.phase)}`, infoX, infoY2);
-    if (!mobile) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, panelY + 68);
+    if (!mobile && !creative) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, panelY + 68);
 
-    const barW = mobile ? panelW - 24 : 240;
-    const healthBarY = panelY + (mobile ? 52 : 118);
-    const satietyBarY = panelY + (mobile ? 66 : 136);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(panelX + 12, healthBarY, barW, 10);
-    ctx.fillStyle = '#e53935';
-    ctx.fillRect(panelX + 12, healthBarY, barW * (state.player.health / 10), 10);
+    if (!creative) {
+      const barW = mobile ? panelW - 24 : 240;
+      const healthBarY = panelY + (mobile ? 52 : 118);
+      const satietyBarY = panelY + (mobile ? 66 : 136);
+      ctx.fillStyle = '#444';
+      ctx.fillRect(panelX + 12, healthBarY, barW, 10);
+      ctx.fillStyle = '#e53935';
+      ctx.fillRect(panelX + 12, healthBarY, barW * (state.player.health / 10), 10);
 
-    ctx.fillStyle = '#444';
-    ctx.fillRect(panelX + 12, satietyBarY, barW, 10);
-    ctx.fillStyle = '#ffb300';
-    ctx.fillRect(panelX + 12, satietyBarY, barW * (state.player.satiety / 100), 10);
+      ctx.fillStyle = '#444';
+      ctx.fillRect(panelX + 12, satietyBarY, barW, 10);
+      ctx.fillStyle = '#ffb300';
+      ctx.fillRect(panelX + 12, satietyBarY, barW * (state.player.satiety / 100), 10);
+    }
 
     const fpsBoxW = mobile ? 54 : 60;
     const fpsBoxH = mobile ? 22 : 24;
@@ -135,7 +143,7 @@
     ctx.font = `${mobile ? 10 : 11}px Arial`;
     ctx.fillText(`FPS ${Math.round(state.ui.fps || 0)}`, fpsBoxX + 8, fpsBoxY + (mobile ? 14 : 16));
 
-    drawBreath(ctx, canvas, state);
+    if (!creative) drawBreath(ctx, canvas, state);
     drawHotbar(ctx, canvas, state);
   }
 

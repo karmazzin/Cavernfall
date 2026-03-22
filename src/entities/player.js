@@ -8,9 +8,14 @@
   const audio = Game.audio;
   const LADDER_SPEED = 165;
 
+  function isCreative(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  }
+
   function updatePlayer(state, input, dt) {
     const { player } = state;
     const controlsLocked = (state.crafting && state.crafting.open) || (state.pause && state.pause.open);
+    const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
     const left = !controlsLocked && input.keys.has('KeyA');
     const right = !controlsLocked && input.keys.has('KeyD');
     const jump = !controlsLocked && (input.keys.has('KeyW') || input.keys.has('Space'));
@@ -26,6 +31,8 @@
     const blockFeet = getBlock(state, centerTx, feetTy);
     const inCobweb = blockCenter === BLOCK.COBWEB || blockHead === BLOCK.COBWEB || blockFeet === BLOCK.COBWEB;
     const onLadder = blockCenter === BLOCK.LADDER || blockHead === BLOCK.LADDER || blockFeet === BLOCK.LADDER;
+    const creative = isCreative(state);
+    const creativeFlight = creative && (touchMode || player.creativeFlight);
 
     player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
     player.underwater = blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER;
@@ -35,7 +42,33 @@
     if (left) player.vx -= PLAYER_SPEED;
     if (right) player.vx += PLAYER_SPEED;
 
-    if (player.inWater) {
+    if (creativeFlight) {
+      const flyingDown = !controlsLocked && input.keys.has('KeyS');
+      player.inWater = false;
+      player.underwater = false;
+      player.onLadder = false;
+      player.vy = 0;
+      if (jump) player.vy = -SWIM_SPEED;
+      else if (flyingDown) player.vy = SWIM_SPEED;
+    } else if (creative) {
+      const diving = !controlsLocked && input.keys.has('KeyS');
+      if (player.inWater) {
+        if (jump) player.vy = -SWIM_SPEED;
+        else if (diving) player.vy = SWIM_SPEED;
+        else player.vy *= 0.85;
+      } else if (onLadder) {
+        player.vy = 0;
+        if (jump) player.vy = -LADDER_SPEED;
+        else if (diving) player.vy = LADDER_SPEED;
+        player.vx *= 0.8;
+      } else {
+        if (jump && player.onGround) {
+          player.vy = -JUMP_SPEED;
+          audio.playJump();
+        }
+        player.vy += GRAVITY * dt;
+      }
+    } else if (player.inWater) {
       const diving = !controlsLocked && input.keys.has('KeyS');
       if (jump) player.vy = -SWIM_SPEED;
       else if (diving) player.vy = SWIM_SPEED;
@@ -54,7 +87,7 @@
       player.vy += GRAVITY * dt;
     }
 
-    if (inCobweb) {
+    if (inCobweb && !creativeFlight) {
       player.vx *= 0.5;
       player.vy *= 0.5;
     }
@@ -64,7 +97,7 @@
     player.stepUpHeight = 0;
     player.x = clamp(player.x, 0, WORLD_W * TILE - player.w);
 
-    if (!wasOnGround && player.onGround && !player.inWater && preMoveVy > 700) {
+    if (!creative && !wasOnGround && player.onGround && !player.inWater && preMoveVy > 700) {
       const damage = Math.ceil((preMoveVy - 700) / 180);
       if (damage > 0) {
         player.health = Math.max(0, player.health - damage);
@@ -78,7 +111,7 @@
     const under = getBlock(state, footTx, footTy);
     const inBody = getBlock(state, footTx, Math.floor((player.y + player.h / 2) / TILE));
 
-    if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) {
+    if (!creative && (under === BLOCK.LAVA || inBody === BLOCK.LAVA)) {
       player.health = Math.max(0, player.health - dt * 2);
       state.attackFlash = 0.2;
       player.lavaSoundTimer -= dt;
