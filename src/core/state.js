@@ -62,7 +62,13 @@
       pause: {
         open: false,
         confirmRestart: false,
+        showControls: false,
         statusText: '',
+        fullscreenLabel: 'Полный экран',
+      },
+      ui: {
+        controlMode: 'desktop',
+        helpCollapsed: false,
       },
     };
   }

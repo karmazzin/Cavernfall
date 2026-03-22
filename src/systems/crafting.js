@@ -69,19 +69,28 @@
     return px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
   }
 
-  function getCraftingLayout(canvas) {
-    const slot = 48;
-    const gap = 8;
-    const panel = {
-      w: 1120,
-      h: 560,
-      x: Math.floor((canvas.width - 1120) / 2),
-      y: Math.floor((canvas.height - 560) / 2),
-    };
+  function getCraftingLayout(canvas, state) {
+    const mobile = Game.uiRenderer && Game.uiRenderer.isMobileUi ? Game.uiRenderer.isMobileUi(canvas, state) : canvas.width < 900;
+    const compact = mobile && canvas.height < 720;
+    const slot = mobile ? (compact ? 26 : canvas.width < 420 ? 30 : 34) : 48;
+    const gap = mobile ? 4 : 8;
+    const panel = mobile
+      ? {
+          w: Math.min(canvas.width - 16, slot * 9 + gap * 8 + 28),
+          h: Math.min(canvas.height - 20, compact ? 380 : 660),
+          x: Math.floor((canvas.width - Math.min(canvas.width - 16, slot * 9 + gap * 8 + 28)) / 2),
+          y: 10,
+        }
+      : {
+          w: 1120,
+          h: 560,
+          x: Math.floor((canvas.width - 1120) / 2),
+          y: Math.floor((canvas.height - 560) / 2),
+        };
 
     const grid = [];
-    const gridStartX = panel.x + 32;
-    const gridStartY = panel.y + 76;
+    const gridStartX = panel.x + (mobile ? 16 : 32);
+    const gridStartY = panel.y + (mobile ? 70 : 76);
     for (let row = 0; row < 3; row += 1) {
       for (let col = 0; col < 3; col += 1) {
         grid.push(slotRect(gridStartX + col * (slot + gap), gridStartY + row * (slot + gap), slot));
@@ -89,38 +98,59 @@
     }
 
     const inventory = [];
-    const inventoryStartX = panel.x + 32;
-    const inventoryStartY = panel.y + 272;
+    const inventoryStartX = panel.x + (mobile ? 14 : 32);
+    const inventoryStartY = panel.y + (mobile ? (compact ? 234 : 294) : 272);
     for (let row = 0; row < 3; row += 1) {
       for (let col = 0; col < 9; col += 1) {
-        inventory.push(slotRect(inventoryStartX + col * (slot + 8), inventoryStartY + row * (slot + 8), slot));
+        inventory.push(slotRect(inventoryStartX + col * (slot + gap), inventoryStartY + row * (slot + gap), slot));
       }
     }
 
     const hotbar = [];
-    const hotbarY = panel.y + 438;
+    const hotbarY = panel.y + (mobile ? (compact ? 334 : 406) : 438);
     for (let col = 0; col < 9; col += 1) {
-      hotbar.push(slotRect(inventoryStartX + col * (slot + 8), hotbarY, slot));
+      hotbar.push(slotRect(inventoryStartX + col * (slot + gap), hotbarY, slot));
     }
 
     return {
       panel,
+      mobile,
+      compact,
       slot,
       grid,
-      result: slotRect(panel.x + 250, panel.y + 130, 60),
+      result: mobile
+        ? slotRect(panel.x + panel.w - slot - 18, panel.y + 104, slot + 8)
+        : slotRect(panel.x + 250, panel.y + 130, 60),
       inventory,
       hotbar,
-      recipes: {
-        x: panel.x + 560,
-        y: panel.y + 76,
-        w: 250,
-        h: 452,
-      },
+      recipes: mobile
+        ? {
+            x: panel.x + 14,
+            y: panel.y + (compact ? 366 : 466),
+            w: panel.w - 28,
+            h: panel.h - (compact ? 378 : 478),
+            compact: true,
+          }
+        : {
+            x: panel.x + 560,
+            y: panel.y + 76,
+            w: 250,
+            h: 452,
+            compact: false,
+          },
       furnace: {
-        panel: slotRect(panel.x + 828, panel.y + 76, 260, 236),
-        input: slotRect(panel.x + 852, panel.y + 136, 48),
-        fuel: slotRect(panel.x + 852, panel.y + 212, 48),
-        output: slotRect(panel.x + 1008, panel.y + 174, 56),
+        panel: mobile
+          ? slotRect(panel.x + panel.w - 158, panel.y + 70, 144, 154)
+          : slotRect(panel.x + 828, panel.y + 76, 260, 236),
+        input: mobile
+          ? slotRect(panel.x + panel.w - 142, panel.y + 106, slot)
+          : slotRect(panel.x + 852, panel.y + 136, 48),
+        fuel: mobile
+          ? slotRect(panel.x + panel.w - 142, panel.y + 152, slot)
+          : slotRect(panel.x + 852, panel.y + 212, 48),
+        output: mobile
+          ? slotRect(panel.x + panel.w - 70, panel.y + 128, slot + 6)
+          : slotRect(panel.x + 1008, panel.y + 174, 56),
       },
     };
   }
@@ -262,7 +292,7 @@
     const crafting = ensureCraftingState(state);
     if (!crafting.open || !input.mouse.justPressed) return false;
 
-    const layout = getCraftingLayout(canvas);
+    const layout = getCraftingLayout(canvas, state);
     const { x, y, button } = input.mouse;
     const activeFurnace = getNearestFurnace(state, 5);
 
@@ -316,6 +346,12 @@
         input.mouse.justPressed = false;
         return true;
       }
+    }
+
+    if (layout.mobile && !contains(layout.panel, x, y)) {
+      closeCrafting(state);
+      input.mouse.justPressed = false;
+      return true;
     }
 
     input.mouse.justPressed = false;

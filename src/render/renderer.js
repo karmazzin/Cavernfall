@@ -179,10 +179,11 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
-      ctx.font = 'bold 42px Arial';
+      const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
+      ctx.font = `bold ${touchMode ? 34 : 42}px Arial`;
       ctx.fillText('КОНЕЦ ИГРЫ', canvas.width / 2, canvas.height / 2 - 10);
-      ctx.font = '20px Arial';
-      ctx.fillText('Нажми R, чтобы начать заново', canvas.width / 2, canvas.height / 2 + 30);
+      ctx.font = `${touchMode ? 18 : 20}px Arial`;
+      ctx.fillText(touchMode ? 'Тап по экрану, чтобы начать заново' : 'Нажми R, чтобы начать заново', canvas.width / 2, canvas.height / 2 + 30);
       ctx.textAlign = 'left';
     }
   }

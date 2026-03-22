@@ -5,23 +5,106 @@ html, body {
   background: #111;
   font-family: Arial, sans-serif;
   color: white;
+  touch-action: none;
+}
+
+body {
+  position: relative;
 }
 
 canvas {
   display: block;
+  width: 100vw;
+  height: 100vh;
   background: #7ec8ff;
   cursor: crosshair;
 }
 
-.help {
+body.touch-mode canvas {
+  cursor: default;
+}
+
+.touch-controls {
   position: fixed;
-  right: 12px;
-  top: 12px;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 10px 12px;
-  border-radius: 10px;
-  max-width: 340px;
-  font-size: 13px;
-  line-height: 1.4;
+  inset: 0;
+  z-index: 35;
   pointer-events: none;
+  display: none;
+}
+
+body.touch-mode .touch-controls {
+  display: block;
+}
+
+body.ui-overlay-hidden .touch-controls {
+  display: none;
+}
+
+.touch-cluster {
+  position: absolute;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+
+.touch-left {
+  left: 12px;
+}
+
+.touch-right {
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.touch-dpad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.touch-dpad-row {
+  display: flex;
+  gap: 8px;
+}
+
+.touch-btn {
+  min-width: 62px;
+  min-height: 52px;
+  font-size: 16px;
+  font-weight: bold;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(10, 10, 10, 0.7);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  line-height: 1;
+  backdrop-filter: blur(4px);
+}
+
+.touch-dpad .touch-btn {
+  min-width: 56px;
+  min-height: 56px;
+  font-size: 24px;
+}
+
+.touch-btn.is-active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 520px) {
+  .touch-btn {
+    min-width: 56px;
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  .touch-dpad .touch-btn {
+    min-width: 50px;
+    min-height: 50px;
+    font-size: 22px;
+  }
 }

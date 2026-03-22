@@ -14,7 +14,8 @@
     ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
 
     if (!slot || slot.id == null || slot.count <= 0) return;
-    drawItem(ctx, slot.id, rect.x + 10, rect.y + 10, 28);
+    const itemSize = Math.max(18, rect.w - 20);
+    drawItem(ctx, slot.id, rect.x + Math.floor((rect.w - itemSize) / 2), rect.y + Math.floor((rect.h - itemSize) / 2) - 2, itemSize);
     if (slot.count > 1) {
       ctx.fillStyle = '#fff';
       ctx.font = '12px Arial';
@@ -23,9 +24,9 @@
     drawDurabilityBar(ctx, slot, rect.x, rect.y + rect.h, rect.w);
   }
 
-  function drawSectionTitle(ctx, text, x, y) {
+  function drawSectionTitle(ctx, text, x, y, mobile = false) {
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = `bold ${mobile ? 14 : 16}px Arial`;
     ctx.fillText(text, x, y);
   }
 
@@ -76,6 +77,7 @@
 
   function drawRecipeHints(ctx, layout) {
     const area = layout.recipes;
+    if (area.h <= 24) return;
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     ctx.fillRect(area.x, area.y, area.w, area.h);
     ctx.strokeStyle = 'rgba(255,255,255,0.16)';
@@ -83,22 +85,21 @@
     ctx.strokeRect(area.x, area.y, area.w, area.h);
 
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px Arial';
+    ctx.font = `bold ${layout.mobile ? 15 : 18}px Arial`;
     ctx.fillText('Подсказки рецептов', area.x + 16, area.y + 26);
-    ctx.font = '12px Arial';
+    ctx.font = `${layout.mobile ? 11 : 12}px Arial`;
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.fillText('ЛКМ: взять/переместить весь стек', area.x + 16, area.y + 46);
-    ctx.fillText('ПКМ: половина стека или 1 предмет', area.x + 16, area.y + 62);
+    ctx.fillText('ЛКМ: весь стек', area.x + 16, area.y + 44);
+    if (!layout.mobile) ctx.fillText('ПКМ: половина стека или 1 предмет', area.x + 16, area.y + 62);
 
-    const cardW = 218;
-    const cardH = 66;
-    const gapX = 10;
-    const gapY = 10;
-    const startY = area.y + 82;
+    const cardW = layout.mobile ? Math.floor((area.w - 42) / 2) : 218;
+    const cardH = layout.mobile ? 58 : 66;
+    const gapY = layout.mobile ? 8 : 10;
+    const startY = area.y + (layout.mobile ? 58 : 82);
 
     for (let i = 0; i < RECIPES.length; i += 1) {
-      const x = area.x + 16;
-      const y = startY + i * (cardH + gapY);
+      const x = layout.mobile ? area.x + 16 + (i % 2) * (cardW + 10) : area.x + 16;
+      const y = layout.mobile ? startY + Math.floor(i / 2) * (cardH + gapY) : startY + i * (cardH + gapY);
       if (y + cardH > area.y + area.h - 8) break;
       drawRecipeCard(ctx, RECIPES[i], x, y, cardW, cardH);
     }
@@ -115,11 +116,11 @@
     ctx.strokeRect(panel.x, panel.y, panel.w, panel.h);
 
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 18px Arial';
+    ctx.font = `bold ${layout.mobile ? 15 : 18}px Arial`;
     ctx.fillText('Печка', panel.x + 16, panel.y + 26);
-    ctx.font = '12px Arial';
+    ctx.font = `${layout.mobile ? 10 : 12}px Arial`;
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.fillText('Доступна рядом с установленной печкой', panel.x + 16, panel.y + 44);
+    if (!layout.mobile) ctx.fillText('Доступна рядом с установленной печкой', panel.x + 16, panel.y + 44);
 
     drawSlot(ctx, layout.furnace.input, furnace.input);
     drawSlot(ctx, layout.furnace.fuel, furnace.fuel);
@@ -127,42 +128,49 @@
 
     ctx.fillStyle = '#fff';
     ctx.font = '12px Arial';
-    ctx.fillText('Вход', layout.furnace.input.x, layout.furnace.input.y - 8);
-    ctx.fillText('Топливо', layout.furnace.fuel.x, layout.furnace.fuel.y - 8);
-    ctx.fillText('Выход', layout.furnace.output.x, layout.furnace.output.y - 8);
+    ctx.fillText('Вход', layout.furnace.input.x, layout.furnace.input.y - 6);
+    ctx.fillText('Топл.', layout.furnace.fuel.x, layout.furnace.fuel.y - 6);
+    ctx.fillText('Выход', layout.furnace.output.x, layout.furnace.output.y - 6);
 
     ctx.strokeStyle = 'rgba(255,255,255,0.45)';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(panel.x + 98, panel.y + 164);
-    ctx.lineTo(panel.x + 144, panel.y + 164);
-    ctx.lineTo(panel.x + 136, panel.y + 156);
-    ctx.moveTo(panel.x + 144, panel.y + 164);
-    ctx.lineTo(panel.x + 136, panel.y + 172);
+    ctx.moveTo(panel.x + (layout.mobile ? 56 : 98), panel.y + (layout.mobile ? 95 : 164));
+    ctx.lineTo(panel.x + (layout.mobile ? 86 : 144), panel.y + (layout.mobile ? 95 : 164));
+    ctx.lineTo(panel.x + (layout.mobile ? 80 : 136), panel.y + (layout.mobile ? 87 : 156));
+    ctx.moveTo(panel.x + (layout.mobile ? 86 : 144), panel.y + (layout.mobile ? 95 : 164));
+    ctx.lineTo(panel.x + (layout.mobile ? 80 : 136), panel.y + (layout.mobile ? 103 : 172));
     ctx.stroke();
 
     const burnRatio = furnace.burnTotal > 0 ? Math.max(0, Math.min(1, furnace.burnTime / furnace.burnTotal)) : 0;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(panel.x + 48, panel.y + 176, 12, 40);
+    ctx.fillRect(panel.x + (layout.mobile ? 22 : 48), panel.y + (layout.mobile ? 104 : 176), 12, layout.mobile ? 28 : 40);
     if (burnRatio > 0) {
       ctx.fillStyle = '#ffb347';
-      ctx.fillRect(panel.x + 49, panel.y + 177 + (38 * (1 - burnRatio)), 10, 38 * burnRatio);
+      const burnHeight = layout.mobile ? 26 : 38;
+      const burnX = panel.x + (layout.mobile ? 23 : 49);
+      const burnY = panel.y + (layout.mobile ? 105 : 177);
+      ctx.fillRect(burnX, burnY + (burnHeight * (1 - burnRatio)), 10, burnHeight * burnRatio);
     }
 
     const recipe = furnace.input && furnace.input.id != null ? Game.furnaceSystem.getSmeltRecipe(furnace.input.id) : null;
     const progressRatio = recipe ? Math.max(0, Math.min(1, furnace.progress / recipe.time)) : 0;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(panel.x + 112, panel.y + 156, 58, 16);
+    const progressX = panel.x + (layout.mobile ? 72 : 112);
+    const progressY = panel.y + (layout.mobile ? 88 : 156);
+    const progressW = layout.mobile ? 42 : 58;
+    const progressH = layout.mobile ? 12 : 16;
+    ctx.fillRect(progressX, progressY, progressW, progressH);
     if (progressRatio > 0) {
       ctx.fillStyle = '#ffd36e';
-      ctx.fillRect(panel.x + 113, panel.y + 157, 56 * progressRatio, 14);
+      ctx.fillRect(progressX + 1, progressY + 1, (progressW - 2) * progressRatio, progressH - 2);
     }
   }
 
   function drawCraftingOverlay(ctx, canvas, state, input) {
     if (!state.crafting || !state.crafting.open) return;
 
-    const layout = getCraftingLayout(canvas);
+    const layout = getCraftingLayout(canvas, state);
     const activeFurnace = getNearestFurnace(state, 5);
     ctx.fillStyle = 'rgba(0,0,0,0.62)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -174,39 +182,39 @@
     ctx.strokeRect(layout.panel.x, layout.panel.y, layout.panel.w, layout.panel.h);
 
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px Arial';
-    ctx.fillText('Крафт и инвентарь', layout.panel.x + 32, layout.panel.y + 42);
+    ctx.font = `bold ${layout.mobile ? 18 : 24}px Arial`;
+    ctx.fillText('Крафт и инвентарь', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + (layout.mobile ? 30 : 42));
 
-    drawSectionTitle(ctx, 'Сетка крафта', layout.panel.x + 32, layout.panel.y + 64);
+    drawSectionTitle(ctx, 'Сетка крафта', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + (layout.mobile ? 52 : 64), layout.mobile);
     for (let i = 0; i < layout.grid.length; i += 1) drawSlot(ctx, layout.grid[i], state.crafting.grid[i]);
 
     ctx.strokeStyle = 'rgba(255,255,255,0.45)';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(layout.panel.x + 212, layout.panel.y + 158);
-    ctx.lineTo(layout.panel.x + 240, layout.panel.y + 158);
-    ctx.lineTo(layout.panel.x + 232, layout.panel.y + 148);
-    ctx.moveTo(layout.panel.x + 240, layout.panel.y + 158);
-    ctx.lineTo(layout.panel.x + 232, layout.panel.y + 168);
+    ctx.moveTo(layout.mobile ? layout.panel.x + 140 : layout.panel.x + 212, layout.mobile ? layout.panel.y + 122 : layout.panel.y + 158);
+    ctx.lineTo(layout.mobile ? layout.panel.x + 162 : layout.panel.x + 240, layout.mobile ? layout.panel.y + 122 : layout.panel.y + 158);
+    ctx.lineTo(layout.mobile ? layout.panel.x + 156 : layout.panel.x + 232, layout.mobile ? layout.panel.y + 114 : layout.panel.y + 148);
+    ctx.moveTo(layout.mobile ? layout.panel.x + 162 : layout.panel.x + 240, layout.mobile ? layout.panel.y + 122 : layout.panel.y + 158);
+    ctx.lineTo(layout.mobile ? layout.panel.x + 156 : layout.panel.x + 232, layout.mobile ? layout.panel.y + 130 : layout.panel.y + 168);
     ctx.stroke();
 
     const resultSlot = state.crafting.result ? state.crafting.result.result : null;
     drawSlot(ctx, layout.result, resultSlot, !!resultSlot);
-    drawSectionTitle(ctx, 'Результат', layout.result.x - 4, layout.result.y - 12);
+    drawSectionTitle(ctx, 'Результат', layout.result.x - 4, layout.result.y - 10, layout.mobile);
 
-    drawSectionTitle(ctx, 'Инвентарь', layout.panel.x + 32, layout.panel.y + 258);
+    drawSectionTitle(ctx, 'Инвентарь', layout.panel.x + (layout.mobile ? 14 : 32), layout.inventory[0].y - 12, layout.mobile);
     for (let i = 0; i < layout.inventory.length; i += 1) {
       drawSlot(ctx, layout.inventory[i], state.player.inventory[i]);
     }
 
-    drawSectionTitle(ctx, 'Хотбар', layout.panel.x + 32, layout.panel.y + 424);
+    drawSectionTitle(ctx, 'Хотбар', layout.panel.x + (layout.mobile ? 14 : 32), layout.hotbar[0].y - 10, layout.mobile);
     for (let i = 0; i < layout.hotbar.length; i += 1) {
       drawSlot(ctx, layout.hotbar[i], state.player.hotbar[i], i === state.player.selectedSlot);
     }
 
     if (resultSlot) {
       const def = getItemDefinition(resultSlot.id);
-      ctx.font = '13px Arial';
+      ctx.font = `${layout.mobile ? 11 : 13}px Arial`;
       ctx.fillStyle = '#fff';
       ctx.fillText(def ? def.label : 'Результат', layout.result.x - 6, layout.result.y + layout.result.h + 18);
     }

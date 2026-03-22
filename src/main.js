@@ -28,6 +28,7 @@
     for (const key of Object.keys(state)) delete state[key];
     Object.assign(state, nextState);
     ensureCraftingState(state);
+    input.syncUiState();
   }
 
   function seedStarterInventory() {
@@ -52,6 +53,7 @@
   function closePause() {
     state.pause.open = false;
     state.pause.confirmRestart = false;
+    state.pause.showControls = false;
     state.pause.statusText = '';
   }
 
@@ -62,6 +64,7 @@
     }
     state.pause.open = true;
     state.pause.confirmRestart = false;
+    state.pause.showControls = false;
     state.pause.statusText = '';
   }
 
@@ -79,7 +82,10 @@
       if (!contains(button, x, y)) continue;
 
       if (button.id === 'continue') closePause();
+      if (button.id === 'controls') state.pause.showControls = true;
+      if (button.id === 'controls_back') state.pause.showControls = false;
       if (button.id === 'save') state.pause.statusText = saveGame(state) ? 'Игра сохранена' : 'Сохранение не удалось';
+      if (button.id === 'fullscreen') input.toggleFullscreen();
       if (button.id === 'restart') state.pause.confirmRestart = true;
       if (button.id === 'restart_no') state.pause.confirmRestart = false;
       if (button.id === 'restart_yes') {
@@ -122,6 +128,7 @@
   } else startNewGame();
 
   function update(dt) {
+    document.body.classList.toggle('ui-overlay-hidden', !!(state.pause.open || (state.crafting && state.crafting.open)));
     if (state.pause.open || state.gameOver) return;
 
     if (!state.crafting.open) state.cycleTime += dt;
@@ -166,7 +173,11 @@
     last = now;
 
     const camera = createCamera(state, canvas);
-    if (state.pause.open) handlePausePointer(input, canvas);
+    if (state.gameOver && state.ui && state.ui.controlMode === 'touch' && input.mouse.justPressed) {
+      clearSave();
+      startNewGame();
+      input.mouse.justPressed = false;
+    } else if (state.pause.open) handlePausePointer(input, canvas);
     else if (state.crafting.open) handleCraftingPointer(state, input, canvas);
     else handleMouse(state, input, camera, dt);
     update(dt);

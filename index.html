@@ -2,20 +2,31 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Cavernfall</title>
   <link rel="stylesheet" href="./styles/main.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
-  <div class="help">
-    <b>Cavernfall</b><br>
-    A / D — идти, клавиши работают на любой раскладке<br>
-    W / Пробел — прыгать / плыть вверх в воде<br>
-    ЛКМ по блоку — ломать / ставить выбранный блок<br>
-    ЛКМ по овце — ударить, выбить сырую баранину<br>
-    1..9 — выбор ячейки хотбара<br>
-    E — съесть 1 сырую баранину, тоже на любой раскладке
+
+  <div class="touch-controls" id="touchControls" aria-hidden="true">
+    <div class="touch-cluster touch-left">
+      <div class="touch-dpad">
+        <div class="touch-dpad-row touch-dpad-top">
+          <button type="button" class="touch-btn touch-hold touch-jump" data-key="KeyW">^</button>
+        </div>
+        <div class="touch-dpad-row">
+          <button type="button" class="touch-btn touch-hold" data-key="KeyA">&lt;</button>
+          <button type="button" class="touch-btn touch-hold" data-key="KeyS">v</button>
+          <button type="button" class="touch-btn touch-hold" data-key="KeyD">&gt;</button>
+        </div>
+      </div>
+    </div>
+    <div class="touch-cluster touch-right">
+      <button type="button" class="touch-btn" data-action="eat">Еда</button>
+      <button type="button" class="touch-btn" data-action="craft">Инв.</button>
+      <button type="button" class="touch-btn" data-action="pause">Пауза</button>
+    </div>
   </div>
 
   <script defer src="./src/core/bootstrap.js"></script>
