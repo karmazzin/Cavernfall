@@ -6,6 +6,7 @@
   const { getBlock } = Game.world;
   const { moveEntity } = Game.physics;
   const audio = Game.audio;
+  const LADDER_SPEED = 165;
 
   function updatePlayer(state, input, dt) {
     const { player } = state;
@@ -24,9 +25,11 @@
     const blockHead = getBlock(state, centerTx, headTy);
     const blockFeet = getBlock(state, centerTx, feetTy);
     const inCobweb = blockCenter === BLOCK.COBWEB || blockHead === BLOCK.COBWEB || blockFeet === BLOCK.COBWEB;
+    const onLadder = blockCenter === BLOCK.LADDER || blockHead === BLOCK.LADDER || blockFeet === BLOCK.LADDER;
 
     player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
     player.underwater = blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER;
+    player.onLadder = onLadder;
 
     player.vx = 0;
     if (left) player.vx -= PLAYER_SPEED;
@@ -37,6 +40,12 @@
       if (jump) player.vy = -SWIM_SPEED;
       else if (diving) player.vy = SWIM_SPEED;
       else player.vy *= 0.85;
+    } else if (onLadder) {
+      const climbingDown = !controlsLocked && input.keys.has('KeyS');
+      player.vy = 0;
+      if (jump) player.vy = -LADDER_SPEED;
+      else if (climbingDown) player.vy = LADDER_SPEED;
+      player.vx *= 0.8;
     } else {
       if (jump && player.onGround) {
         player.vy = -JUMP_SPEED;

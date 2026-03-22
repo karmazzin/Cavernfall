@@ -59,6 +59,22 @@
       ctx.fillStyle = '#d0a06b';
       ctx.fillRect(x + 4, y, 1, TILE);
       ctx.fillRect(x + 10, y, 1, TILE);
+    } else if (id === BLOCK.PILLAR) {
+      ctx.fillStyle = '#7a4f2d';
+      ctx.fillRect(x + 6, y, 4, TILE);
+      ctx.fillStyle = '#c79a63';
+      ctx.fillRect(x + 7, y, 1, TILE);
+      ctx.fillRect(x + 9, y, 1, TILE);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x + 5, y + 1, 6, 2);
+    } else if (id === BLOCK.LADDER) {
+      ctx.fillStyle = '#8a5a31';
+      ctx.fillRect(x + 4, y, 2, TILE);
+      ctx.fillRect(x + 10, y, 2, TILE);
+      ctx.fillStyle = '#cf9b63';
+      ctx.fillRect(x + 5, y + 3, 6, 2);
+      ctx.fillRect(x + 5, y + 7, 6, 2);
+      ctx.fillRect(x + 5, y + 11, 6, 2);
     } else if (id === BLOCK.COBWEB) {
       ctx.strokeStyle = 'rgba(240,245,255,0.8)';
       ctx.lineWidth = 1;

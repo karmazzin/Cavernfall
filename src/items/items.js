@@ -37,6 +37,8 @@
     [BLOCK.FURNACE]: 'Печка',
     [BLOCK.BLACKSTONE]: 'Чёрный камень',
     [BLOCK.GOLD_ORE]: 'Золотая руда',
+    [BLOCK.PILLAR]: 'Столб',
+    [BLOCK.LADDER]: 'Лестница',
   };
 
   const ITEM_DEFS = {

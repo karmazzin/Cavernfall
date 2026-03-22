@@ -18,6 +18,8 @@
     FURNACE: 13,
     BLACKSTONE: 14,
     GOLD_ORE: 15,
+    PILLAR: 16,
+    LADDER: 17,
   };
 
   const BLOCK_COLORS = {
@@ -36,6 +38,8 @@
     [BLOCK.FURNACE]: '#666',
     [BLOCK.BLACKSTONE]: '#2f2f35',
     [BLOCK.GOLD_ORE]: '#9a8a60',
+    [BLOCK.PILLAR]: '#9b6b3f',
+    [BLOCK.LADDER]: '#c59a63',
   };
 
   const BREAK_TIME = {
@@ -49,6 +53,8 @@
     [BLOCK.COAL_ORE]: 4,
     [BLOCK.BLACKSTONE]: 5,
     [BLOCK.GOLD_ORE]: 4.6,
+    [BLOCK.PILLAR]: 1.2,
+    [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
     [BLOCK.FURNACE]: 4.5,
     [BLOCK.BEDROCK]: Infinity,
@@ -63,6 +69,7 @@
     BLOCK.WOOD,
     BLOCK.LEAF,
     BLOCK.PLANK,
+    BLOCK.PILLAR,
     BLOCK.BLACKSTONE,
     BLOCK.TORCH,
     BLOCK.FURNACE,

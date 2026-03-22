@@ -15,7 +15,9 @@
       id !== BLOCK.COBWEB &&
       id !== BLOCK.WOOD &&
       id !== BLOCK.LEAF &&
-      id !== BLOCK.TORCH
+      id !== BLOCK.TORCH &&
+      id !== BLOCK.PILLAR &&
+      id !== BLOCK.LADDER
     );
   }
 
@@ -43,7 +45,7 @@
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
     const surfaceY = state.surfaceAt[safeTx];
     const block = getBlock(state, tx, ty);
-    const airLike = block === BLOCK.AIR || block === BLOCK.COBWEB || block === BLOCK.TORCH || liquid(block);
+    const airLike = block === BLOCK.AIR || block === BLOCK.COBWEB || block === BLOCK.TORCH || block === BLOCK.PILLAR || block === BLOCK.LADDER || liquid(block);
     const inCave = ty >= surfaceY + 8 && airLike;
     return {
       biome: inCave ? 'cave' : state.biomeAt[safeTx],

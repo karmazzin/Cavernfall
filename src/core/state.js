@@ -22,6 +22,7 @@
       breath: BREATH_TOTAL,
       inWater: false,
       underwater: false,
+      onLadder: false,
       stepSoundTimer: 0,
       swimSoundTimer: 0,
       lavaSoundTimer: 0,
@@ -69,6 +70,9 @@
       ui: {
         controlMode: 'desktop',
         helpCollapsed: false,
+        fps: 0,
+        fpsFrames: 0,
+        fpsAccum: 0,
       },
     };
   }

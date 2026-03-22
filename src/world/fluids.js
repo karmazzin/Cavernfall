@@ -1,6 +1,6 @@
 (() => {
   const Game = window.MC2D;
-  const { WORLD_H, WORLD_W } = Game.constants;
+  const { TILE, WORLD_H, WORLD_W } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { getBlock, setBlock, liquid, blockSolid } = Game.world;
   const BURNABLE = new Set([BLOCK.WOOD, BLOCK.LEAF, BLOCK.PLANK]);
@@ -10,9 +10,7 @@
     for (const [dx, dy] of neighbors) {
       const nx = tx + dx;
       const ny = ty + dy;
-      if (BURNABLE.has(getBlock(state, nx, ny))) {
-        setBlock(state, nx, ny, BLOCK.AIR);
-      }
+      if (BURNABLE.has(getBlock(state, nx, ny))) setBlock(state, nx, ny, BLOCK.AIR);
     }
   }
 
@@ -33,14 +31,45 @@
     if (id === BLOCK.LAVA) igniteNeighbors(state, tx, ty);
   }
 
+  function canSpreadSideways(state, tx, ty, dx, id) {
+    const side = getBlock(state, tx + dx, ty);
+    const sideDown = getBlock(state, tx + dx, ty + 1);
+    const supportBelow = getBlock(state, tx, ty + 1);
+    const nextSupport = blockSolid(sideDown) || liquid(sideDown);
+    if (side !== BLOCK.AIR) return false;
+    if (!nextSupport) return false;
+
+    if (id === BLOCK.WATER) {
+      const sourceSupport = blockSolid(supportBelow) || liquid(supportBelow);
+      if (!sourceSupport) return false;
+    }
+
+    const sideUp = getBlock(state, tx + dx, ty - 1);
+    if (sideUp === BLOCK.AIR && sideDown === BLOCK.AIR) return false;
+    return true;
+  }
+
+  function addReactionPoint(points, x, y) {
+    if (x < 0 || x >= WORLD_W || y < 0 || y >= WORLD_H) return;
+    points.add(`${x},${y}`);
+  }
+
   function updateFluids(state) {
     const moves = [];
+    const reactionPoints = new Set();
+    const playerTx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const playerTy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    const minX = Math.max(1, playerTx - 56);
+    const maxX = Math.min(WORLD_W - 2, playerTx + 56);
+    const minY = Math.max(1, playerTy - 42);
+    const maxY = Math.min(WORLD_H - 2, playerTy + 42);
 
-    for (let ty = WORLD_H - 2; ty >= 0; ty -= 1) {
-      for (let tx = 0; tx < WORLD_W; tx += 1) {
+    for (let ty = maxY; ty >= minY; ty -= 1) {
+      for (let tx = minX; tx <= maxX; tx += 1) {
         const id = getBlock(state, tx, ty);
         if (!liquid(id)) continue;
 
+        addReactionPoint(reactionPoints, tx, ty);
         reactFluidsAt(state, tx, ty);
         if (getBlock(state, tx, ty) !== id) continue;
 
@@ -57,13 +86,13 @@
 
         const dirs = Math.random() < 0.5 ? [-1, 1] : [1, -1];
         for (const dx of dirs) {
-          const side = getBlock(state, tx + dx, ty);
-          const sideDown = getBlock(state, tx + dx, ty + 1);
-          if (side === BLOCK.AIR && (blockSolid(sideDown) || liquid(sideDown))) {
+          if (canSpreadSideways(state, tx, ty, dx, id)) {
             moves.push({ fromX: tx, fromY: ty, toX: tx + dx, toY: ty, id });
             break;
           }
 
+          const side = getBlock(state, tx + dx, ty);
+          const sideDown = getBlock(state, tx + dx, ty + 1);
           if ((id === BLOCK.WATER && (side === BLOCK.LAVA || sideDown === BLOCK.LAVA)) || (id === BLOCK.LAVA && (side === BLOCK.WATER || sideDown === BLOCK.WATER))) {
             moves.push({ stone: true, x: tx + dx, y: ty });
             break;
@@ -74,19 +103,25 @@
 
     for (const move of moves) {
       if (move.stone) {
-        if (move.x >= 0 && move.x < WORLD_W && move.y >= 0 && move.y < WORLD_H - 1) {
-          setBlock(state, move.x, move.y, BLOCK.STONE);
-        }
+        if (move.x >= 0 && move.x < WORLD_W && move.y >= 0 && move.y < WORLD_H - 1) setBlock(state, move.x, move.y, BLOCK.STONE);
+        addReactionPoint(reactionPoints, move.x, move.y);
         continue;
       }
 
       if (getBlock(state, move.fromX, move.fromY) === move.id && getBlock(state, move.toX, move.toY) === BLOCK.AIR) {
         setBlock(state, move.toX, move.toY, move.id);
+        addReactionPoint(reactionPoints, move.fromX, move.fromY);
+        addReactionPoint(reactionPoints, move.toX, move.toY);
+        addReactionPoint(reactionPoints, move.toX + 1, move.toY);
+        addReactionPoint(reactionPoints, move.toX - 1, move.toY);
+        addReactionPoint(reactionPoints, move.toX, move.toY + 1);
+        addReactionPoint(reactionPoints, move.toX, move.toY - 1);
       }
     }
 
-    for (let ty = 0; ty < WORLD_H; ty += 1) {
-      for (let tx = 0; tx < WORLD_W; tx += 1) reactFluidsAt(state, tx, ty);
+    for (const point of reactionPoints) {
+      const [tx, ty] = point.split(',').map(Number);
+      reactFluidsAt(state, tx, ty);
     }
   }
 

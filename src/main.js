@@ -129,6 +129,15 @@
 
   function update(dt) {
     document.body.classList.toggle('ui-overlay-hidden', !!(state.pause.open || (state.crafting && state.crafting.open)));
+
+    state.ui.fpsFrames += 1;
+    state.ui.fpsAccum += dt;
+    if (state.ui.fpsAccum >= 0.25) {
+      state.ui.fps = state.ui.fpsFrames / state.ui.fpsAccum;
+      state.ui.fpsFrames = 0;
+      state.ui.fpsAccum = 0;
+    }
+
     if (state.pause.open || state.gameOver) return;
 
     if (!state.crafting.open) state.cycleTime += dt;
@@ -169,7 +178,7 @@
 
   let last = performance.now();
   function loop(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
+    const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
 
     const camera = createCamera(state, canvas);

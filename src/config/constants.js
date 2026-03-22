@@ -3,7 +3,7 @@
 
   Game.constants = {
     TILE: 16,
-    WORLD_W: 520,
+    WORLD_W: 840,
     WORLD_H: 140,
     SURFACE_BASE: 28,
     GRAVITY: 1500,

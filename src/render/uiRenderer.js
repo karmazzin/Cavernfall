@@ -123,6 +123,18 @@
     ctx.fillStyle = '#ffb300';
     ctx.fillRect(panelX + 12, satietyBarY, barW * (state.player.satiety / 100), 10);
 
+    const fpsBoxW = mobile ? 54 : 60;
+    const fpsBoxH = mobile ? 22 : 24;
+    const fpsBoxX = panelX + panelW + 10;
+    const fpsBoxY = panelY;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(fpsBoxX, fpsBoxY, fpsBoxW, fpsBoxH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.strokeRect(fpsBoxX, fpsBoxY, fpsBoxW, fpsBoxH);
+    ctx.fillStyle = '#fff';
+    ctx.font = `${mobile ? 10 : 11}px Arial`;
+    ctx.fillText(`FPS ${Math.round(state.ui.fps || 0)}`, fpsBoxX + 8, fpsBoxY + (mobile ? 14 : 16));
+
     drawBreath(ctx, canvas, state);
     drawHotbar(ctx, canvas, state);
   }
