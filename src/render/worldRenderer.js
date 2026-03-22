@@ -17,6 +17,20 @@
       ctx.fillStyle = '#999';
       ctx.fillRect(x + 3, y + 3, 3, 3);
       ctx.fillRect(x + 10, y + 8, 2, 2);
+    } else if (id === BLOCK.COAL_ORE) {
+      ctx.fillStyle = '#8b8b8b';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#1e1e1e';
+      ctx.fillRect(x + 3, y + 4, 3, 3);
+      ctx.fillRect(x + 9, y + 3, 4, 4);
+      ctx.fillRect(x + 7, y + 10, 3, 3);
+    } else if (id === BLOCK.TORCH) {
+      ctx.fillStyle = '#6f4726';
+      ctx.fillRect(x + 7, y + 6, 2, 8);
+      ctx.fillStyle = '#ffb347';
+      ctx.fillRect(x + 5, y + 3, 6, 4);
+      ctx.fillStyle = 'rgba(255,230,120,0.35)';
+      ctx.fillRect(x + 4, y + 2, 8, 5);
     } else if (id === BLOCK.WATER) {
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.fillRect(x, y + 2, TILE, 2);
@@ -46,6 +60,16 @@
     } else if (id === BLOCK.LEAF) {
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.fillRect(x + 3, y + 3, 3, 3);
+    } else if (id === BLOCK.FURNACE) {
+      ctx.fillStyle = '#5e5e5e';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(x + 2, y + 2, TILE - 4, 3);
+      ctx.strokeStyle = '#2e2e2e';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 3, y + 7, TILE - 6, 6);
+      ctx.fillStyle = '#2d2d2d';
+      ctx.fillRect(x + 5, y + 9, TILE - 10, 2);
     }
   }
 

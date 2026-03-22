@@ -6,6 +6,8 @@
   const ITEM = {
     STICK: 'stick',
     RAW_MUTTON: 'raw_mutton',
+    COAL: 'coal',
+    CHARCOAL: 'charcoal',
     WOODEN_PICKAXE: 'wooden_pickaxe',
     WOODEN_AXE: 'wooden_axe',
     WOODEN_SHOVEL: 'wooden_shovel',
@@ -27,11 +29,16 @@
     [BLOCK.BEDROCK]: 'Бедрок',
     [BLOCK.PLANK]: 'Доски',
     [BLOCK.COBWEB]: 'Паутина',
+    [BLOCK.COAL_ORE]: 'Угольная руда',
+    [BLOCK.TORCH]: 'Факел',
+    [BLOCK.FURNACE]: 'Печка',
   };
 
   const ITEM_DEFS = {
     [ITEM.STICK]: { id: ITEM.STICK, label: 'Палка', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.RAW_MUTTON]: { id: ITEM.RAW_MUTTON, label: 'Сырая баранина', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 20 },
+    [ITEM.COAL]: { id: ITEM.COAL, label: 'Уголь', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.CHARCOAL]: { id: ITEM.CHARCOAL, label: 'Древесный уголь', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WOODEN_PICKAXE]: {
       id: ITEM.WOODEN_PICKAXE,
       label: 'Деревянная кирка',

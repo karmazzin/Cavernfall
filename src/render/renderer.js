@@ -10,13 +10,71 @@
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
+  const { getLightSourcesInView } = Game.furnaceSystem;
+
+  let darknessMaskCanvas = null;
+  let darknessMaskCtx = null;
+
+  function ensureDarknessMask(canvas) {
+    if (!darknessMaskCanvas) {
+      darknessMaskCanvas = document.createElement('canvas');
+      darknessMaskCtx = darknessMaskCanvas.getContext('2d');
+    }
+    if (darknessMaskCanvas.width !== canvas.width || darknessMaskCanvas.height !== canvas.height) {
+      darknessMaskCanvas.width = canvas.width;
+      darknessMaskCanvas.height = canvas.height;
+    }
+    return darknessMaskCtx;
+  }
+
+  function applyLight(ctx, x, y, innerRadius, radius, strength = 1) {
+    const safeStrength = clamp(strength, 0.35, 1.2);
+    const light = ctx.createRadialGradient(x, y, innerRadius, x, y, radius);
+    light.addColorStop(0, `rgba(0,0,0,${0.98 * safeStrength})`);
+    light.addColorStop(0.35, `rgba(0,0,0,${0.68 * safeStrength})`);
+    light.addColorStop(0.72, `rgba(0,0,0,${0.22 * safeStrength})`);
+    light.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawDarknessMask(ctx, canvas, state, camera, location, darkness) {
+    const maskCtx = ensureDarknessMask(canvas);
+    maskCtx.clearRect(0, 0, canvas.width, canvas.height);
+    maskCtx.globalCompositeOperation = 'source-over';
+    maskCtx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
+    maskCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const lightX = state.player.x - camera.x + state.player.w / 2;
+    const lightY = state.player.y - camera.y + state.player.h / 2;
+    const heldItem = state.player.hotbar[state.player.selectedSlot];
+    const holdingTorch = heldItem && heldItem.id === BLOCK.TORCH;
+    const baseRadius = location.inCave ? 205 : 255;
+    const baseStrength = location.inCave ? 0.78 : 0.62;
+    const heldTorchRadius = holdingTorch ? (location.inCave ? 310 : 350) : 0;
+    const heldTorchStrength = location.inCave ? 1 : 0.92;
+    const worldLights = getLightSourcesInView(state, camera, canvas);
+
+    maskCtx.save();
+    maskCtx.globalCompositeOperation = 'destination-out';
+    applyLight(maskCtx, lightX, lightY, 28, baseRadius, baseStrength);
+    if (heldTorchRadius > 0) applyLight(maskCtx, lightX, lightY, 38, heldTorchRadius, heldTorchStrength);
+    for (const light of worldLights) {
+      applyLight(maskCtx, light.x, light.y, light.inner, light.radius, light.strength || 1);
+    }
+    maskCtx.restore();
+
+    ctx.drawImage(darknessMaskCanvas, 0, 0);
+  }
 
   function draw(ctx, canvas, state, camera, input) {
     const phase = phaseInfo(state);
     const playerTileX = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const playerTileY = Math.floor((state.player.y + state.player.h / 2) / TILE);
     const location = getLocationInfo(state, playerTileX, playerTileY);
-    const caveDarkness = location.inCave ? 0.82 : 0;
+    const caveDarkness = location.inCave ? 0.72 : 0;
     const darkness = Math.max(phase.darkness, caveDarkness);
     const skyTop = phase.phase === 'night'
       ? '#08111f'
@@ -104,21 +162,7 @@
     ctx.fillRect(state.player.x - camera.x + 1, state.player.y - camera.y, 10, 8);
 
     if (darkness > 0) {
-      ctx.fillStyle = `rgba(0, 0, 30, ${darkness})`;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const lightX = state.player.x - camera.x + state.player.w / 2;
-      const lightY = state.player.y - camera.y + state.player.h / 2;
-      const lightRadius = location.inCave ? 130 : 180;
-      const light = ctx.createRadialGradient(lightX, lightY, 20, lightX, lightY, lightRadius);
-      light.addColorStop(0, 'rgba(0,0,0,0)');
-      light.addColorStop(1, `rgba(0,0,0,${darkness})`);
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = light;
-      ctx.beginPath();
-      ctx.arc(lightX, lightY, lightRadius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      drawDarknessMask(ctx, canvas, state, camera, location, darkness);
     }
 
     if (state.attackFlash > 0) {

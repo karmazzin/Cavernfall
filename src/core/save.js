@@ -17,6 +17,22 @@
     return result;
   }
 
+  function normalizeFurnaces(furnaces) {
+    const result = {};
+    if (!furnaces || typeof furnaces !== 'object') return result;
+    for (const [key, furnace] of Object.entries(furnaces)) {
+      result[key] = {
+        input: normalizeSlotArray([furnace.input], 1)[0],
+        fuel: normalizeSlotArray([furnace.fuel], 1)[0],
+        output: normalizeSlotArray([furnace.output], 1)[0],
+        progress: Number.isFinite(furnace.progress) ? furnace.progress : 0,
+        burnTime: Number.isFinite(furnace.burnTime) ? furnace.burnTime : 0,
+        burnTotal: Number.isFinite(furnace.burnTotal) ? furnace.burnTotal : 0,
+      };
+    }
+    return result;
+  }
+
   function snapshotState(state) {
     return {
       world: state.world,
@@ -26,6 +42,7 @@
       zombies: state.zombies,
       spiders: state.spiders,
       foods: state.foods,
+      furnaces: state.furnaces,
       player: state.player,
       gameOver: state.gameOver,
       cycleTime: state.cycleTime,
@@ -64,6 +81,7 @@
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
       state.foods = Array.isArray(data.foods) ? data.foods : state.foods;
+      state.furnaces = normalizeFurnaces(data.furnaces);
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;

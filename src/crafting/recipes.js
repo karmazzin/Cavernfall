@@ -18,6 +18,31 @@
       result: { id: ITEM.STICK, count: 4 },
     },
     {
+      name: 'Факел',
+      pattern: [
+        [null, ITEM.COAL, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: BLOCK.TORCH, count: 4 },
+    },
+    {
+      name: 'Факел',
+      pattern: [
+        [null, ITEM.CHARCOAL, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: BLOCK.TORCH, count: 4 },
+    },
+    {
+      name: 'Печка',
+      pattern: [
+        [BLOCK.STONE, BLOCK.STONE, BLOCK.STONE],
+        [BLOCK.STONE, ITEM.COAL, BLOCK.STONE],
+        [BLOCK.STONE, BLOCK.STONE, BLOCK.STONE],
+      ],
+      result: { id: BLOCK.FURNACE, count: 1 },
+    },
+    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],

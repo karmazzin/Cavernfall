@@ -15,7 +15,13 @@
   } = Game.inventory;
   const { getBreakTime, getAttackDamage } = Game.tools;
   const { spawnFood, ANIMAL_STATE, setWalk } = Game.animalsEntity;
+  const { ensureFurnaceAt, removeFurnaceAt } = Game.furnaceSystem;
   const audio = Game.audio;
+
+  function getBlockDrop(blockId) {
+    if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
+    return { id: blockId, count: 1 };
+  }
 
   function useSelectedTool(state, amount = 1) {
     const slot = selectedToolSlot(state);
@@ -137,7 +143,10 @@
         const id = selectedPlaceableId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
           const used = consumeSelectedPlaceable(state);
-          if (used) setBlock(state, tx, ty, used);
+          if (used) {
+            setBlock(state, tx, ty, used);
+            if (used === BLOCK.FURNACE) ensureFurnaceAt(state, tx, ty);
+          }
         }
       }
       state.breaking = null;
@@ -158,7 +167,16 @@
     state.breaking.progress += dt;
     if (state.breaking.progress >= state.breaking.need) {
       audio.playDig();
-      addToInventory(state, block);
+      const drop = getBlockDrop(block);
+      addToInventory(state, drop.id, drop.count);
+      if (block === BLOCK.FURNACE) {
+        const furnace = removeFurnaceAt(state, tx, ty);
+        if (furnace) {
+          for (const slot of [furnace.input, furnace.fuel, furnace.output]) {
+            if (slot && slot.id != null && slot.count > 0) addToInventory(state, slot.id, slot.count, slot.durability ?? null);
+          }
+        }
+      }
       setBlock(state, tx, ty, BLOCK.AIR);
       useSelectedTool(state);
       state.breaking = null;

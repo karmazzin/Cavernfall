@@ -12,6 +12,7 @@
     addItemStackToSlots,
   } = Game.inventory;
   const { findMatchingRecipe } = Game.craftingRecipes;
+  const { getNearestFurnace } = Game.furnaceSystem;
 
   function ensureCraftingState(state) {
     if (state.crafting) return state.crafting;
@@ -72,9 +73,9 @@
     const slot = 48;
     const gap = 8;
     const panel = {
-      w: 1020,
+      w: 1120,
       h: 560,
-      x: Math.floor((canvas.width - 1020) / 2),
+      x: Math.floor((canvas.width - 1120) / 2),
       y: Math.floor((canvas.height - 560) / 2),
     };
 
@@ -112,8 +113,14 @@
       recipes: {
         x: panel.x + 560,
         y: panel.y + 76,
-        w: 426,
+        w: 250,
         h: 452,
+      },
+      furnace: {
+        panel: slotRect(panel.x + 828, panel.y + 76, 260, 236),
+        input: slotRect(panel.x + 852, panel.y + 136, 48),
+        fuel: slotRect(panel.x + 852, panel.y + 212, 48),
+        output: slotRect(panel.x + 1008, panel.y + 174, 56),
       },
     };
   }
@@ -229,12 +236,35 @@
     updateCraftingResult(state);
   }
 
+  function handleOutputOnlyClick(crafting, slot, button) {
+    const cursor = crafting.cursor;
+    if (button === 2) {
+      if (isSlotEmpty(cursor) && !isSlotEmpty(slot)) takeHalf(slot, cursor);
+      return;
+    }
+
+    if (isSlotEmpty(cursor)) {
+      if (!isSlotEmpty(slot)) {
+        copySlot(cursor, slot);
+        clearSlot(slot);
+      }
+      return;
+    }
+
+    if (canMergeInto(cursor, slot) && cursor.count + slot.count <= getItemStackLimit(cursor.id)) {
+      cursor.count += slot.count;
+      clearSlot(slot);
+      normalizeSlot(cursor);
+    }
+  }
+
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
     if (!crafting.open || !input.mouse.justPressed) return false;
 
     const layout = getCraftingLayout(canvas);
     const { x, y, button } = input.mouse;
+    const activeFurnace = getNearestFurnace(state, 5);
 
     for (let i = 0; i < layout.grid.length; i += 1) {
       if (contains(layout.grid[i], x, y)) {
@@ -267,6 +297,25 @@
       handleResultClick(state);
       input.mouse.justPressed = false;
       return true;
+    }
+
+    if (activeFurnace) {
+      const furnace = activeFurnace.furnace;
+      if (contains(layout.furnace.input, x, y)) {
+        handleSlotClick(crafting, furnace.input, button);
+        input.mouse.justPressed = false;
+        return true;
+      }
+      if (contains(layout.furnace.fuel, x, y)) {
+        handleSlotClick(crafting, furnace.fuel, button);
+        input.mouse.justPressed = false;
+        return true;
+      }
+      if (contains(layout.furnace.output, x, y)) {
+        handleOutputOnlyClick(crafting, furnace.output, button);
+        input.mouse.justPressed = false;
+        return true;
+      }
     }
 
     input.mouse.justPressed = false;

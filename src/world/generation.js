@@ -57,6 +57,33 @@
     }
   }
 
+  function generateCoalOre(state) {
+    const veinCount = Math.floor(rand(90, 150));
+    for (let i = 0; i < veinCount; i += 1) {
+      const tx = Math.floor(rand(8, WORLD_W - 9));
+      const ty = Math.floor(rand(34, WORLD_H - 14));
+
+      if (getBlock(state, tx, ty) !== BLOCK.STONE) continue;
+
+      const nearCave =
+        getBlock(state, tx + 1, ty) === BLOCK.AIR ||
+        getBlock(state, tx - 1, ty) === BLOCK.AIR ||
+        getBlock(state, tx, ty + 1) === BLOCK.AIR ||
+        getBlock(state, tx, ty - 1) === BLOCK.AIR;
+
+      if (!nearCave && Math.random() < 0.75) continue;
+
+      const veinSize = Math.floor(rand(4, 9));
+      let x = tx;
+      let y = ty;
+      for (let j = 0; j < veinSize; j += 1) {
+        if (getBlock(state, x, y) === BLOCK.STONE) setBlock(state, x, y, BLOCK.COAL_ORE);
+        x = clamp(x + Math.floor(rand(-1, 2)), 4, WORLD_W - 5);
+        y = clamp(y + Math.floor(rand(-1, 2)), 20, WORLD_H - 6);
+      }
+    }
+  }
+
   function addSpider(state, tx, ty) {
     state.spiders.push({
       x: tx * TILE + 1,
@@ -225,6 +252,7 @@
     }
 
     carveConnectedCaves(state);
+    generateCoalOre(state);
 
     for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
       const biome = state.biomeAt[tx];

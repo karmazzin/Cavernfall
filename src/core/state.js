@@ -38,6 +38,7 @@
       zombies: [],
       spiders: [],
       foods: [],
+      furnaces: {},
       player: createPlayer(),
       gameOver: false,
       cycleTime: 0,

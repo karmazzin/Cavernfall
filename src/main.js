@@ -8,6 +8,7 @@
   const { updateZombies } = Game.zombiesEntity;
   const { updateSpiders } = Game.spidersEntity;
   const { updateFood } = Game.foodEntity;
+  const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood } = Game.inventory;
@@ -134,6 +135,7 @@
     updateZombies(state, dt);
     updateSpiders(state, dt);
     updateFood(state, dt);
+    updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
 

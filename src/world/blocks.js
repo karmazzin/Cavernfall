@@ -13,6 +13,9 @@
     BEDROCK: 8,
     PLANK: 9,
     COBWEB: 10,
+    COAL_ORE: 11,
+    TORCH: 12,
+    FURNACE: 13,
   };
 
   const BLOCK_COLORS = {
@@ -26,6 +29,9 @@
     [BLOCK.BEDROCK]: '#222',
     [BLOCK.PLANK]: '#b8824d',
     [BLOCK.COBWEB]: '#d8dde5',
+    [BLOCK.COAL_ORE]: '#727272',
+    [BLOCK.TORCH]: '#7b4f28',
+    [BLOCK.FURNACE]: '#666',
   };
 
   const BREAK_TIME = {
@@ -36,12 +42,24 @@
     [BLOCK.LEAF]: 1,
     [BLOCK.COBWEB]: 0.7,
     [BLOCK.STONE]: 4,
+    [BLOCK.COAL_ORE]: 4,
+    [BLOCK.TORCH]: 0.2,
+    [BLOCK.FURNACE]: 4.5,
     [BLOCK.BEDROCK]: Infinity,
     [BLOCK.WATER]: Infinity,
     [BLOCK.LAVA]: Infinity,
   };
 
-  const PLACEABLE = new Set([BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.WOOD, BLOCK.LEAF, BLOCK.PLANK]);
+  const PLACEABLE = new Set([
+    BLOCK.GRASS,
+    BLOCK.DIRT,
+    BLOCK.STONE,
+    BLOCK.WOOD,
+    BLOCK.LEAF,
+    BLOCK.PLANK,
+    BLOCK.TORCH,
+    BLOCK.FURNACE,
+  ]);
 
   Game.blocks = { BLOCK, BLOCK_COLORS, BREAK_TIME, PLACEABLE };
 })();

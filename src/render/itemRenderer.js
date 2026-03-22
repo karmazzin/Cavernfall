@@ -25,6 +25,36 @@
       return;
     }
 
+    if (itemId === ITEM.COAL) {
+      ctx.fillStyle = '#202020';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.28, y + size * 0.62);
+      ctx.lineTo(x + size * 0.36, y + size * 0.24);
+      ctx.lineTo(x + size * 0.62, y + size * 0.18);
+      ctx.lineTo(x + size * 0.74, y + size * 0.42);
+      ctx.lineTo(x + size * 0.54, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(x + size * 0.48, y + size * 0.28, size * 0.08, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.CHARCOAL) {
+      ctx.fillStyle = '#2c241d';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.26, y + size * 0.64);
+      ctx.lineTo(x + size * 0.34, y + size * 0.26);
+      ctx.lineTo(x + size * 0.60, y + size * 0.20);
+      ctx.lineTo(x + size * 0.72, y + size * 0.44);
+      ctx.lineTo(x + size * 0.52, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,220,180,0.12)';
+      ctx.fillRect(x + size * 0.47, y + size * 0.30, size * 0.08, size * 0.12);
+      return;
+    }
+
     if (itemId === ITEM.RAW_MUTTON) {
       ctx.fillStyle = '#cf6f7e';
       ctx.beginPath();
