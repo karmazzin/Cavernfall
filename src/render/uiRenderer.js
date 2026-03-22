@@ -68,7 +68,17 @@
     const tx = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const ty = Math.floor((state.player.y + state.player.h / 2) / TILE);
     const biomeKey = getLocationInfo(state, tx, ty).biome;
-    const biome = biomeKey === 'forest' ? 'Лес' : biomeKey === 'lake' ? 'Озеро' : biomeKey === 'cave' ? 'Пещера' : 'Равнина';
+    const biome = biomeKey === 'forest'
+      ? 'Лес'
+      : biomeKey === 'lake'
+        ? 'Озеро'
+        : biomeKey === 'cave'
+          ? 'Пещера'
+          : biomeKey === 'mountains'
+            ? 'Горы'
+            : biomeKey === 'volcano'
+              ? 'Вулкан'
+              : 'Равнина';
     ctx.fillText(`Биом: ${biome}`, 160, 36);
     ctx.fillText(`Фаза: ${phase.phase === 'day' ? 'День' : phase.phase === 'night' ? 'Ночь' : phase.phase === 'sunset' ? 'Закат' : 'Рассвет'}`, 160, 58);
     ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, 160, 80);

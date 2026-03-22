@@ -46,7 +46,9 @@
     const networkCount = Math.floor(rand(18, 28));
     for (let i = 0; i < networkCount; i += 1) {
       const tx = Math.floor(rand(8, WORLD_W - 9));
-      const ty = Math.max(34, state.surfaceAt[tx] + Math.floor(rand(10, 22)));
+      const biome = state.biomeAt[tx];
+      const extraDepth = biome === 'mountains' ? rand(8, 18) : biome === 'volcano' ? rand(10, 22) : rand(10, 22);
+      const ty = Math.max(34, state.surfaceAt[tx] + Math.floor(extraDepth));
       carveTunnel(state, tx, ty, Math.floor(rand(24, 52)), Math.floor(rand(2, 4)));
     }
 
@@ -58,12 +60,14 @@
   }
 
   function generateCoalOre(state) {
-    const veinCount = Math.floor(rand(90, 150));
+    const veinCount = Math.floor(rand(110, 180));
     for (let i = 0; i < veinCount; i += 1) {
       const tx = Math.floor(rand(8, WORLD_W - 9));
-      const ty = Math.floor(rand(34, WORLD_H - 14));
+      const ty = Math.floor(rand(20, WORLD_H - 14));
+      const biome = state.biomeAt[tx];
+      const hostBlock = biome === 'volcano' ? BLOCK.BLACKSTONE : BLOCK.STONE;
 
-      if (getBlock(state, tx, ty) !== BLOCK.STONE) continue;
+      if (getBlock(state, tx, ty) !== hostBlock) continue;
 
       const nearCave =
         getBlock(state, tx + 1, ty) === BLOCK.AIR ||
@@ -71,15 +75,16 @@
         getBlock(state, tx, ty + 1) === BLOCK.AIR ||
         getBlock(state, tx, ty - 1) === BLOCK.AIR;
 
-      if (!nearCave && Math.random() < 0.75) continue;
+      const richBiome = biome === 'mountains' || biome === 'volcano';
+      if (!nearCave && Math.random() < (richBiome ? 0.35 : 0.72)) continue;
 
-      const veinSize = Math.floor(rand(4, 9));
+      const veinSize = Math.floor(rand(richBiome ? 5 : 4, richBiome ? 11 : 9));
       let x = tx;
       let y = ty;
       for (let j = 0; j < veinSize; j += 1) {
-        if (getBlock(state, x, y) === BLOCK.STONE) setBlock(state, x, y, BLOCK.COAL_ORE);
+        if (getBlock(state, x, y) === hostBlock) setBlock(state, x, y, BLOCK.COAL_ORE);
         x = clamp(x + Math.floor(rand(-1, 2)), 4, WORLD_W - 5);
-        y = clamp(y + Math.floor(rand(-1, 2)), 20, WORLD_H - 6);
+        y = clamp(y + Math.floor(rand(-1, 2)), 12, WORLD_H - 6);
       }
     }
   }
@@ -109,9 +114,7 @@
     for (let tx = startX; tx <= endX; tx += 1) {
       setBlock(state, tx, ceilingY, BLOCK.PLANK);
       setBlock(state, tx, floorY, BLOCK.PLANK);
-      for (let ty = ceilingY + 1; ty <= floorY - 1; ty += 1) {
-        setBlock(state, tx, ty, BLOCK.AIR);
-      }
+      for (let ty = ceilingY + 1; ty <= floorY - 1; ty += 1) setBlock(state, tx, ty, BLOCK.AIR);
 
       if (tx % 7 === 0) {
         setBlock(state, tx, ceilingY + 1, BLOCK.COBWEB);
@@ -121,9 +124,7 @@
       }
     }
 
-    for (let tx = startX + 3; tx <= endX - 3; tx += 6) {
-      addSpider(state, tx, ceilingY + 3);
-    }
+    for (let tx = startX + 3; tx <= endX - 3; tx += 6) addSpider(state, tx, ceilingY + 3);
   }
 
   function generateMineshafts(state) {
@@ -131,20 +132,22 @@
     let attempts = 0;
     let built = 0;
 
-    while (attempts < 160 && built < shaftCount) {
+    while (attempts < 180 && built < shaftCount) {
       attempts += 1;
       const length = Math.floor(rand(18, 42));
       const startX = Math.floor(rand(10, WORLD_W - length - 10));
       const sampleX = startX + Math.floor(length / 2);
+      const biome = state.biomeAt[sampleX];
+      if (biome === 'volcano') continue;
+
       const topY = Math.max(state.surfaceAt[sampleX] + 11, Math.floor(rand(42, WORLD_H - 22)));
       const midY = topY + 2;
-
       if (midY >= WORLD_H - 8) continue;
       if (getBlock(state, sampleX, midY) !== BLOCK.AIR) continue;
 
       let underground = true;
       for (let tx = startX; tx < startX + length; tx += 4) {
-        if (topY <= state.surfaceAt[tx] + 8) {
+        if (state.biomeAt[tx] === 'volcano' || topY <= state.surfaceAt[tx] + 8) {
           underground = false;
           break;
         }
@@ -157,18 +160,30 @@
   }
 
   function carveSurfaceBasin(state, options) {
-    const center = Math.floor(rand(options.minX, options.maxX));
+    const allowedCenters = [];
+    for (let tx = options.minX; tx <= options.maxX; tx += 1) {
+      const biome = state.biomeAt[tx];
+      if (biome === 'plains' || biome === 'forest') allowedCenters.push(tx);
+    }
+    if (allowedCenters.length === 0) return null;
+
+    const center = allowedCenters[Math.floor(rand(0, allowedCenters.length))];
     const radius = Math.floor(rand(options.minRadius, options.maxRadius));
     const depth = Math.floor(rand(options.minDepth, options.maxDepth));
     const x0 = clamp(center - radius, 3, WORLD_W - 4);
     const x1 = clamp(center + radius, 3, WORLD_W - 4);
-    const original = state.surfaceAt.slice(x0, x1 + 1);
 
+    for (let tx = x0; tx <= x1; tx += 1) {
+      const biome = state.biomeAt[tx];
+      if (biome !== 'plains' && biome !== 'forest') return null;
+    }
+
+    const original = state.surfaceAt.slice(x0, x1 + 1);
     for (let tx = x0; tx <= x1; tx += 1) {
       const edgeDistance = Math.abs(tx - center) / Math.max(1, radius);
       const curve = 1 - edgeDistance * edgeDistance;
       const carve = Math.max(0, Math.round(depth * curve));
-      state.surfaceAt[tx] = clamp(state.surfaceAt[tx] + carve, 20, 42);
+      state.surfaceAt[tx] = clamp(state.surfaceAt[tx] + carve, 18, 42);
     }
 
     const liquidTop = Math.min(...original) + 1;
@@ -178,41 +193,196 @@
     }
 
     if (filledColumns.length < 3) return null;
-
     return { type: options.type, x0, x1, liquidTop, filledColumns };
   }
 
   function fillSurfaceBasin(state, basin) {
     const fluidId = basin.type === 'water' ? BLOCK.WATER : BLOCK.LAVA;
     for (const tx of basin.filledColumns) {
-      for (let ty = basin.liquidTop; ty < state.surfaceAt[tx]; ty += 1) {
-        setBlock(state, tx, ty, fluidId);
-      }
+      for (let ty = basin.liquidTop; ty < state.surfaceAt[tx]; ty += 1) setBlock(state, tx, ty, fluidId);
       if (basin.type === 'water') state.biomeAt[tx] = 'lake';
     }
+  }
+
+  function generateBiomeBands(state) {
+    const volcanoSegments = [];
+    let x = 0;
+    let lastBiome = 'plains';
+
+    while (x < WORLD_W) {
+      let biome;
+      const mountainChance = lastBiome === 'mountains' ? 0.12 : 0.2;
+      if (Math.random() < mountainChance) biome = 'mountains';
+      else biome = Math.random() < 0.4 ? 'forest' : 'plains';
+
+      let segLen = Math.floor(rand(48, 116));
+      if (biome === 'mountains') segLen = Math.floor(rand(34, 76));
+
+      const segmentStart = x;
+      const segmentEnd = Math.min(WORLD_W - 1, x + segLen - 1);
+      const center = (segmentStart + segmentEnd) / 2;
+      const half = Math.max(1, (segmentEnd - segmentStart) / 2);
+      const peakLift = biome === 'mountains' ? rand(10, 18) : rand(0, 3);
+
+      for (; x <= segmentEnd; x += 1) {
+        const t = Math.abs((x - center) / half);
+        const ridge = biome === 'mountains' ? Math.pow(Math.max(0, 1 - t), 0.55) : 0;
+        const target = biome === 'mountains'
+          ? SURFACE_BASE - peakLift * ridge + rand(-1.2, 1.2)
+          : SURFACE_BASE + rand(-2.2, 2.2);
+        const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
+        const maxStep = biome === 'mountains' ? 2.6 : 1.3;
+        state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 38));
+        state.biomeAt[x] = biome;
+      }
+
+      if (biome === 'mountains' && Math.random() < 0.42) {
+        const volcanoLen = Math.min(WORLD_W - x, Math.floor(rand(20, 42)));
+        if (volcanoLen >= 16) {
+          const volcanoStart = x;
+          const volcanoEnd = Math.min(WORLD_W - 1, x + volcanoLen - 1);
+          const volcanoCenter = (volcanoStart + volcanoEnd) / 2;
+          const volcanoHalf = Math.max(1, (volcanoEnd - volcanoStart) / 2);
+          const volcanoLift = rand(14, 22);
+
+          for (; x <= volcanoEnd; x += 1) {
+            const t = Math.abs((x - volcanoCenter) / volcanoHalf);
+            const ridge = Math.pow(Math.max(0, 1 - t), 0.42);
+            const target = SURFACE_BASE - volcanoLift * ridge + rand(-0.8, 0.8);
+            const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
+            state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -2.4, 2.4), 6, 24));
+            state.biomeAt[x] = 'volcano';
+          }
+
+          volcanoSegments.push({ start: volcanoStart, end: volcanoEnd, center: Math.round(volcanoCenter) });
+        }
+      }
+
+      lastBiome = biome;
+    }
+
+    return volcanoSegments;
+  }
+
+  function shapeVolcanoes(state, volcanoSegments) {
+    for (const segment of volcanoSegments) {
+      const radius = Math.max(8, Math.floor((segment.end - segment.start) / 2));
+      for (let tx = segment.start; tx <= segment.end; tx += 1) {
+        const edge = Math.abs(tx - segment.center) / radius;
+        const cone = Math.max(0, 1 - edge * edge);
+        const lift = Math.round(6 * cone + 3 * Math.sqrt(cone));
+        state.surfaceAt[tx] = Math.max(5, state.surfaceAt[tx] - lift);
+      }
+
+      const craterHalf = Math.max(3, Math.floor(radius * 0.28));
+      for (let tx = segment.center - craterHalf; tx <= segment.center + craterHalf; tx += 1) {
+        if (tx < segment.start || tx > segment.end) continue;
+        const depth = craterHalf - Math.abs(tx - segment.center) + 2;
+        state.surfaceAt[tx] = clamp(state.surfaceAt[tx] + depth, 6, 26);
+      }
+    }
+  }
+
+  function fillTerrain(state) {
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      const s = state.surfaceAt[tx];
+      const biome = state.biomeAt[tx];
+      for (let ty = s; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          state.world[ty][tx] = BLOCK.BEDROCK;
+        } else if (biome === 'mountains') {
+          state.world[ty][tx] = BLOCK.STONE;
+        } else if (biome === 'volcano') {
+          state.world[ty][tx] = BLOCK.BLACKSTONE;
+        } else if (ty === s) {
+          state.world[ty][tx] = BLOCK.GRASS;
+        } else if (ty < s + 4) {
+          state.world[ty][tx] = BLOCK.DIRT;
+        } else {
+          state.world[ty][tx] = BLOCK.STONE;
+        }
+      }
+    }
+  }
+
+  function carveVolcanoCore(state, segment) {
+    const center = segment.center;
+    const mouthWidth = Math.max(4, Math.floor((segment.end - segment.start) * 0.16));
+    const topY = state.surfaceAt[center] + 1;
+    const bottomY = clamp(topY + Math.floor(rand(30, 44)), topY + 18, WORLD_H - 8);
+
+    for (let ty = topY; ty <= bottomY; ty += 1) {
+      const progress = (ty - topY) / Math.max(1, bottomY - topY);
+      const width = Math.round(mouthWidth + progress * 3 + Math.sin(progress * Math.PI) * 4);
+      for (let tx = center - width; tx <= center + width; tx += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2) continue;
+        setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+
+    const lavaTop = bottomY - Math.floor(rand(8, 14));
+    for (let ty = lavaTop; ty <= bottomY; ty += 1) {
+      const progress = (ty - topY) / Math.max(1, bottomY - topY);
+      const width = Math.round(mouthWidth + progress * 3 + Math.sin(progress * Math.PI) * 4) - 1;
+      for (let tx = center - width; tx <= center + width; tx += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2) continue;
+        setBlock(state, tx, ty, BLOCK.LAVA);
+      }
+    }
+
+    for (let tx = segment.start; tx <= segment.end; tx += 1) {
+      if (Math.abs(tx - center) < mouthWidth + 1) continue;
+      if (Math.random() < 0.08) {
+        const pocketY = clamp(state.surfaceAt[tx] + Math.floor(rand(2, 7)), 8, WORLD_H - 10);
+        carveCircle(state, tx, pocketY, Math.floor(rand(1, 3)), BLOCK.LAVA);
+      }
+    }
+  }
+
+  function plantTrees(state, surfaceFluidColumns) {
+    for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
+      const biome = state.biomeAt[tx];
+      if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || surfaceFluidColumns.has(tx)) continue;
+      const treeChance = biome === 'forest' ? 0.11 : 0.025;
+      if (Math.random() >= treeChance) continue;
+
+      const s = state.surfaceAt[tx];
+      if (getBlock(state, tx, s) !== BLOCK.GRASS || getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
+
+      const height = Math.floor(rand(3, 6));
+      for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
+      const topY = s - height;
+      for (let yy = -2; yy <= 1; yy += 1) {
+        for (let xx = -2; xx <= 2; xx += 1) {
+          if (Math.abs(xx) + Math.abs(yy) < 4 && getBlock(state, tx + xx, topY + yy) === BLOCK.AIR) {
+            setBlock(state, tx + xx, topY + yy, BLOCK.LEAF);
+          }
+        }
+      }
+    }
+  }
+
+  function chooseSpawnColumn(state, blockedColumns) {
+    for (let tx = 20; tx < WORLD_W - 5; tx += 1) {
+      const biome = state.biomeAt[tx];
+      if (blockedColumns.has(tx)) continue;
+      if (biome === 'mountains' || biome === 'volcano') continue;
+      if (getBlock(state, tx, state.surfaceAt[tx]) !== BLOCK.GRASS) continue;
+      return tx;
+    }
+    return 20;
   }
 
   function generateWorld(state) {
     const basins = [];
     const surfaceFluidColumns = new Set();
     state.spiders.length = 0;
-    let x = 0;
-    let surface = SURFACE_BASE;
 
-    while (x < WORLD_W) {
-      const biome = Math.random() < 0.5 ? 'plains' : 'forest';
-      const segLen = Math.floor(rand(60, 121));
+    const volcanoSegments = generateBiomeBands(state);
+    shapeVolcanoes(state, volcanoSegments);
 
-      for (let i = 0; i < segLen && x < WORLD_W; i += 1, x += 1) {
-        state.biomeAt[x] = biome;
-        surface += Math.floor(rand(-1, 2));
-        surface = clamp(surface, 20, 38);
-        state.surfaceAt[x] = surface;
-      }
-    }
-
-    const waterBasinCount = Math.floor(rand(6, 11));
-    const lavaBasinCount = Math.floor(rand(3, 6));
+    const waterBasinCount = Math.floor(rand(5, 9));
+    const lavaBasinCount = Math.floor(rand(2, 4));
     for (let i = 0; i < waterBasinCount; i += 1) {
       const basin = carveSurfaceBasin(state, {
         type: 'water',
@@ -241,47 +411,17 @@
       for (const tx of basin.filledColumns) surfaceFluidColumns.add(tx);
     }
 
-    for (let tx = 0; tx < WORLD_W; tx += 1) {
-      const s = state.surfaceAt[tx];
-      for (let ty = s; ty < WORLD_H; ty += 1) {
-        if (ty === s) state.world[ty][tx] = BLOCK.GRASS;
-        else if (ty < s + 4) state.world[ty][tx] = BLOCK.DIRT;
-        else if (ty === WORLD_H - 1) state.world[ty][tx] = BLOCK.BEDROCK;
-        else state.world[ty][tx] = BLOCK.STONE;
-      }
-    }
-
+    fillTerrain(state);
     carveConnectedCaves(state);
+    for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
-
-    for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
-      const biome = state.biomeAt[tx];
-      if (biome === 'lake' || surfaceFluidColumns.has(tx)) continue;
-      const treeChance = biome === 'forest' ? 0.11 : 0.025;
-      if (Math.random() < treeChance) {
-        const s = state.surfaceAt[tx];
-        if (getBlock(state, tx, s) === BLOCK.GRASS && getBlock(state, tx, s - 1) === BLOCK.AIR) {
-          const height = Math.floor(rand(3, 6));
-          for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
-          const topY = s - height;
-          for (let yy = -2; yy <= 1; yy += 1) {
-            for (let xx = -2; xx <= 2; xx += 1) {
-              if (Math.abs(xx) + Math.abs(yy) < 4 && getBlock(state, tx + xx, topY + yy) === BLOCK.AIR) {
-                setBlock(state, tx + xx, topY + yy, BLOCK.LEAF);
-              }
-            }
-          }
-        }
-      }
-    }
-
+    plantTrees(state, surfaceFluidColumns);
     generateMineshafts(state);
     for (const basin of basins) fillSurfaceBasin(state, basin);
 
     for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
 
-    let spawnX = 20;
-    while (spawnX < WORLD_W - 2 && surfaceFluidColumns.has(spawnX)) spawnX += 1;
+    const spawnX = chooseSpawnColumn(state, surfaceFluidColumns);
     state.player.x = spawnX * TILE;
     state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
   }

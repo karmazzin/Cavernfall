@@ -32,6 +32,7 @@
     [BLOCK.COAL_ORE]: 'Угольная руда',
     [BLOCK.TORCH]: 'Факел',
     [BLOCK.FURNACE]: 'Печка',
+    [BLOCK.BLACKSTONE]: 'Чёрный камень',
   };
 
   const ITEM_DEFS = {

@@ -24,6 +24,14 @@
       ctx.fillRect(x + 3, y + 4, 3, 3);
       ctx.fillRect(x + 9, y + 3, 4, 4);
       ctx.fillRect(x + 7, y + 10, 3, 3);
+    } else if (id === BLOCK.BLACKSTONE) {
+      ctx.fillStyle = '#2f2f35';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#3c3c46';
+      ctx.fillRect(x + 2, y + 3, 5, 4);
+      ctx.fillRect(x + 9, y + 2, 4, 3);
+      ctx.fillStyle = '#1b1b20';
+      ctx.fillRect(x + 5, y + 9, 6, 4);
     } else if (id === BLOCK.TORCH) {
       ctx.fillStyle = '#6f4726';
       ctx.fillRect(x + 7, y + 6, 2, 8);
