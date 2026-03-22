@@ -17,6 +17,7 @@
     TORCH: 12,
     FURNACE: 13,
     BLACKSTONE: 14,
+    GOLD_ORE: 15,
   };
 
   const BLOCK_COLORS = {
@@ -34,6 +35,7 @@
     [BLOCK.TORCH]: '#7b4f28',
     [BLOCK.FURNACE]: '#666',
     [BLOCK.BLACKSTONE]: '#2f2f35',
+    [BLOCK.GOLD_ORE]: '#9a8a60',
   };
 
   const BREAK_TIME = {
@@ -46,6 +48,7 @@
     [BLOCK.STONE]: 4,
     [BLOCK.COAL_ORE]: 4,
     [BLOCK.BLACKSTONE]: 5,
+    [BLOCK.GOLD_ORE]: 4.6,
     [BLOCK.TORCH]: 0.2,
     [BLOCK.FURNACE]: 4.5,
     [BLOCK.BEDROCK]: Infinity,

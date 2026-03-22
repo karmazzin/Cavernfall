@@ -43,6 +43,11 @@
       result: { id: BLOCK.FURNACE, count: 1 },
     },
     {
+      name: 'Монеты',
+      pattern: [[ITEM.GOLD_INGOT]],
+      result: { id: ITEM.COIN, count: 4 },
+    },
+    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],

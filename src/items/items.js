@@ -8,6 +8,9 @@
     RAW_MUTTON: 'raw_mutton',
     COAL: 'coal',
     CHARCOAL: 'charcoal',
+    RAW_GOLD: 'raw_gold',
+    GOLD_INGOT: 'gold_ingot',
+    COIN: 'coin',
     WOODEN_PICKAXE: 'wooden_pickaxe',
     WOODEN_AXE: 'wooden_axe',
     WOODEN_SHOVEL: 'wooden_shovel',
@@ -33,6 +36,7 @@
     [BLOCK.TORCH]: 'Факел',
     [BLOCK.FURNACE]: 'Печка',
     [BLOCK.BLACKSTONE]: 'Чёрный камень',
+    [BLOCK.GOLD_ORE]: 'Золотая руда',
   };
 
   const ITEM_DEFS = {
@@ -40,6 +44,9 @@
     [ITEM.RAW_MUTTON]: { id: ITEM.RAW_MUTTON, label: 'Сырая баранина', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 20 },
     [ITEM.COAL]: { id: ITEM.COAL, label: 'Уголь', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.CHARCOAL]: { id: ITEM.CHARCOAL, label: 'Древесный уголь', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.RAW_GOLD]: { id: ITEM.RAW_GOLD, label: 'Рудное золото', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.GOLD_INGOT]: { id: ITEM.GOLD_INGOT, label: 'Золотой слиток', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.COIN]: { id: ITEM.COIN, label: 'Монета', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WOODEN_PICKAXE]: {
       id: ITEM.WOODEN_PICKAXE,
       label: 'Деревянная кирка',

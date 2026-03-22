@@ -2,7 +2,7 @@
   const Game = window.MC2D;
   const { BLOCK } = Game.blocks;
   const { createGameState } = Game.state;
-  const { generateWorld } = Game.generation;
+  const { generateWorld, retrofitWorldFeatures } = Game.generation;
   const { spawnAnimals, updateAnimals } = Game.animalsEntity;
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
@@ -116,8 +116,10 @@
   });
 
   const loadedState = loadGame();
-  if (loadedState) replaceState(loadedState);
-  else startNewGame();
+  if (loadedState) {
+    replaceState(loadedState);
+    retrofitWorldFeatures(state);
+  } else startNewGame();
 
   function update(dt) {
     if (state.pause.open || state.gameOver) return;

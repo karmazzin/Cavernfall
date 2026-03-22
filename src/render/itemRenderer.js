@@ -55,6 +55,52 @@
       return;
     }
 
+    if (itemId === ITEM.RAW_GOLD) {
+      ctx.fillStyle = '#c59c3c';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.28, y + size * 0.64);
+      ctx.lineTo(x + size * 0.34, y + size * 0.30);
+      ctx.lineTo(x + size * 0.58, y + size * 0.20);
+      ctx.lineTo(x + size * 0.76, y + size * 0.40);
+      ctx.lineTo(x + size * 0.60, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,240,170,0.22)';
+      ctx.fillRect(x + size * 0.46, y + size * 0.28, size * 0.10, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.GOLD_INGOT) {
+      ctx.fillStyle = '#d4af37';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.20, y + size * 0.58);
+      ctx.lineTo(x + size * 0.30, y + size * 0.34);
+      ctx.lineTo(x + size * 0.70, y + size * 0.34);
+      ctx.lineTo(x + size * 0.80, y + size * 0.58);
+      ctx.lineTo(x + size * 0.68, y + size * 0.72);
+      ctx.lineTo(x + size * 0.32, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,248,200,0.28)';
+      ctx.fillRect(x + size * 0.32, y + size * 0.40, size * 0.32, size * 0.08);
+      return;
+    }
+
+    if (itemId === ITEM.COIN) {
+      ctx.fillStyle = '#ddb847';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.5, y + size * 0.48, size * 0.24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#9e7b1f';
+      ctx.lineWidth = Math.max(1, size * 0.05);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,245,180,0.35)';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.44, y + size * 0.40, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
     if (itemId === ITEM.RAW_MUTTON) {
       ctx.fillStyle = '#cf6f7e';
       ctx.beginPath();

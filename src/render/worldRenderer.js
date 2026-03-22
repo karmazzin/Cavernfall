@@ -24,6 +24,13 @@
       ctx.fillRect(x + 3, y + 4, 3, 3);
       ctx.fillRect(x + 9, y + 3, 4, 4);
       ctx.fillRect(x + 7, y + 10, 3, 3);
+    } else if (id === BLOCK.GOLD_ORE) {
+      ctx.fillStyle = '#7f7b72';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#d1b54a';
+      ctx.fillRect(x + 3, y + 3, 4, 4);
+      ctx.fillRect(x + 9, y + 4, 3, 3);
+      ctx.fillRect(x + 7, y + 10, 4, 3);
     } else if (id === BLOCK.BLACKSTONE) {
       ctx.fillStyle = '#2f2f35';
       ctx.fillRect(x, y, TILE, TILE);

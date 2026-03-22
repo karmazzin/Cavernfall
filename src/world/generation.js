@@ -89,6 +89,47 @@
     }
   }
 
+  function generateGoldOre(state) {
+    const veinCount = Math.floor(rand(72, 118));
+    for (let i = 0; i < veinCount; i += 1) {
+      const tx = Math.floor(rand(8, WORLD_W - 9));
+      const ty = Math.floor(rand(30, WORLD_H - 16));
+      const biome = state.biomeAt[tx];
+      const hostBlock = biome === 'volcano' ? BLOCK.BLACKSTONE : BLOCK.STONE;
+      if (getBlock(state, tx, ty) !== hostBlock) continue;
+
+      const nearCave =
+        getBlock(state, tx + 1, ty) === BLOCK.AIR ||
+        getBlock(state, tx - 1, ty) === BLOCK.AIR ||
+        getBlock(state, tx, ty + 1) === BLOCK.AIR ||
+        getBlock(state, tx, ty - 1) === BLOCK.AIR;
+      if (!nearCave && Math.random() < 0.88) continue;
+
+      const veinSize = Math.floor(rand(3, 7));
+      let x = tx;
+      let y = ty;
+      for (let j = 0; j < veinSize; j += 1) {
+        if (getBlock(state, x, y) === hostBlock) setBlock(state, x, y, BLOCK.GOLD_ORE);
+        x = clamp(x + Math.floor(rand(-1, 2)), 4, WORLD_W - 5);
+        y = clamp(y + Math.floor(rand(-1, 2)), 18, WORLD_H - 6);
+      }
+    }
+  }
+
+  function countBlockInWorld(state, blockId) {
+    let total = 0;
+    for (let ty = 0; ty < WORLD_H; ty += 1) {
+      for (let tx = 0; tx < WORLD_W; tx += 1) {
+        if (state.world[ty][tx] === blockId) total += 1;
+      }
+    }
+    return total;
+  }
+
+  function retrofitWorldFeatures(state) {
+    if (countBlockInWorld(state, BLOCK.GOLD_ORE) === 0) generateGoldOre(state);
+  }
+
   function addSpider(state, tx, ty) {
     state.spiders.push({
       x: tx * TILE + 1,
@@ -415,6 +456,7 @@
     carveConnectedCaves(state);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
+    generateGoldOre(state);
     plantTrees(state, surfaceFluidColumns);
     generateMineshafts(state);
     for (const basin of basins) fillSurfaceBasin(state, basin);
@@ -426,5 +468,5 @@
     state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
   }
 
-  Game.generation = { generateWorld };
+  Game.generation = { generateWorld, retrofitWorldFeatures };
 })();
