@@ -116,6 +116,32 @@
       return;
     }
 
+    if (itemId === ITEM.WHEAT) {
+      ctx.fillStyle = '#c8ad4e';
+      ctx.fillRect(x + size * 0.48, y + size * 0.18, size * 0.06, size * 0.56);
+      for (let i = 0; i < 4; i += 1) {
+        ctx.fillRect(x + size * (0.36 + i * 0.04), y + size * (0.24 + i * 0.09), size * 0.12, size * 0.06);
+        ctx.fillRect(x + size * (0.52 - i * 0.04), y + size * (0.28 + i * 0.09), size * 0.12, size * 0.06);
+      }
+      return;
+    }
+
+    if (itemId === ITEM.CARROT) {
+      ctx.fillStyle = '#d96d20';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.52, y + size * 0.2);
+      ctx.lineTo(x + size * 0.70, y + size * 0.34);
+      ctx.lineTo(x + size * 0.56, y + size * 0.76);
+      ctx.lineTo(x + size * 0.34, y + size * 0.36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#6ea84a';
+      ctx.fillRect(x + size * 0.45, y + size * 0.12, size * 0.04, size * 0.12);
+      ctx.fillRect(x + size * 0.50, y + size * 0.10, size * 0.04, size * 0.14);
+      ctx.fillRect(x + size * 0.55, y + size * 0.12, size * 0.04, size * 0.12);
+      return;
+    }
+
     if (itemId === ITEM.RAW_MUTTON) {
       ctx.fillStyle = '#cf6f7e';
       ctx.beginPath();

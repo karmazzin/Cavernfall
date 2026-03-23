@@ -23,6 +23,12 @@
     DEEPSTONE: 18,
     DEEP_ORE: 19,
     CHEST: 20,
+    DOOR: 21,
+    PATH: 22,
+    SAND: 23,
+    SANDSTONE: 24,
+    CACTUS: 25,
+    DRY_BUSH: 26,
   };
 
   const BLOCK_COLORS = {
@@ -46,6 +52,12 @@
     [BLOCK.DEEPSTONE]: '#4a505b',
     [BLOCK.DEEP_ORE]: '#6a4b86',
     [BLOCK.CHEST]: '#8b5a2b',
+    [BLOCK.DOOR]: '#7a532b',
+    [BLOCK.PATH]: '#8c6b43',
+    [BLOCK.SAND]: '#d9c27a',
+    [BLOCK.SANDSTONE]: '#c0a161',
+    [BLOCK.CACTUS]: '#3a8f48',
+    [BLOCK.DRY_BUSH]: '#8d7445',
   };
 
   const BREAK_TIME = {
@@ -62,6 +74,12 @@
     [BLOCK.DEEPSTONE]: 5.4,
     [BLOCK.DEEP_ORE]: 5.8,
     [BLOCK.CHEST]: 1.1,
+    [BLOCK.DOOR]: 0.5,
+    [BLOCK.PATH]: 0.8,
+    [BLOCK.SAND]: 0.7,
+    [BLOCK.SANDSTONE]: 3.4,
+    [BLOCK.CACTUS]: 0.4,
+    [BLOCK.DRY_BUSH]: 0.15,
     [BLOCK.PILLAR]: 1.2,
     [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
@@ -83,6 +101,12 @@
     BLOCK.DEEPSTONE,
     BLOCK.DEEP_ORE,
     BLOCK.CHEST,
+    BLOCK.DOOR,
+    BLOCK.PATH,
+    BLOCK.SAND,
+    BLOCK.SANDSTONE,
+    BLOCK.CACTUS,
+    BLOCK.DRY_BUSH,
     BLOCK.TORCH,
     BLOCK.FURNACE,
   ]);

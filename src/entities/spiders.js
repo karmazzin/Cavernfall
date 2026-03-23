@@ -96,6 +96,18 @@
     }
   }
 
+  function spawnSpiderRaidNearHumans(state) {
+    if (state.spiders.length >= MAX_SPIDERS || !state.humanSettlements || !state.humanSettlements.villages.length) return;
+    const village = state.humanSettlements.villages[Math.floor(rand(0, state.humanSettlements.villages.length))];
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const tx = clamp((dir < 0 ? village.bounds.x0 : village.bounds.x1) + dir * Math.floor(rand(4, 8)), 2, WORLD_W - 3);
+    const ty = state.surfaceAt[tx] - 1;
+    if (isLitAt(state, tx, ty)) return;
+    if (getBlock(state, tx, ty) !== BLOCK.AIR) return;
+    if (!blockSolid(getBlock(state, tx, ty + 1))) return;
+    state.spiders.push(createSpider(tx, ty));
+  }
+
   function updateSpiders(state, dt) {
     const creative = isCreative(state);
     const phase = phaseInfo(state).phase;
@@ -114,6 +126,7 @@
       state.spiderCaveSpawnTick = 0;
       spawnSpiderInCave(state);
       if (Math.random() < 0.34) spawnSpiderRaidNearDwarves(state);
+      if (Math.random() < 0.24) spawnSpiderRaidNearHumans(state);
     }
 
     for (let i = state.spiders.length - 1; i >= 0; i -= 1) {
@@ -135,6 +148,14 @@
         const dist = Math.hypot(dwarf.x - spider.x, dwarf.y - spider.y);
         if (dist < distance) {
           target = dwarf;
+          targetIsPlayer = false;
+          distance = dist;
+        }
+      }
+      for (const human of state.humans || []) {
+        const dist = Math.hypot(human.x - spider.x, human.y - spider.y);
+        if (dist < distance) {
+          target = human;
           targetIsPlayer = false;
           distance = dist;
         }

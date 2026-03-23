@@ -140,6 +140,94 @@
     ctx.fillRect(x + 10, y + 9 + Math.max(0, walk), 2, 3 - Math.min(1.5, Math.max(0, walk)));
   }
 
+  function drawHuman(ctx, human, camera, time) {
+    const x = human.x - camera.x;
+    const y = human.y - camera.y;
+    const walkPhase = Math.sin(time * 8 + human.x * 0.04) * Math.min(2.2, Math.abs(human.vx) / 28);
+    const palette = human.palette || { body: '#5477a7', accent: '#d6c28a', hat: '#8f6a3f' };
+    const skin = '#d7b492';
+    ctx.fillStyle = palette.body;
+    ctx.fillRect(x + 2, y + 9, 8, 9);
+    ctx.fillStyle = skin;
+    ctx.fillRect(x + 2, y + 2, 8, 7);
+    ctx.fillStyle = '#2a2a2d';
+    ctx.fillRect(x + (human.dir > 0 ? 7 : 3), y + 5, 2, 2);
+    ctx.fillStyle = palette.accent;
+    ctx.fillRect(x + 1, y + 18 + Math.max(0, walkPhase), 4, 4 - Math.max(0, walkPhase) * 0.4);
+    ctx.fillRect(x + 7, y + 18 + Math.max(0, -walkPhase), 4, 4 - Math.max(0, -walkPhase) * 0.4);
+    ctx.fillStyle = skin;
+    ctx.fillRect(x, y + 11 + Math.max(0, -walkPhase * 0.45), 2, 6);
+    ctx.fillRect(x + 10, y + 11 + Math.max(0, walkPhase * 0.45), 2, 6);
+
+    if (human.role === 'guard') {
+      ctx.fillStyle = '#565861';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#8f949f';
+      ctx.fillRect(x + 3, y + 1, 6, 1);
+      ctx.fillStyle = '#4a4c54';
+      ctx.fillRect(x + 3, y + 9, 6, 2);
+      drawHeldTool(ctx, ITEM.STONE_SWORD, x, y, human.dir, 0.2);
+      return;
+    }
+
+    if (human.profession === 'farmer') {
+      ctx.fillStyle = '#9d7a43';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#d8bf74';
+      ctx.fillRect(x + 3, y + 11, 6, 2);
+      ctx.fillStyle = '#6f9b4f';
+      ctx.fillRect(x + 4, y + 1, 1, 2);
+      ctx.fillRect(x + 7, y + 1, 1, 2);
+    } else if (human.profession === 'shepherd') {
+      ctx.fillStyle = '#7f6d58';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#f0eee6';
+      ctx.fillRect(x + 3, y + 9, 6, 3);
+      ctx.fillStyle = '#caa8c9';
+      ctx.fillRect(x + 2, y + 12, 8, 2);
+    } else if (human.profession === 'lumber') {
+      ctx.fillStyle = '#6d4e30';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#b98348';
+      ctx.fillRect(x + 3, y + 10, 6, 2);
+      ctx.fillStyle = '#5b3f24';
+      ctx.fillRect(x + 2, y + 13, 8, 2);
+      drawHeldTool(ctx, ITEM.STONE_AXE, x, y, human.dir, 0.1);
+    } else if (human.profession === 'mason') {
+      ctx.fillStyle = '#6c6f78';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#aeb2bb';
+      ctx.fillRect(x + 3, y + 9, 6, 2);
+      ctx.fillStyle = '#50545d';
+      ctx.fillRect(x + 2, y + 13, 8, 2);
+      drawHeldTool(ctx, ITEM.STONE_PICKAXE, x, y, human.dir, human.state === 'work' ? 0.22 : 0);
+    } else if (human.profession === 'miner') {
+      ctx.fillStyle = '#403a34';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#d1aa61';
+      ctx.fillRect(x + 4, y + 1, 4, 1);
+      ctx.fillStyle = '#72553c';
+      ctx.fillRect(x + 3, y + 9, 6, 2);
+      ctx.fillStyle = '#3d4048';
+      ctx.fillRect(x + 2, y + 13, 8, 2);
+      drawHeldTool(ctx, ITEM.STONE_PICKAXE, x, y, human.dir, human.state === 'work' ? 0.28 : 0);
+    } else if (human.profession === 'merchant') {
+      ctx.fillStyle = '#6c4a78';
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = '#c8b06d';
+      ctx.fillRect(x + 3, y + 9, 6, 2);
+      ctx.fillStyle = '#8a5d2d';
+      ctx.fillRect(x + 4, y + 2, 4, 1);
+      ctx.fillStyle = '#53385d';
+      ctx.fillRect(x + 2, y + 13, 8, 2);
+    } else {
+      ctx.fillStyle = palette.hat;
+      ctx.fillRect(x + 2, y, 8, 3);
+      ctx.fillStyle = palette.accent;
+      ctx.fillRect(x + 3, y + 10, 6, 2);
+    }
+  }
+
   function drawDwarf(ctx, state, dwarf, camera, time) {
     const x = dwarf.x - camera.x;
     const y = dwarf.y - camera.y;
@@ -180,5 +268,5 @@
     }
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawDwarf };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf };
 })();

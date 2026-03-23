@@ -48,7 +48,13 @@
       animals: [],
       zombies: [],
       spiders: [],
+      humans: [],
       dwarves: [],
+      humanSettlements: {
+        villages: [],
+        nodes: [],
+        edges: [],
+      },
       dwarfColony: {
         homes: [],
         stockpiles: [],
@@ -62,6 +68,7 @@
       foods: [],
       chests: {},
       furnaces: {},
+      doors: {},
       player: createPlayer(),
       gameOver: false,
       cycleTime: 0,
@@ -84,6 +91,7 @@
         result: null,
         chestOpenKey: null,
         tradeSettlementId: null,
+        tradeHumanId: null,
         tradeStatus: '',
       },
       pause: {

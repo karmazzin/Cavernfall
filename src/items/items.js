@@ -12,6 +12,8 @@
     GOLD_INGOT: 'gold_ingot',
     COIN: 'coin',
     DEEP_CRYSTAL: 'deep_crystal',
+    WHEAT: 'wheat',
+    CARROT: 'carrot',
     WOODEN_PICKAXE: 'wooden_pickaxe',
     WOODEN_AXE: 'wooden_axe',
     WOODEN_SHOVEL: 'wooden_shovel',
@@ -43,6 +45,12 @@
     [BLOCK.DEEPSTONE]: 'Глубинный камень',
     [BLOCK.DEEP_ORE]: 'Глубинная руда',
     [BLOCK.CHEST]: 'Сундук',
+    [BLOCK.DOOR]: 'Дверь',
+    [BLOCK.PATH]: 'Тропинка',
+    [BLOCK.SAND]: 'Песок',
+    [BLOCK.SANDSTONE]: 'Песчаник',
+    [BLOCK.CACTUS]: 'Кактус',
+    [BLOCK.DRY_BUSH]: 'Сухой куст',
   };
 
   const ITEM_DEFS = {
@@ -54,6 +62,8 @@
     [ITEM.GOLD_INGOT]: { id: ITEM.GOLD_INGOT, label: 'Золотой слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.COIN]: { id: ITEM.COIN, label: 'Монета', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.DEEP_CRYSTAL]: { id: ITEM.DEEP_CRYSTAL, label: 'Глубинный кристалл', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.WHEAT]: { id: ITEM.WHEAT, label: 'Пшеница', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.CARROT]: { id: ITEM.CARROT, label: 'Морковь', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 12 },
     [ITEM.WOODEN_PICKAXE]: {
       id: ITEM.WOODEN_PICKAXE,
       label: 'Деревянная кирка',

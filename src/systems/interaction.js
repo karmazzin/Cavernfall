@@ -18,7 +18,9 @@
   const { spawnFood, ANIMAL_STATE, setWalk } = Game.animalsEntity;
   const { ensureFurnaceAt, removeFurnaceAt } = Game.furnaceSystem;
   const { removeChestAt } = Game.chestSystem;
+  const { toggleDoor, removeDoorAt, resolveDoorBase } = Game.doorSystem;
   const { onColonyBlockBroken, hitDwarf, removeDwarf, getNearestTrader } = Game.dwarvesEntity;
+  const { getNearestHumanTrader } = Game.humansEntity;
   const audio = Game.audio;
 
   function isCreative(state) {
@@ -53,6 +55,48 @@
     const blockPy = ty * TILE;
     if (aabb(blockPx, blockPy, TILE, TILE, state.player.x, state.player.y, state.player.w, state.player.h)) return false;
 
+    return true;
+  }
+
+  function findUsableDoor(state, input, camera) {
+    const candidates = [];
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+
+    if (input && input.mouse) {
+      const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
+      const base = resolveDoorBase(state, tx, ty);
+      if (base && getBlock(state, base.tx, base.ty) === BLOCK.DOOR) {
+        const dist = Math.hypot(base.tx * TILE + TILE / 2 - playerCx, base.ty * TILE + TILE / 2 - playerCy);
+        if (dist <= 110) return base;
+      }
+    }
+
+    const centerTx = Math.floor(playerCx / TILE);
+    const centerTy = Math.floor(playerCy / TILE);
+    let best = null;
+    let bestDist = Infinity;
+    for (let yy = centerTy - 3; yy <= centerTy + 3; yy += 1) {
+      for (let xx = centerTx - 3; xx <= centerTx + 3; xx += 1) {
+        const base = resolveDoorBase(state, xx, yy);
+        if (!base) continue;
+        const key = `${base.tx},${base.ty}`;
+        if (candidates.includes(key)) continue;
+        candidates.push(key);
+        const dist = Math.hypot(base.tx * TILE + TILE / 2 - playerCx, base.ty * TILE + TILE / 2 - playerCy);
+        if (dist < bestDist && dist <= 110) {
+          bestDist = dist;
+          best = base;
+        }
+      }
+    }
+    return best;
+  }
+
+  function useNearbyDoor(state, input, camera) {
+    const target = findUsableDoor(state, input, camera);
+    if (!target) return false;
+    toggleDoor(state, target.tx, target.ty);
     return true;
   }
 
@@ -162,6 +206,19 @@
       }
     }
 
+    for (let i = state.humans.length - 1; i >= 0; i -= 1) {
+      const human = state.humans[i];
+      if (wx >= human.x && wx <= human.x + human.w && wy >= human.y && wy <= human.y + human.h) {
+        if (input.mouse.justPressed && human.role !== 'guard') {
+          Game.crafting.openHumanTrade(state, human.id);
+          input.mouse.justPressed = false;
+          return;
+        }
+        input.mouse.justPressed = false;
+        return;
+      }
+    }
+
     if (dist > 110) {
       state.breaking = null;
       input.mouse.justPressed = false;
@@ -169,6 +226,13 @@
     }
 
     const block = getBlock(state, tx, ty);
+
+    if (block === BLOCK.DOOR && input.mouse.justPressed) {
+      toggleDoor(state, tx, ty);
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
 
     if (block === BLOCK.CHEST && input.mouse.justPressed) {
       Game.crafting.openChest(state, tx, ty);
@@ -214,6 +278,7 @@
           }
         }
       }
+      if (block === BLOCK.DOOR) removeDoorAt(state, tx, ty);
       setBlock(state, tx, ty, BLOCK.AIR);
       state.breaking = null;
       input.mouse.justPressed = false;
@@ -252,6 +317,7 @@
           }
         }
       }
+      if (block === BLOCK.DOOR) removeDoorAt(state, tx, ty);
       setBlock(state, tx, ty, BLOCK.AIR);
       useSelectedTool(state);
       state.breaking = null;
@@ -260,5 +326,5 @@
     input.mouse.justPressed = false;
   }
 
-  Game.interaction = { screenToTile, canPlaceBlock, handleMouse };
+  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, handleMouse };
 })();

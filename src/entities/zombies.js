@@ -115,6 +115,20 @@
     }
   }
 
+  function spawnZombieRaidNearHumans(state) {
+    if (state.zombies.length >= MAX_ZOMBIES || !state.humanSettlements || !state.humanSettlements.villages.length) return;
+    const village = state.humanSettlements.villages[Math.floor(rand(0, state.humanSettlements.villages.length))];
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const tx = clamp((dir < 0 ? village.bounds.x0 : village.bounds.x1) + dir * Math.floor(rand(4, 8)), 2, WORLD_W - 3);
+    const sy = state.surfaceAt[tx] - 2;
+    if (isLitAt(state, tx, sy + 1)) return;
+    state.zombies.push({
+      x: tx * TILE, y: sy * TILE, w: 12, h: 24, vx: 0, vy: 0, onGround: false,
+      attackCd: 0, hp: 3, burnTimer: 0, jumpCd: 0, obstacleTimer: 0,
+    });
+    ensureMobState(state.zombies[state.zombies.length - 1]);
+  }
+
   function updateZombies(state, dt) {
     const creative = isCreative(state);
     const phase = phaseInfo(state).phase;
@@ -135,6 +149,7 @@
       state.zombieCaveSpawnTick = 0;
       spawnZombieInCave(state);
       if (Math.random() < 0.38) spawnZombieRaidNearDwarves(state);
+      if (Math.random() < 0.28) spawnZombieRaidNearHumans(state);
     }
 
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
@@ -160,6 +175,14 @@
         const dist = Math.hypot(dwarf.x - zombie.x, dwarf.y - zombie.y);
         if (dist < targetDist) {
           target = dwarf;
+          targetIsPlayer = false;
+          targetDist = dist;
+        }
+      }
+      for (const human of state.humans || []) {
+        const dist = Math.hypot(human.x - zombie.x, human.y - zombie.y);
+        if (dist < targetDist) {
+          target = human;
           targetIsPlayer = false;
           targetDist = dist;
         }

@@ -8,6 +8,7 @@
   }
 
   function blockSolid(id) {
+    if (id === BLOCK.DOOR) return true;
     return (
       id !== BLOCK.AIR &&
       id !== BLOCK.WATER &&
@@ -18,8 +19,16 @@
       id !== BLOCK.TORCH &&
       id !== BLOCK.PILLAR &&
       id !== BLOCK.LADDER &&
-      id !== BLOCK.CHEST
+      id !== BLOCK.CHEST &&
+      id !== BLOCK.DRY_BUSH
     );
+  }
+
+  function isOpenDoorAt(state, tx, ty) {
+    const block = getBlock(state, tx, ty);
+    if (block !== BLOCK.DOOR) return false;
+    const door = state.doors && state.doors[`${tx},${ty}`];
+    return !!(door && door.open);
   }
 
   function liquid(id) {
@@ -39,7 +48,9 @@
   function isSolidAtPixel(state, px, py) {
     const tx = Math.floor(px / TILE);
     const ty = Math.floor(py / TILE);
-    return blockSolid(getBlock(state, tx, ty));
+    const block = getBlock(state, tx, ty);
+    if (block === BLOCK.DOOR) return !isOpenDoorAt(state, tx, ty);
+    return blockSolid(block);
   }
 
   function layerOffset(tx) {
@@ -86,5 +97,5 @@
     return false;
   }
 
-  Game.world = { createGrid, blockSolid, liquid, getBlock, setBlock, isSolidAtPixel, getLocationInfo, isLitAt, getStaticLightRadius };
+  Game.world = { createGrid, blockSolid, liquid, getBlock, setBlock, isSolidAtPixel, getLocationInfo, isLitAt, getStaticLightRadius, isOpenDoorAt };
 })();

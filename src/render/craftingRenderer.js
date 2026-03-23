@@ -6,7 +6,7 @@
   const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
-  const { TRADE_OFFERS, canAfford } = Game.tradeSystem;
+  const { getTraderOffers, getTraderTitle, canAfford } = Game.tradeSystem;
 
   function drawSlot(ctx, rect, slot, highlighted = false) {
     ctx.fillStyle = highlighted ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.45)';
@@ -198,6 +198,7 @@
 
   function drawTradePanel(ctx, layout, state, trader) {
     const panel = layout.trade.panel;
+    const offers = getTraderOffers(trader);
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
     ctx.strokeStyle = 'rgba(255,255,255,0.16)';
@@ -208,12 +209,12 @@
     ctx.fillText('Торговля', panel.x + 12, panel.y + 22);
     ctx.font = `${layout.mobile ? 10 : 12}px Arial`;
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.fillText('Спокойный гном рядом', panel.x + 12, panel.y + 38);
+    ctx.fillText(getTraderTitle(trader), panel.x + 12, panel.y + 38);
     const offerHeight = layout.mobile ? 26 : 34;
     const startX = panel.x + 10;
     const startY = panel.y + 46;
-    for (let i = 0; i < TRADE_OFFERS.length; i += 1) {
-      const offer = TRADE_OFFERS[i];
+    for (let i = 0; i < offers.length; i += 1) {
+      const offer = offers[i];
       const y = startY + i * (offerHeight + 6);
       ctx.fillStyle = canAfford(state, offer) ? 'rgba(88,122,88,0.28)' : 'rgba(100,100,100,0.18)';
       ctx.fillRect(startX, y, panel.w - 20, offerHeight);
@@ -234,7 +235,7 @@
     const layout = getCraftingLayout(canvas, state);
     const activeFurnace = getNearestFurnace(state, 5);
     const activeChest = Game.crafting.getActiveChest(state);
-    const trader = Game.crafting.getActiveTrader(state);
+    const trader = Game.crafting.getActiveTrader(state) || Game.crafting.getActiveHumanTrader(state);
     const creative = isCreativeMode(state);
     ctx.fillStyle = 'rgba(0,0,0,0.62)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);

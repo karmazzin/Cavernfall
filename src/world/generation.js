@@ -15,6 +15,7 @@
   const { rand, clamp } = Game.math;
   const { getBlock, setBlock } = Game.world;
   const { chestKey, createChestState, fillChestLoot } = Game.chestSystem;
+  const { placeDoor } = Game.doorSystem;
   const DWARF_COLORS = [
     { tunic: '#8a5c34', hood: '#6c727f' },
     { tunic: '#5a6f8f', hood: '#7e868f' },
@@ -23,6 +24,15 @@
     { tunic: '#8a4f4f', hood: '#7f6c6c' },
     { tunic: '#8b7442', hood: '#867b67' },
   ];
+  const VILLAGER_PALETTES = [
+    { body: '#5477a7', accent: '#d6c28a', hat: '#8f6a3f' },
+    { body: '#7b8d4f', accent: '#d8b57f', hat: '#75522d' },
+    { body: '#8a5c5c', accent: '#d7cab4', hat: '#6f4b2d' },
+    { body: '#6f6294', accent: '#d5c69e', hat: '#725537' },
+  ];
+  const PLAINS_PROFESSIONS = ['farmer', 'farmer', 'shepherd', 'shepherd', 'lumber', 'lumber', 'merchant', 'mason'];
+  const MOUNTAIN_PROFESSIONS = ['miner', 'miner', 'miner', 'mason', 'mason', 'merchant', 'lumber', 'farmer'];
+  const DESERT_PROFESSIONS = ['merchant', 'merchant', 'mason', 'mason', 'miner', 'miner', 'farmer', 'shepherd'];
 
   function isUpperBand(y) {
     return y >= UPPER_CAVE_START && y <= UPPER_CAVE_END;
@@ -61,7 +71,21 @@
   }
 
   function isRockLike(blockId) {
-    return blockId === BLOCK.STONE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DIRT || blockId === BLOCK.GRASS || blockId === BLOCK.COAL_ORE || blockId === BLOCK.GOLD_ORE;
+    return blockId === BLOCK.STONE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.SANDSTONE || blockId === BLOCK.DIRT || blockId === BLOCK.GRASS || blockId === BLOCK.SAND || blockId === BLOCK.COAL_ORE || blockId === BLOCK.GOLD_ORE;
+  }
+
+  function isDesertBiome(biome) {
+    return biome === 'desert';
+  }
+
+  function getVillageStyle(type) {
+    if (type === 'mountain_village') {
+      return { surface: BLOCK.STONE, subsoil: BLOCK.STONE, deepSubsoil: BLOCK.STONE, wall: BLOCK.STONE, support: BLOCK.STONE, roof: BLOCK.DEEPSTONE, tower: BLOCK.STONE };
+    }
+    if (type === 'desert_village') {
+      return { surface: BLOCK.SAND, subsoil: BLOCK.SANDSTONE, deepSubsoil: BLOCK.SANDSTONE, wall: BLOCK.SANDSTONE, support: BLOCK.SANDSTONE, roof: BLOCK.SANDSTONE, tower: BLOCK.SANDSTONE };
+    }
+    return { surface: BLOCK.GRASS, subsoil: BLOCK.DIRT, deepSubsoil: BLOCK.STONE, wall: BLOCK.PLANK, support: BLOCK.WOOD, roof: BLOCK.STONE, tower: BLOCK.STONE };
   }
 
   function carveCircle(state, cx, cy, radius, blockId = BLOCK.AIR) {
@@ -118,7 +142,7 @@
         const mid = state.surfaceAt[tx];
         const right = state.surfaceAt[tx + 1];
         const avg = Math.round((left + mid * 2 + right) / 4);
-        const blend = biome === 'mountains' ? 3 : biome === 'forest' ? 4 : 5;
+        const blend = biome === 'mountains' ? 3 : biome === 'forest' ? 4 : biome === 'desert' ? 5 : 5;
         next[tx] = clamp(Math.round((mid * blend + avg) / (blend + 1)), 8, 38);
       }
       state.surfaceAt = next;
@@ -128,13 +152,13 @@
   function flattenPlains(state) {
     let tx = 0;
     while (tx < WORLD_W) {
-      if (state.biomeAt[tx] !== 'plains') {
+      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert') {
         tx += 1;
         continue;
       }
 
       const start = tx;
-      while (tx < WORLD_W && state.biomeAt[tx] === 'plains') tx += 1;
+      while (tx < WORLD_W && (state.biomeAt[tx] === 'plains' || state.biomeAt[tx] === 'desert')) tx += 1;
       const end = tx - 1;
       if (end - start + 1 < 18) continue;
 
@@ -154,7 +178,7 @@
 
   function addPlainMicroRelief(state) {
     for (let tx = 3; tx < WORLD_W - 3; tx += 1) {
-      if (state.biomeAt[tx] !== 'plains') continue;
+      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert') continue;
       if (Math.random() < 0.7) continue;
       const prev = state.surfaceAt[tx - 1];
       const next = state.surfaceAt[tx + 1];
@@ -176,24 +200,41 @@
     }
   }
 
+  function applyDesertSegment(state, start, end) {
+    const center = (start + end) / 2;
+    const half = Math.max(1, (end - start) / 2);
+    for (let x = start; x <= end; x += 1) {
+      const t = Math.abs((x - center) / half);
+      const dune = Math.sin((1 - t) * Math.PI) * 1.2;
+      const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
+      const target = SURFACE_BASE + dune + rand(-0.3, 0.3);
+      state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -0.7, 0.7), 20, 36));
+      state.biomeAt[x] = 'desert';
+    }
+  }
+
   function generateBiomeBands(state) {
     let x = 0;
     let lastBiome = 'plains';
     while (x < WORLD_W) {
       let biome;
-      if (Math.random() < (lastBiome === 'mountains' ? 0.08 : 0.15)) biome = 'mountains';
-      else biome = Math.random() < 0.34 ? 'forest' : 'plains';
+      const roll = Math.random();
+      if (roll < (lastBiome === 'mountains' ? 0.1 : 0.16)) biome = 'mountains';
+      else if (roll < 0.28) biome = 'forest';
+      else if (roll < 0.44) biome = 'desert';
+      else biome = 'plains';
 
       let segLen = Math.floor(rand(90, 170));
-      if (biome === 'mountains') segLen = Math.floor(rand(70, 118));
+      if (biome === 'mountains') segLen = Math.floor(rand(104, 164));
       if (biome === 'forest') segLen = Math.floor(rand(72, 136));
+      if (biome === 'desert') segLen = Math.floor(rand(112, 176));
 
       const segmentStart = x;
       const segmentEnd = Math.min(WORLD_W - 1, x + segLen - 1);
       const center = (segmentStart + segmentEnd) / 2;
       const half = Math.max(1, (segmentEnd - segmentStart) / 2);
-      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : rand(0, 1.2);
-      const segmentBase = biome === 'plains' ? SURFACE_BASE + rand(-0.5, 0.5) : SURFACE_BASE + rand(-1.2, 1.2);
+      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : rand(0, 1.2);
+      const segmentBase = biome === 'plains' || biome === 'desert' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
 
       for (; x <= segmentEnd; x += 1) {
         const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
@@ -204,11 +245,13 @@
           target = SURFACE_BASE - peakLift * ridge + rand(-0.6, 0.6);
         } else if (biome === 'forest') {
           target += Math.sin((x - segmentStart) / 9) * 1.2 + rand(-0.4, 0.4);
+        } else if (biome === 'desert') {
+          target += Math.sin((x - segmentStart) / 14) * 0.9 + rand(-0.25, 0.25);
         } else if ((x - segmentStart) % Math.floor(rand(12, 22)) === 0) {
           target += rand(-0.4, 0.4);
         }
 
-        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : 0.4;
+        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : 0.4;
         state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
         state.biomeAt[x] = biome;
       }
@@ -256,6 +299,16 @@
     applyVolcanoSegment(state, start, start + width - 1);
   }
 
+  function ensureDesertSegment(state) {
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      if (state.biomeAt[tx] === 'desert') return;
+    }
+
+    const hostStart = Math.floor(rand(80, WORLD_W - 160));
+    const width = Math.floor(rand(120, 182));
+    applyDesertSegment(state, hostStart, Math.min(WORLD_W - 40, hostStart + width));
+  }
+
   function shapeVolcanoes(state, volcanoSegments) {
     for (const segment of volcanoSegments) {
       const radius = Math.max(10, Math.floor((segment.end - segment.start) / 2));
@@ -279,6 +332,7 @@
       const s = state.surfaceAt[tx];
       const biome = state.biomeAt[tx];
       const deepStart = deepStartAt(tx);
+      const upperStart = upperStartAt(tx);
       for (let ty = s; ty < WORLD_H; ty += 1) {
         if (ty === WORLD_H - 1) {
           state.world[ty][tx] = BLOCK.BEDROCK;
@@ -286,6 +340,11 @@
           state.world[ty][tx] = ty >= deepStart - 4 ? BLOCK.BLACKSTONE : BLOCK.BLACKSTONE;
         } else if (ty >= deepStart) {
           state.world[ty][tx] = BLOCK.DEEPSTONE;
+        } else if (biome === 'desert') {
+          if (ty === s) state.world[ty][tx] = BLOCK.SAND;
+          else if (ty < s + 3) state.world[ty][tx] = BLOCK.SAND;
+          else if (ty < upperStart - 1) state.world[ty][tx] = BLOCK.SANDSTONE;
+          else state.world[ty][tx] = BLOCK.STONE;
         } else if (biome === 'mountains') {
           state.world[ty][tx] = BLOCK.STONE;
         } else if (ty === s) {
@@ -527,6 +586,25 @@
     if (!a || !b || a.id === b.id) return;
     state.dwarfColony.edges.push({ from: a.id, to: b.id, type });
     state.dwarfColony.edges.push({ from: b.id, to: a.id, type });
+  }
+
+  function addHumanNode(state, settlementId, kind, x, y, meta = {}) {
+    const node = {
+      id: `hnode-${state.humanSettlements.nodes.length}`,
+      settlementId,
+      kind,
+      x,
+      y,
+      ...meta,
+    };
+    state.humanSettlements.nodes.push(node);
+    return node;
+  }
+
+  function addHumanEdge(state, a, b, type = 'walk') {
+    if (!a || !b || a.id === b.id) return;
+    state.humanSettlements.edges.push({ from: a.id, to: b.id, type });
+    state.humanSettlements.edges.push({ from: b.id, to: a.id, type });
   }
 
   function getSettlementNodes(state, settlementId, kind = null) {
@@ -1146,9 +1224,10 @@
       const surfaceBlock = getBlock(state, tx, s);
       if (surfaceBlock === BLOCK.WATER || surfaceBlock === BLOCK.LAVA) continue;
       if (biome === 'mountains') setBlock(state, tx, s, BLOCK.STONE);
+      else if (biome === 'desert') setBlock(state, tx, s, BLOCK.SAND);
       else if (biome === 'volcano') setBlock(state, tx, s, BLOCK.BLACKSTONE);
       else setBlock(state, tx, s, BLOCK.GRASS);
-      const filler = biome === 'volcano' ? BLOCK.BLACKSTONE : biome === 'mountains' ? BLOCK.STONE : BLOCK.DIRT;
+      const filler = biome === 'volcano' ? BLOCK.BLACKSTONE : biome === 'mountains' ? BLOCK.STONE : biome === 'desert' ? BLOCK.SANDSTONE : BLOCK.DIRT;
       for (let ty = s + 1; ty <= Math.min(WORLD_H - 2, s + 2); ty += 1) {
         if (getBlock(state, tx, ty) === BLOCK.AIR) setBlock(state, tx, ty, filler);
       }
@@ -1203,7 +1282,7 @@
   function plantTrees(state, surfaceFluidColumns) {
     for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
       const biome = state.biomeAt[tx];
-      if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || surfaceFluidColumns.has(tx)) continue;
+      if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || biome === 'desert' || surfaceFluidColumns.has(tx)) continue;
       const treeChance = biome === 'forest' ? 0.09 : 0.01;
       if (Math.random() >= treeChance) continue;
       const s = state.surfaceAt[tx];
@@ -1220,11 +1299,422 @@
     }
   }
 
+  function plantDesertFlora(state, surfaceFluidColumns) {
+    let cactusCount = 0;
+    let bushCount = 0;
+    function tryPlace(skipVillageBounds) {
+      for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
+        if (state.biomeAt[tx] !== 'desert' || surfaceFluidColumns.has(tx)) continue;
+        if (!skipVillageBounds && (state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
+        const s = state.surfaceAt[tx];
+        if (getBlock(state, tx, s) !== BLOCK.SAND || getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
+        if (Math.random() < 0.09 && getBlock(state, tx, s - 2) === BLOCK.AIR && getBlock(state, tx, s - 3) === BLOCK.AIR) {
+          const height = Math.random() < 0.34 ? 3 : 2;
+          for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.CACTUS);
+          cactusCount += 1;
+        } else if (Math.random() < 0.18) {
+          setBlock(state, tx, s - 1, BLOCK.DRY_BUSH);
+          bushCount += 1;
+        }
+      }
+    }
+
+    tryPlace(false);
+
+    if (cactusCount === 0 || bushCount === 0) {
+      for (const skipVillageBounds of [false, true]) {
+        for (let tx = 6; tx < WORLD_W - 6; tx += 1) {
+          if (state.biomeAt[tx] !== 'desert' || surfaceFluidColumns.has(tx)) continue;
+          if (!skipVillageBounds && (state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
+          const s = state.surfaceAt[tx];
+          if (getBlock(state, tx, s) !== BLOCK.SAND) continue;
+          if (cactusCount === 0 && getBlock(state, tx, s - 1) === BLOCK.AIR && getBlock(state, tx, s - 2) === BLOCK.AIR) {
+            setBlock(state, tx, s - 1, BLOCK.CACTUS);
+            setBlock(state, tx, s - 2, BLOCK.CACTUS);
+            cactusCount += 1;
+          } else if (bushCount === 0 && getBlock(state, tx, s - 1) === BLOCK.AIR) {
+            setBlock(state, tx, s - 1, BLOCK.DRY_BUSH);
+            bushCount += 1;
+          }
+          if (cactusCount > 0 && bushCount > 0) return;
+        }
+      }
+    }
+  }
+
+  function chooseVillageProfession(type) {
+    const pool = type === 'mountain_village' ? MOUNTAIN_PROFESSIONS : type === 'desert_village' ? DESERT_PROFESSIONS : PLAINS_PROFESSIONS;
+    return pool[Math.floor(rand(0, pool.length))];
+  }
+
+  function prepareVillageGround(state, x0, x1, baseY, type = 'plains_village') {
+    const style = getVillageStyle(type);
+    for (let tx = x0; tx <= x1; tx += 1) {
+      if (tx < 3 || tx >= WORLD_W - 3) continue;
+      state.surfaceAt[tx] = baseY;
+      state.biomeAt[tx] = type === 'desert_village' ? 'desert' : state.biomeAt[tx];
+      setBlock(state, tx, baseY, style.surface);
+      setBlock(state, tx, baseY + 1, style.subsoil);
+      setBlock(state, tx, baseY + 2, style.subsoil);
+      setBlock(state, tx, baseY + 3, style.deepSubsoil);
+      for (let ty = Math.max(1, baseY - 12); ty < baseY; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.BEDROCK) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+  }
+
+  function placeLampPost(state, tx, groundY) {
+    setBlock(state, tx, groundY - 1, BLOCK.PILLAR);
+    if (getBlock(state, tx, groundY - 2) === BLOCK.AIR) setBlock(state, tx, groundY - 2, BLOCK.TORCH);
+  }
+
+  function placeVillageChest(state, tx, ty, ownerSettlementId) {
+    setBlock(state, tx, ty, BLOCK.CHEST);
+    const key = chestKey(tx, ty);
+    if (!state.chests[key]) {
+      state.chests[key] = createChestState(ownerSettlementId);
+      fillChestLoot(state.chests[key]);
+    }
+  }
+
+  function spawnVillageSheep(state, tx, groundY, dir = 1) {
+    const animal = {
+      x: tx * TILE + 2,
+      y: (groundY - 1) * TILE,
+      w: 12,
+      h: 10,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      hp: 3,
+      dir,
+      state: 'idle',
+      stateTimer: 1.6,
+      grazing: true,
+      walkMin: 6,
+      walkMax: 10,
+      moveSpeed: 18,
+      panicSpeed: 54,
+      targetVx: 0,
+      hopCd: 0,
+      obstacleTimer: 0,
+      clickCd: 0,
+      edgeCooldown: 0,
+      commitTimer: 0,
+      stuckTimer: 0,
+      turnLockTimer: 0,
+      breath: 3.5,
+      inWater: false,
+      underwater: false,
+      lavaDamageTimer: 0,
+    };
+    state.animals.push(animal);
+  }
+
+  function decorateVillageRoad(state, x0, x1, groundY) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      setBlock(state, tx, groundY, BLOCK.PATH);
+      if ((tx - x0) % 14 === 6) {
+        placeLampPost(state, tx, groundY);
+      }
+    }
+  }
+
+  function decorateHouseInterior(state, house, village) {
+    const floorY = house.groundY;
+    const x0 = house.x0;
+    const x1 = house.x1;
+    const mid = Math.floor((x0 + x1) / 2);
+    setBlock(state, mid, floorY, village.type === 'mountain_village' ? BLOCK.STONE : village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
+    if (house.profession === 'merchant') {
+      placeVillageChest(state, mid - 1, floorY - 1, village.id);
+      placeVillageChest(state, mid + 1, floorY - 1, village.id);
+      setBlock(state, mid, floorY, village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
+    } else if (house.profession === 'miner') {
+      placeVillageChest(state, mid - 1, floorY - 1, village.id);
+      setBlock(state, mid + 1, floorY - 1, BLOCK.LADDER);
+      setBlock(state, mid, floorY, BLOCK.STONE);
+    } else if (house.profession === 'mason') {
+      setBlock(state, mid - 1, floorY, BLOCK.STONE);
+      setBlock(state, mid + 1, floorY, BLOCK.DEEPSTONE);
+      setBlock(state, mid, floorY - 1, BLOCK.PILLAR);
+    } else if (house.profession === 'lumber') {
+      setBlock(state, mid - 1, floorY, BLOCK.WOOD);
+      setBlock(state, mid + 1, floorY, BLOCK.PLANK);
+      placeVillageChest(state, mid, floorY - 1, village.id);
+    } else if (house.profession === 'farmer') {
+      placeVillageChest(state, mid - 1, floorY - 1, village.id);
+      setBlock(state, mid + 1, floorY, BLOCK.PLANK);
+    } else if (house.profession === 'shepherd') {
+      placeVillageChest(state, mid, floorY - 1, village.id);
+      setBlock(state, mid - 1, floorY, BLOCK.PLANK);
+      setBlock(state, mid + 1, floorY, BLOCK.PLANK);
+    } else if (village.type === 'desert_village') {
+      setBlock(state, mid - 1, floorY, BLOCK.SANDSTONE);
+      setBlock(state, mid + 1, floorY, BLOCK.SANDSTONE);
+    } else if (house.role === 'guard') {
+      setBlock(state, mid - 1, floorY, BLOCK.STONE);
+      setBlock(state, mid + 1, floorY, BLOCK.STONE);
+      placeVillageChest(state, mid, floorY - 1, village.id);
+    }
+  }
+
+  function decorateWorkyard(state, house, village, side) {
+    const baseY = house.groundY;
+    const workX = side < 0 ? house.x0 - 5 : house.x1 + 5;
+    if (house.profession === 'farmer') {
+      for (let dx = -2; dx <= 2; dx += 1) {
+        setBlock(state, workX + dx, baseY, BLOCK.DIRT);
+        if (dx % 2 === 0 && getBlock(state, workX + dx, baseY - 1) === BLOCK.AIR) setBlock(state, workX + dx, baseY - 1, BLOCK.LEAF);
+      }
+      placeLampPost(state, workX, baseY);
+    } else if (house.profession === 'shepherd') {
+      for (let dx = -3; dx <= 3; dx += 1) {
+        setBlock(state, workX + dx, baseY, BLOCK.PATH);
+      }
+      setBlock(state, workX - 3, baseY - 1, BLOCK.PILLAR);
+      setBlock(state, workX + 3, baseY - 1, BLOCK.PILLAR);
+      setBlock(state, workX - 3, baseY - 2, BLOCK.PILLAR);
+      setBlock(state, workX + 3, baseY - 2, BLOCK.PILLAR);
+      if (Math.random() < 0.7) spawnVillageSheep(state, workX - 1, baseY, 1);
+      if (Math.random() < 0.7) spawnVillageSheep(state, workX + 1, baseY, -1);
+    } else if (house.profession === 'lumber') {
+      setBlock(state, workX - 1, baseY - 1, BLOCK.WOOD);
+      setBlock(state, workX, baseY - 1, BLOCK.WOOD);
+      setBlock(state, workX + 1, baseY - 1, BLOCK.PLANK);
+      setBlock(state, workX + 2, baseY - 1, BLOCK.PILLAR);
+    } else if (house.profession === 'mason') {
+      setBlock(state, workX - 1, baseY - 1, BLOCK.STONE);
+      setBlock(state, workX, baseY - 1, BLOCK.DEEPSTONE);
+      setBlock(state, workX + 1, baseY - 1, BLOCK.PILLAR);
+      setBlock(state, workX + 2, baseY - 1, BLOCK.STONE);
+    } else if (house.profession === 'miner') {
+      placeVillageChest(state, workX - 1, baseY - 1, village.id);
+      setBlock(state, workX, baseY - 1, BLOCK.LADDER);
+      setBlock(state, workX + 1, baseY - 1, BLOCK.COAL_ORE);
+      if (Math.random() < 0.45) setBlock(state, workX + 2, baseY - 1, BLOCK.GOLD_ORE);
+    } else if (house.profession === 'merchant') {
+      placeVillageChest(state, workX - 1, baseY - 1, village.id);
+      setBlock(state, workX, baseY - 1, village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
+      placeVillageChest(state, workX + 1, baseY - 1, village.id);
+      placeLampPost(state, workX, baseY);
+    } else if (village.type === 'desert_village') {
+      setBlock(state, workX - 1, baseY - 1, BLOCK.SANDSTONE);
+      setBlock(state, workX, baseY - 1, BLOCK.CACTUS);
+      if (getBlock(state, workX + 1, baseY - 1) === BLOCK.AIR) setBlock(state, workX + 1, baseY - 1, BLOCK.DRY_BUSH);
+    }
+  }
+
+  function buildVillageTower(state, village, cx, groundY, inward) {
+    const topY = groundY - 10;
+    const style = getVillageStyle(village.type);
+    prepareVillageGround(state, cx - 3, cx + 3, groundY, village.type);
+    for (let tx = cx - 2; tx <= cx + 2; tx += 1) {
+      setBlock(state, tx, groundY, style.tower);
+      setBlock(state, tx, topY, style.tower);
+    }
+    for (let ty = topY; ty <= groundY; ty += 1) {
+      setBlock(state, cx - 2, ty, style.tower);
+      setBlock(state, cx + 2, ty, style.tower);
+      if (ty > topY && ty < groundY) {
+        setBlock(state, cx - 1, ty, BLOCK.AIR);
+        setBlock(state, cx, ty, BLOCK.AIR);
+        setBlock(state, cx + 1, ty, BLOCK.AIR);
+      }
+    }
+    for (let ty = groundY - 1; ty >= topY + 1; ty -= 1) setBlock(state, cx, ty, BLOCK.LADDER);
+    placeDoor(state, cx - 2, groundY - 1, { ownerSettlementId: village.id, tower: true, open: true, height: 2 });
+    placeDoor(state, cx + 2, groundY - 1, { ownerSettlementId: village.id, tower: true, open: true, height: 2 });
+    placeTorchPair(state, cx - 1, topY + 1, 1);
+    placeTorchPair(state, cx + 1, topY + 1, 1);
+    const baseNode = addHumanNode(state, village.id, 'tower_base', cx, groundY - 1);
+    const topNode = addHumanNode(state, village.id, 'tower_top', cx, topY + 1);
+    addHumanEdge(state, baseNode, topNode, 'ladder');
+    village.towers.push({
+      x: cx,
+      groundY,
+      doorX: cx + inward,
+      doorY: groundY - 1,
+      doorXs: [cx - 2, cx + 2],
+      baseNodeId: baseNode.id,
+      topNodeId: topNode.id
+    });
+    return { baseNode, topNode };
+  }
+
+  function buildVillageHouse(state, village, cx, groundY, profession, role = 'villager', options = {}) {
+    const style = getVillageStyle(village.type);
+    const wallBlock = style.wall;
+    const supportBlock = style.support;
+    const roofBlock = style.roof;
+    const halfW = options.halfW || (role === 'guard' ? 3 : village.type === 'mountain_village' ? Math.floor(rand(4, 6)) : Math.floor(rand(4, 6)));
+    const height = options.height || (role === 'guard' ? 4 : Math.floor(rand(5, 7)));
+    const x0 = cx - halfW;
+    const x1 = cx + halfW;
+    const topY = groundY - height;
+    prepareVillageGround(state, x0 - 2, x1 + 2, groundY, village.type);
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      setBlock(state, tx, groundY, style.subsoil);
+      setBlock(state, tx, topY, roofBlock);
+      if (tx > x0 && tx < x1 && Math.abs(tx - cx) < halfW) setBlock(state, tx, topY - 1, roofBlock);
+    }
+    for (let ty = topY; ty <= groundY; ty += 1) {
+      setBlock(state, x0, ty, wallBlock);
+      setBlock(state, x1, ty, wallBlock);
+      if (ty > topY && ty < groundY) {
+        for (let tx = x0 + 1; tx <= x1 - 1; tx += 1) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+
+    setBlock(state, x0, groundY - 1, supportBlock);
+    setBlock(state, x1, groundY - 1, supportBlock);
+    setBlock(state, x0 + 1, groundY - 2, BLOCK.AIR);
+    setBlock(state, x1 - 1, groundY - 2, BLOCK.AIR);
+    placeDoor(state, x0, groundY - 1, { ownerSettlementId: village.id, open: true, height: 2 });
+    placeDoor(state, x1, groundY - 1, { ownerSettlementId: village.id, open: true, height: 2 });
+    if (halfW >= 4) {
+      setBlock(state, cx - 1, topY + 2, BLOCK.AIR);
+      setBlock(state, cx + 1, topY + 2, BLOCK.AIR);
+    }
+    placeTorchPair(state, x0 + 1, groundY - 3, 0.7);
+    placeTorchPair(state, x1 - 1, groundY - 3, 0.7);
+
+    const houseNode = addHumanNode(state, village.id, 'house', cx, groundY - 1, { profession, role });
+    const workSide = options.workSide || (Math.random() < 0.5 ? -1 : 1);
+    const workNode = addHumanNode(state, village.id, 'work', cx + workSide * (halfW + 4), groundY - 1, { profession });
+    const house = {
+      id: `${village.id}-house-${village.houses.length}`,
+      x: cx,
+      x0,
+      x1,
+      y: groundY - 1,
+      groundY,
+      halfW,
+      height,
+      spawnX: cx,
+      spawnY: groundY - 1,
+      nodeId: houseNode.id,
+      workNodeId: workNode.id,
+      residentId: null,
+      respawnTimer: 0,
+      profession,
+      role,
+      leftDoorX: x0,
+      rightDoorX: x1,
+      doorY: groundY - 1,
+    };
+    village.houses.push(house);
+    decorateHouseInterior(state, house, village);
+    decorateWorkyard(state, house, village, workSide);
+    return { houseNode, workNode, house };
+  }
+
+  function buildGuardHut(state, village, tower, inward, guardIndex) {
+    const hutX = tower.x + inward * 8;
+    const { houseNode, workNode, house } = buildVillageHouse(state, village, hutX, tower.groundY, 'guard', 'guard', { halfW: 3, height: 4, workSide: inward });
+    house.towerNodeId = guardIndex % 2 === 0
+      ? (tower.topNodeId || (tower.topNode && tower.topNode.id) || null)
+      : (tower.baseNodeId || (tower.baseNode && tower.baseNode.id) || null);
+    return { houseNode, workNode, house };
+  }
+
+  function findBiomeSegments(state, biome) {
+    const segments = [];
+    let x = 0;
+    while (x < WORLD_W) {
+      if (state.biomeAt[x] !== biome) {
+        x += 1;
+        continue;
+      }
+      const start = x;
+      while (x < WORLD_W && state.biomeAt[x] === biome) x += 1;
+      segments.push({ start, end: x - 1, center: Math.floor((start + x - 1) / 2) });
+    }
+    return segments;
+  }
+
+  function generateHumanVillage(state, segment, type, index) {
+    const village = {
+      id: `human-village-${index}`,
+      type,
+      centerX: segment.center,
+      alertLevel: 0,
+      alertTimer: 0,
+      palette: VILLAGER_PALETTES[index % VILLAGER_PALETTES.length],
+      houses: [],
+      towers: [],
+      bounds: { x0: segment.center, x1: segment.center, y0: 0, y1: 0 },
+    };
+    const segmentWidth = segment.end - segment.start + 1;
+    const desiredCount = type === 'mountain_village' ? Math.floor(rand(6, 9)) : type === 'desert_village' ? Math.floor(rand(7, 10)) : Math.floor(rand(8, 11));
+    const spacing = type === 'mountain_village' ? 16 : type === 'desert_village' ? 16 : 15;
+    const minCount = type === 'mountain_village' ? 4 : type === 'desert_village' ? 5 : 6;
+    const maxCount = Math.max(minCount, Math.floor((segmentWidth - 32) / spacing) + 1);
+    const houseCount = Math.max(minCount, Math.min(desiredCount, maxCount));
+    const totalWidth = (houseCount - 1) * spacing;
+    const startX = clamp(segment.center - Math.floor(totalWidth / 2), segment.start + 16, segment.end - 16);
+    const groundY = state.surfaceAt[segment.center];
+    const centerNodes = [];
+    const roadX0 = startX - 12;
+    const roadX1 = startX + totalWidth + 12;
+
+    prepareVillageGround(state, roadX0 - 2, roadX1 + 2, groundY, type);
+    decorateVillageRoad(state, roadX0, roadX1, groundY);
+
+    for (let i = 0; i < houseCount; i += 1) {
+      const x = startX + i * spacing;
+      const roadNode = addHumanNode(state, village.id, 'center', x, groundY - 1);
+      centerNodes.push(roadNode);
+      if (i > 0) addHumanEdge(state, centerNodes[i - 1], roadNode, 'walk');
+    }
+
+    const leftTower = buildVillageTower(state, village, roadX0, groundY, 1);
+    const rightTower = buildVillageTower(state, village, roadX1, groundY, -1);
+    addHumanEdge(state, leftTower.baseNode, centerNodes[0], 'walk');
+    addHumanEdge(state, centerNodes[centerNodes.length - 1], rightTower.baseNode, 'walk');
+
+    const leftGuard = buildGuardHut(state, village, { ...leftTower, x: roadX0, groundY }, 1, 0);
+    const rightGuard = buildGuardHut(state, village, { ...rightTower, x: roadX1, groundY }, -1, 1);
+    addHumanEdge(state, leftGuard.houseNode, leftTower.baseNode, 'walk');
+    addHumanEdge(state, leftGuard.workNode, leftTower.baseNode, 'walk');
+    addHumanEdge(state, rightGuard.houseNode, rightTower.baseNode, 'walk');
+    addHumanEdge(state, rightGuard.workNode, rightTower.baseNode, 'walk');
+
+    for (let i = 0; i < houseCount; i += 1) {
+      const x = startX + i * spacing;
+      const profession = chooseVillageProfession(village.type);
+      const { houseNode, workNode, house } = buildVillageHouse(state, village, x, groundY, profession, 'villager');
+      addHumanEdge(state, houseNode, centerNodes[i], 'walk');
+      addHumanEdge(state, workNode, centerNodes[i], 'walk');
+    }
+
+    village.bounds = { x0: roadX0 - 8, x1: roadX1 + 8, y0: groundY - 12, y1: groundY + 3 };
+    state.humanSettlements.villages.push(village);
+  }
+
+  function generateVillages(state) {
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    const plains = findBiomeSegments(state, 'plains').filter((segment) => segment.end - segment.start >= 120);
+    const mountains = findBiomeSegments(state, 'mountains').filter((segment) => segment.end - segment.start >= 72);
+    const deserts = findBiomeSegments(state, 'desert').filter((segment) => segment.end - segment.start >= 72);
+    let index = 0;
+    plains.sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (plains[0]) generateHumanVillage(state, plains[0], 'plains_village', index++);
+    mountains.sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (mountains[0]) generateHumanVillage(state, mountains[0], 'mountain_village', index++);
+    deserts.sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (deserts[0]) generateHumanVillage(state, deserts[0], 'desert_village', index++);
+    if (plains[1]) generateHumanVillage(state, plains[1], 'plains_village', index++);
+  }
+
   function chooseSpawnColumn(state, blockedColumns) {
     for (let tx = 20; tx < WORLD_W - 5; tx += 1) {
       const biome = state.biomeAt[tx];
       if (blockedColumns.has(tx) || biome === 'mountains' || biome === 'volcano') continue;
-      if (getBlock(state, tx, state.surfaceAt[tx]) !== BLOCK.GRASS) continue;
+      if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
+      const surfaceBlock = getBlock(state, tx, state.surfaceAt[tx]);
+      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx - 1]) > 1) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx + 1]) > 1) continue;
       return tx;
@@ -1236,7 +1726,10 @@
     const basins = [];
     const surfaceFluidColumns = new Set();
     state.spiders.length = 0;
+    state.humans.length = 0;
     state.dwarves.length = 0;
+    state.doors = {};
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
     state.dwarfColony = {
       homes: [],
       stockpiles: [],
@@ -1249,6 +1742,7 @@
     };
 
     generateBiomeBands(state);
+    ensureDesertSegment(state);
     ensureVolcanoSegment(state);
     smoothSurface(state, 1);
     flattenPlains(state);
@@ -1308,6 +1802,8 @@
     removeFloatingDebris(state);
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
+    generateVillages(state);
+    plantDesertFlora(state, surfaceFluidColumns);
 
     for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
 

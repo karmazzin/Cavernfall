@@ -5,13 +5,14 @@
   const { clamp } = Game.math;
   const { getBlock, getLocationInfo } = Game.world;
   const { phaseInfo } = Game.dayCycle;
-  const { drawBlock } = Game.worldRenderer;
+  const { drawBlock, drawDoor } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawDwarf } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
   const { getLightSourcesInView } = Game.furnaceSystem;
+  const { getDoorAt } = Game.doorSystem;
 
   let darknessMaskCanvas = null;
   let darknessMaskCtx = null;
@@ -106,6 +107,21 @@
     return { tx, ty, sx: tx * TILE - camera.x, sy: ty * TILE - camera.y };
   }
 
+  function getHoveredHuman(state, camera, input, canvas) {
+    if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.ui && state.ui.controlMode === 'touch') return null;
+    const wx = input.mouse.x / VIEW_ZOOM + camera.x;
+    const wy = input.mouse.y / VIEW_ZOOM + camera.y;
+    for (const human of state.humans || []) {
+      if (human.role === 'guard') continue;
+      if (wx >= human.x && wx <= human.x + human.w && wy >= human.y && wy <= human.y + human.h) {
+        const dist = Math.hypot(human.x - state.player.x, human.y - state.player.y);
+        if (dist <= 110) return human;
+      }
+    }
+    return null;
+  }
+
   function drawChestHint(ctx, chest) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 225, 150, 0.95)';
@@ -130,6 +146,28 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, chest.sx + TILE / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
+  function drawHumanHint(ctx, human, camera) {
+    const labels = (Game.tradeSystem && Game.tradeSystem.HUMAN_PROFESSION_LABELS) || {};
+    const label = `${labels[human.profession] || 'Житель'}: торговать`;
+    const sx = human.x - camera.x + human.w / 2;
+    const sy = human.y - camera.y - 24;
+    ctx.save();
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    ctx.fillStyle = 'rgba(15, 12, 8, 0.9)';
+    ctx.fillRect(sx - boxW / 2, sy, boxW, boxH);
+    ctx.strokeStyle = 'rgba(160, 220, 255, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx - boxW / 2 + 0.5, sy + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#e6f7ff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, sx, sy + boxH / 2 + 0.5);
     ctx.restore();
   }
 
@@ -175,12 +213,22 @@
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
         const id = getBlock(state, x, y);
-        if (id !== BLOCK.AIR) drawBlock(ctx, id, x * TILE - camera.x, y * TILE - camera.y, time);
+        if (id === BLOCK.AIR) continue;
+        const sx = x * TILE - camera.x;
+        const sy = y * TILE - camera.y;
+        if (id === BLOCK.DOOR) {
+          const door = getDoorAt(state, x, y);
+          drawDoor(ctx, sx, sy, !!(door && door.open), !!(door && door.upper));
+        } else {
+          drawBlock(ctx, id, sx, sy, time);
+        }
       }
     }
 
     const hoveredChest = getHoveredChest(state, camera, input, canvas);
+    const hoveredHuman = getHoveredHuman(state, camera, input, canvas);
     if (hoveredChest) drawChestHint(ctx, hoveredChest);
+    if (hoveredHuman) drawHumanHint(ctx, hoveredHuman, camera);
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - camera.x;
@@ -206,6 +254,7 @@
     for (const animal of state.animals) drawSheep(ctx, animal, camera, time);
     for (const zombie of state.zombies) drawZombie(ctx, zombie, camera, time);
     for (const spider of state.spiders) drawSpider(ctx, spider, camera, time);
+    for (const human of state.humans || []) drawHuman(ctx, human, camera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
 
     drawPlayer(ctx, state, camera, time);

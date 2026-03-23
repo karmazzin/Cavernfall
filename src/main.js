@@ -9,13 +9,14 @@
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
   const { updateSpiders } = Game.spidersEntity;
+  const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood } = Game.inventory;
-  const { handleMouse } = Game.interaction;
+  const { handleMouse, useNearbyDoor } = Game.interaction;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
@@ -235,6 +236,10 @@
     eatFood: () => {
       if (app.screen === 'playing') eatFood(state);
     },
+    use: () => {
+      if (app.screen !== 'playing') return;
+      if (!useNearbyDoor(state, input, camera)) eatFood(state);
+    },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
     },
@@ -279,6 +284,7 @@
     updateAnimals(state, dt);
     updateZombies(state, dt);
     updateSpiders(state, dt);
+    updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
     updateFurnaces(state, dt);
@@ -302,6 +308,9 @@
     }
     for (const dwarf of state.dwarves) {
       if (dwarf.clickCd) dwarf.clickCd = Math.max(0, dwarf.clickCd - dt);
+    }
+    for (const human of state.humans) {
+      if (human.clickCd) human.clickCd = Math.max(0, human.clickCd - dt);
     }
 
     if (!isCreativeMode() && state.player.health <= 0) state.gameOver = true;

@@ -46,6 +46,19 @@
     return result;
   }
 
+  function normalizeDoors(doors) {
+    const result = {};
+    if (!doors || typeof doors !== 'object') return result;
+    for (const [key, door] of Object.entries(doors)) {
+      result[key] = {
+        open: !!(door && door.open),
+        ownerSettlementId: door && door.ownerSettlementId ? door.ownerSettlementId : null,
+        tower: !!(door && door.tower),
+      };
+    }
+    return result;
+  }
+
   function snapshotState(state) {
     return {
       worldMeta: state.worldMeta,
@@ -55,11 +68,14 @@
       animals: state.animals,
       zombies: state.zombies,
       spiders: state.spiders,
+      humans: state.humans,
+      humanSettlements: state.humanSettlements,
       dwarves: state.dwarves,
       dwarfColony: state.dwarfColony,
       foods: state.foods,
       chests: state.chests,
       furnaces: state.furnaces,
+      doors: state.doors,
       player: state.player,
       gameOver: state.gameOver,
       cycleTime: state.cycleTime,
@@ -164,6 +180,14 @@
       state.animals = Array.isArray(data.animals) ? data.animals : state.animals;
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
+      state.humans = Array.isArray(data.humans) ? data.humans : state.humans;
+      state.humanSettlements = data.humanSettlements && typeof data.humanSettlements === 'object'
+        ? {
+            villages: Array.isArray(data.humanSettlements.villages) ? data.humanSettlements.villages : [],
+            nodes: Array.isArray(data.humanSettlements.nodes) ? data.humanSettlements.nodes : [],
+            edges: Array.isArray(data.humanSettlements.edges) ? data.humanSettlements.edges : [],
+          }
+        : state.humanSettlements;
       state.dwarves = Array.isArray(data.dwarves) ? data.dwarves : state.dwarves;
       state.dwarfColony = data.dwarfColony && typeof data.dwarfColony === 'object'
         ? {
@@ -180,6 +204,7 @@
       state.foods = Array.isArray(data.foods) ? data.foods : state.foods;
       state.chests = normalizeChests(data.chests);
       state.furnaces = normalizeFurnaces(data.furnaces);
+      state.doors = normalizeDoors(data.doors);
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;
@@ -204,6 +229,7 @@
       state.crafting.cursor = createSlot();
       state.crafting.result = null;
       state.crafting.chestOpenKey = null;
+      state.crafting.tradeHumanId = null;
       state.pause.open = false;
       state.pause.confirmRestart = false;
       state.pause.statusText = '';

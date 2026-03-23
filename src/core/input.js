@@ -112,7 +112,7 @@
       keys.add(event.code);
       actions.unlockAudio();
 
-      if (event.code === 'KeyE' && !state.gameOver) actions.eatFood();
+      if (event.code === 'KeyE' && !state.gameOver && !event.repeat) actions.use();
       if (event.code === 'KeyF' && !event.repeat) actions.toggleCreativeFlight();
       if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
       if (event.code === 'Escape' && !event.repeat) actions.togglePause();

@@ -15,8 +15,9 @@
   const { getNearestFurnace } = Game.furnaceSystem;
   const { getNearestChest, getChestAt } = Game.chestSystem;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
-  const { TRADE_OFFERS, performTrade } = Game.tradeSystem;
+  const { getTraderOffers, performTrade } = Game.tradeSystem;
   const { onChestLootTaken, getNearestTrader } = Game.dwarvesEntity;
+  const { getNearestHumanTrader } = Game.humansEntity;
 
   function ensureCraftingState(state) {
     if (state.crafting) return state.crafting;
@@ -26,9 +27,10 @@
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
-      chestOpenKey: null,
-      tradeSettlementId: null,
-      tradeStatus: '',
+        chestOpenKey: null,
+        tradeSettlementId: null,
+        tradeHumanId: null,
+        tradeStatus: '',
     };
     return state.crafting;
   }
@@ -62,6 +64,7 @@
     crafting.open = false;
     crafting.chestOpenKey = null;
     crafting.tradeSettlementId = null;
+    crafting.tradeHumanId = null;
     crafting.tradeStatus = '';
     updateCraftingResult(state);
   }
@@ -70,6 +73,7 @@
     const crafting = ensureCraftingState(state);
     crafting.chestOpenKey = `${tx},${ty}`;
     crafting.tradeSettlementId = null;
+    crafting.tradeHumanId = null;
     crafting.tradeStatus = '';
     openCrafting(state);
   }
@@ -77,6 +81,16 @@
   function openTrade(state, settlementId) {
     const crafting = ensureCraftingState(state);
     crafting.tradeSettlementId = settlementId;
+    crafting.tradeHumanId = null;
+    crafting.chestOpenKey = null;
+    crafting.tradeStatus = '';
+    openCrafting(state);
+  }
+
+  function openHumanTrade(state, humanId) {
+    const crafting = ensureCraftingState(state);
+    crafting.tradeHumanId = humanId;
+    crafting.tradeSettlementId = null;
     crafting.chestOpenKey = null;
     crafting.tradeStatus = '';
     openCrafting(state);
@@ -102,6 +116,14 @@
     if (!crafting.tradeSettlementId) return null;
     const trader = getNearestTrader(state, 86);
     if (!trader || trader.settlement.id !== crafting.tradeSettlementId) return null;
+    return trader;
+  }
+
+  function getActiveHumanTrader(state) {
+    const crafting = ensureCraftingState(state);
+    if (!crafting.tradeHumanId) return null;
+    const trader = getNearestHumanTrader(state, 86);
+    if (!trader || trader.human.id !== crafting.tradeHumanId) return null;
     return trader;
   }
 
@@ -399,7 +421,7 @@
     const { x, y, button } = input.mouse;
     const activeFurnace = getNearestFurnace(state, 5);
     const activeChest = getActiveChest(state);
-    const trader = getActiveTrader(state);
+    const trader = getActiveTrader(state) || getActiveHumanTrader(state);
     const creative = isCreativeMode(state);
 
     if (contains(layout.tabs.craft, x, y)) {
@@ -508,14 +530,14 @@
     }
 
     if (trader) {
-      const offers = TRADE_OFFERS;
+      const offers = getTraderOffers(trader);
       const offerHeight = layout.mobile ? 26 : 34;
       const startX = layout.trade.panel.x + 10;
       const startY = layout.trade.panel.y + 30;
       for (let i = 0; i < offers.length; i += 1) {
         const rect = slotRect(startX, startY + i * (offerHeight + 6), layout.trade.panel.w - 20, offerHeight);
         if (!contains(rect, x, y)) continue;
-        crafting.tradeStatus = performTrade(state, offers[i].id) ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
+        crafting.tradeStatus = performTrade(state, trader, offers[i].id) ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
         input.mouse.justPressed = false;
         return true;
       }
@@ -542,6 +564,8 @@
     getCraftingLayout,
     getActiveChest,
     getActiveTrader,
+    getActiveHumanTrader,
+    openHumanTrade,
     handleCraftingPointer,
   };
 })();
