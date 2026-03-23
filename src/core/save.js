@@ -64,6 +64,7 @@
       worldMeta: state.worldMeta,
       world: state.world,
       biomeAt: state.biomeAt,
+      climateAt: state.climateAt,
       surfaceAt: state.surfaceAt,
       animals: state.animals,
       zombies: state.zombies,
@@ -176,6 +177,7 @@
       };
       state.world = Array.isArray(data.world) ? data.world : state.world;
       state.biomeAt = Array.isArray(data.biomeAt) ? data.biomeAt : state.biomeAt;
+      state.climateAt = Array.isArray(data.climateAt) ? data.climateAt : state.climateAt;
       state.surfaceAt = Array.isArray(data.surfaceAt) ? data.surfaceAt : state.surfaceAt;
       state.animals = Array.isArray(data.animals) ? data.animals : state.animals;
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;

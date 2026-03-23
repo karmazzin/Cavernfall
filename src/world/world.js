@@ -68,8 +68,13 @@
     const dwarfEnd = DWARF_END + offset;
     const upperEnd = UPPER_CAVE_END + offset;
     const caveBiome = ty >= deepStart ? 'deep' : ty > upperEnd && ty <= dwarfEnd ? 'dwarf_caves' : 'cave';
+    const surfaceBiome = state.biomeAt[safeTx];
+    const surfaceClimate = state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate';
+    const biome = inCave ? caveBiome : surfaceBiome;
+    const climate = inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
     return {
-      biome: inCave ? caveBiome : state.biomeAt[safeTx],
+      biome,
+      climate,
       inCave,
       surfaceY,
     };

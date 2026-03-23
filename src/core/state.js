@@ -44,6 +44,7 @@
       },
       world: createGrid(),
       biomeAt: Array(WORLD_W).fill('plains'),
+      climateAt: Array(WORLD_W).fill('temperate'),
       surfaceAt: Array(WORLD_W).fill(SURFACE_BASE),
       animals: [],
       zombies: [],

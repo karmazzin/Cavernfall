@@ -34,6 +34,13 @@
   const MOUNTAIN_PROFESSIONS = ['miner', 'miner', 'miner', 'mason', 'mason', 'merchant', 'lumber', 'farmer'];
   const DESERT_PROFESSIONS = ['merchant', 'merchant', 'mason', 'mason', 'miner', 'miner', 'farmer', 'shepherd'];
 
+  const CLIMATE = {
+    ANY: 'any',
+    COLD: 'cold',
+    TEMPERATE: 'temperate',
+    WARM: 'warm',
+  };
+
   function isUpperBand(y) {
     return y >= UPPER_CAVE_START && y <= UPPER_CAVE_END;
   }
@@ -76,6 +83,38 @@
 
   function isDesertBiome(biome) {
     return biome === 'desert';
+  }
+
+  function climateForBiome(biome) {
+    if (biome === 'mountains') return CLIMATE.COLD;
+    if (biome === 'desert' || biome === 'volcano') return CLIMATE.WARM;
+    if (biome === 'plains' || biome === 'forest') return CLIMATE.TEMPERATE;
+    return CLIMATE.ANY;
+  }
+
+  function chooseBiomeForClimate(climate, lastBiome) {
+    if (climate === CLIMATE.COLD) return 'mountains';
+    if (climate === CLIMATE.WARM) return 'desert';
+    if (lastBiome === 'forest') return Math.random() < 0.62 ? 'plains' : 'forest';
+    if (lastBiome === 'plains') return Math.random() < 0.38 ? 'forest' : 'plains';
+    return Math.random() < 0.34 ? 'forest' : 'plains';
+  }
+
+  function chooseClimate(lastClimate) {
+    const roll = Math.random();
+    if (lastClimate === CLIMATE.COLD) {
+      if (roll < 0.58) return CLIMATE.COLD;
+      if (roll < 0.88) return CLIMATE.TEMPERATE;
+      return CLIMATE.WARM;
+    }
+    if (lastClimate === CLIMATE.WARM) {
+      if (roll < 0.54) return CLIMATE.WARM;
+      if (roll < 0.86) return CLIMATE.TEMPERATE;
+      return CLIMATE.COLD;
+    }
+    if (roll < 0.62) return CLIMATE.TEMPERATE;
+    if (roll < 0.81) return CLIMATE.WARM;
+    return CLIMATE.COLD;
   }
 
   function getVillageStyle(type) {
@@ -197,6 +236,7 @@
       const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
       state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -2, 2), 6, 22));
       state.biomeAt[x] = 'volcano';
+      state.climateAt[x] = CLIMATE.WARM;
     }
   }
 
@@ -210,19 +250,17 @@
       const target = SURFACE_BASE + dune + rand(-0.3, 0.3);
       state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -0.7, 0.7), 20, 36));
       state.biomeAt[x] = 'desert';
+      state.climateAt[x] = CLIMATE.WARM;
     }
   }
 
   function generateBiomeBands(state) {
     let x = 0;
     let lastBiome = 'plains';
+    let lastClimate = CLIMATE.TEMPERATE;
     while (x < WORLD_W) {
-      let biome;
-      const roll = Math.random();
-      if (roll < (lastBiome === 'mountains' ? 0.1 : 0.16)) biome = 'mountains';
-      else if (roll < 0.28) biome = 'forest';
-      else if (roll < 0.44) biome = 'desert';
-      else biome = 'plains';
+      const climate = chooseClimate(lastClimate);
+      const biome = chooseBiomeForClimate(climate, lastBiome);
 
       let segLen = Math.floor(rand(90, 170));
       if (biome === 'mountains') segLen = Math.floor(rand(104, 164));
@@ -254,6 +292,7 @@
         const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : 0.4;
         state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
         state.biomeAt[x] = biome;
+        state.climateAt[x] = climate;
       }
 
       if (biome === 'mountains' && Math.random() < 0.24) {
@@ -264,6 +303,7 @@
       }
 
       lastBiome = biome;
+      lastClimate = climate;
     }
   }
 
@@ -307,6 +347,12 @@
     const hostStart = Math.floor(rand(80, WORLD_W - 160));
     const width = Math.floor(rand(120, 182));
     applyDesertSegment(state, hostStart, Math.min(WORLD_W - 40, hostStart + width));
+  }
+
+  function ensureClimateAt(state) {
+    if (!Array.isArray(state.climateAt) || state.climateAt.length !== WORLD_W) {
+      state.climateAt = Array(WORLD_W).fill(CLIMATE.TEMPERATE);
+    }
   }
 
   function shapeVolcanoes(state, volcanoSegments) {
@@ -1353,6 +1399,7 @@
       if (tx < 3 || tx >= WORLD_W - 3) continue;
       state.surfaceAt[tx] = baseY;
       state.biomeAt[tx] = type === 'desert_village' ? 'desert' : state.biomeAt[tx];
+      state.climateAt[tx] = climateForBiome(state.biomeAt[tx]);
       setBlock(state, tx, baseY, style.surface);
       setBlock(state, tx, baseY + 1, style.subsoil);
       setBlock(state, tx, baseY + 2, style.subsoil);
@@ -1729,6 +1776,7 @@
     state.humans.length = 0;
     state.dwarves.length = 0;
     state.doors = {};
+    ensureClimateAt(state);
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
     state.dwarfColony = {
       homes: [],
