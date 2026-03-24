@@ -1054,7 +1054,9 @@
         const deepStart = deepStartAt(tx);
         if (ty < deepStart - 3) continue;
         if (id === BLOCK.STONE && Math.random() < (ty >= deepStart ? 0.75 : 0.28)) setBlock(state, tx, ty, BLOCK.DEEPSTONE);
-        if (id === BLOCK.BLACKSTONE && Math.random() < 0.18) setBlock(state, tx, ty, BLOCK.DEEPSTONE);
+        if (id === BLOCK.BLACKSTONE && Math.random() < 0.18) {
+          setBlock(state, tx, ty, state.biomeAt[tx] === 'volcano' && Math.random() < (1 / 3) ? BLOCK.DIAMOND_ORE : BLOCK.DEEPSTONE);
+        }
       }
     }
 
@@ -1167,10 +1169,32 @@
     return total;
   }
 
+  function retrofitVolcanoDiamondOre(state, volcanoSegments) {
+    for (const segment of volcanoSegments) {
+      for (let tx = segment.start; tx <= segment.end; tx += 1) {
+        for (let ty = 0; ty < WORLD_H - 1; ty += 1) {
+          if (getBlock(state, tx, ty) === BLOCK.DEEPSTONE && Math.random() < (1 / 3)) setBlock(state, tx, ty, BLOCK.DIAMOND_ORE);
+        }
+      }
+    }
+  }
+
   function retrofitWorldFeatures(state) {
+    const volcanoSegments = [];
+    let x = 0;
+    while (x < WORLD_W) {
+      if (state.biomeAt[x] !== 'volcano') {
+        x += 1;
+        continue;
+      }
+      const start = x;
+      while (x < WORLD_W && state.biomeAt[x] === 'volcano') x += 1;
+      volcanoSegments.push({ start, end: x - 1 });
+    }
     if (countBlockInWorld(state, BLOCK.IRON_ORE) === 0) generateIronOre(state);
     if (countBlockInWorld(state, BLOCK.GOLD_ORE) === 0) generateGoldOre(state);
     if (countBlockInWorld(state, BLOCK.DEEP_ORE) === 0) generateDeepOre(state);
+    if (countBlockInWorld(state, BLOCK.DIAMOND_ORE) === 0 && volcanoSegments.length > 0) retrofitVolcanoDiamondOre(state, volcanoSegments);
   }
 
   function generateDeepOre(state) {

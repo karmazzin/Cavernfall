@@ -327,16 +327,18 @@
       ctx.fillText('Творческий инвентарь', area.x + 12, area.y + 26);
 
       const entries = getCreativeEntries();
-      const cols = layout.mobile ? 6 : 8;
-      const cell = layout.mobile ? 34 : 44;
-      const gap = layout.mobile ? 6 : 8;
+      const pagination = Game.crafting.getCreativePagination(layout, entries.length);
+      const { cols, cell, gap, pageSize, pageCount } = pagination;
+      state.crafting.creativePage = Math.max(0, Math.min(state.crafting.creativePage || 0, pageCount - 1));
       const startX = area.x + 12;
       const startY = area.y + 48;
-      for (let i = 0; i < entries.length; i += 1) {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
+      const pageStart = state.crafting.creativePage * pageSize;
+      const pageEnd = Math.min(entries.length, pageStart + pageSize);
+      for (let i = pageStart; i < pageEnd; i += 1) {
+        const localIndex = i - pageStart;
+        const col = localIndex % cols;
+        const row = Math.floor(localIndex / cols);
         const rect = { x: startX + col * (cell + gap), y: startY + row * (cell + gap), w: cell, h: cell };
-        if (rect.y + rect.h > area.y + area.h - 8) break;
         drawSlot(ctx, rect, entries[i]);
         if (input.mouse && input.mouse.x >= rect.x && input.mouse.x <= rect.x + rect.w && input.mouse.y >= rect.y && input.mouse.y <= rect.y + rect.h) {
           const tip = slotTooltipText(entries[i]);
@@ -346,6 +348,22 @@
           }
         }
       }
+
+      const prev = layout.creativeNav.prev;
+      const next = layout.creativeNav.next;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(prev.x, prev.y, prev.w, prev.h);
+      ctx.fillRect(next.x, next.y, next.w, next.h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeRect(prev.x, prev.y, prev.w, prev.h);
+      ctx.strokeRect(next.x, next.y, next.w, next.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${layout.mobile ? 14 : 16}px Arial`;
+      ctx.fillText('<', prev.x + 12, prev.y + 19);
+      ctx.fillText('>', next.x + 12, next.y + 19);
+      ctx.textAlign = 'center';
+      ctx.fillText(`Страница ${state.crafting.creativePage + 1} / ${pageCount}`, layout.creativeNav.label.x + layout.creativeNav.label.w / 2, layout.creativeNav.label.y + 15);
+      ctx.textAlign = 'left';
 
       if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
         const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };

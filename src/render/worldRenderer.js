@@ -82,6 +82,15 @@
       ctx.fillRect(x + 3, y + 3, 4, 4);
       ctx.fillRect(x + 9, y + 4, 3, 3);
       ctx.fillRect(x + 7, y + 10, 4, 3);
+    } else if (id === BLOCK.DIAMOND_ORE) {
+      ctx.fillStyle = '#4a505b';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#64d9ec';
+      ctx.fillRect(x + 3, y + 3, 3, 4);
+      ctx.fillRect(x + 9, y + 4, 4, 3);
+      ctx.fillRect(x + 7, y + 10, 3, 3);
+      ctx.fillStyle = 'rgba(230,255,255,0.24)';
+      ctx.fillRect(x + 4, y + 4, 1, 2);
     } else if (id === BLOCK.BLACKSTONE) {
       ctx.fillStyle = '#2f2f35';
       ctx.fillRect(x, y, TILE, TILE);

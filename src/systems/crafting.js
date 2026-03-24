@@ -26,6 +26,7 @@
     state.crafting = {
       open: false,
       tab: 'craft',
+      creativePage: 0,
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
@@ -197,6 +198,17 @@
       compact,
       slot,
       tabs,
+      creativeNav: mobile
+        ? {
+            prev: slotRect(panel.x + 14, panel.y + panel.h - 46, 34, 28),
+            next: slotRect(panel.x + panel.w - 48, panel.y + panel.h - 46, 34, 28),
+            label: { x: panel.x + 56, y: panel.y + panel.h - 42, w: panel.w - 112, h: 24 },
+          }
+        : {
+            prev: slotRect(panel.x + 560, panel.y + 34, 36, 28),
+            next: slotRect(panel.x + 1052, panel.y + 34, 36, 28),
+            label: { x: panel.x + 606, y: panel.y + 38, w: 436, h: 20 },
+          },
       grid,
       result: mobile
         ? slotRect(panel.x + panel.w - slot - 18, panel.y + 104, slot + 8)
@@ -244,7 +256,7 @@
       },
       creative: {
         area: mobile
-          ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 90 }
+          ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 126 }
           : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
       },
     };
@@ -442,6 +454,16 @@
     if (!isSlotEmpty(leftover)) copySlot(crafting.cursor, leftover);
   }
 
+  function getCreativePagination(layout, totalEntries) {
+    const cols = layout.mobile ? 6 : 8;
+    const cell = layout.mobile ? 34 : 44;
+    const gap = layout.mobile ? 6 : 8;
+    const rows = Math.max(1, Math.floor((layout.creative.area.h - 56) / (cell + gap)));
+    const pageSize = cols * rows;
+    const pageCount = Math.max(1, Math.ceil(totalEntries / pageSize));
+    return { cols, cell, gap, rows, pageSize, pageCount };
+  }
+
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
     const armor = ensureArmorSlots(state.player);
@@ -462,20 +484,34 @@
 
     if (creative && contains(layout.tabs.creative, x, y)) {
       crafting.tab = 'creative';
+      crafting.creativePage = 0;
       input.mouse.justPressed = false;
       return true;
     }
 
     if (creative && crafting.tab === 'creative') {
       const entries = getCreativeEntries();
-      const cols = layout.mobile ? 6 : 8;
-      const cell = layout.mobile ? 34 : 44;
-      const gap = layout.mobile ? 6 : 8;
+      const pagination = getCreativePagination(layout, entries.length);
+      const { cols, cell, gap, pageSize, pageCount } = pagination;
+      crafting.creativePage = Math.max(0, Math.min(crafting.creativePage || 0, pageCount - 1));
+      if (contains(layout.creativeNav.prev, x, y)) {
+        crafting.creativePage = (crafting.creativePage - 1 + pageCount) % pageCount;
+        input.mouse.justPressed = false;
+        return true;
+      }
+      if (contains(layout.creativeNav.next, x, y)) {
+        crafting.creativePage = (crafting.creativePage + 1) % pageCount;
+        input.mouse.justPressed = false;
+        return true;
+      }
       const startX = layout.creative.area.x + 12;
       const startY = layout.creative.area.y + 48;
-      for (let i = 0; i < entries.length; i += 1) {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
+      const pageStart = crafting.creativePage * pageSize;
+      const pageEnd = Math.min(entries.length, pageStart + pageSize);
+      for (let i = pageStart; i < pageEnd; i += 1) {
+        const localIndex = i - pageStart;
+        const col = localIndex % cols;
+        const row = Math.floor(localIndex / cols);
         const rect = slotRect(startX + col * (cell + gap), startY + row * (cell + gap), cell);
         if (!contains(rect, x, y)) continue;
         giveCreativeEntry(state, entries[i], button);
@@ -607,5 +643,6 @@
     openHumanTrade,
     handleCraftingPointer,
     getArmorSlotRects,
+    getCreativePagination,
   };
 })();

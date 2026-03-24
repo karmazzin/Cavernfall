@@ -9,6 +9,7 @@
   }
 
   function toolColor(tier, sword = false) {
+    if (tier === 'diamond') return sword ? '#9af2ff' : '#63d8ea';
     if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
     if (tier === 'stone') return sword ? '#c4ccd9' : '#9ca4b3';
     return sword ? '#d4b382' : '#c9a16b';
@@ -125,6 +126,36 @@
       ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
       ctx.fillRect(x + size * 0.32, y + size * 0.40, size * 0.32, size * 0.08);
+      return;
+    }
+
+    if (itemId === ITEM.SMALL_DIAMOND) {
+      ctx.fillStyle = '#59d8ef';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.16);
+      ctx.lineTo(x + size * 0.68, y + size * 0.34);
+      ctx.lineTo(x + size * 0.58, y + size * 0.70);
+      ctx.lineTo(x + size * 0.42, y + size * 0.70);
+      ctx.lineTo(x + size * 0.32, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(235,255,255,0.32)';
+      ctx.fillRect(x + size * 0.46, y + size * 0.26, size * 0.08, size * 0.14);
+      return;
+    }
+
+    if (itemId === ITEM.BIG_DIAMOND) {
+      ctx.fillStyle = '#5fe3f5';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.10);
+      ctx.lineTo(x + size * 0.76, y + size * 0.34);
+      ctx.lineTo(x + size * 0.64, y + size * 0.76);
+      ctx.lineTo(x + size * 0.36, y + size * 0.76);
+      ctx.lineTo(x + size * 0.24, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(245,255,255,0.34)';
+      ctx.fillRect(x + size * 0.45, y + size * 0.22, size * 0.10, size * 0.18);
       return;
     }
 

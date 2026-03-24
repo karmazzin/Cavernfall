@@ -30,6 +30,7 @@
     CACTUS: 25,
     DRY_BUSH: 26,
     IRON_ORE: 27,
+    DIAMOND_ORE: 28,
   };
 
   const BLOCK_COLORS = {
@@ -60,6 +61,7 @@
     [BLOCK.CACTUS]: '#3a8f48',
     [BLOCK.DRY_BUSH]: '#8d7445',
     [BLOCK.IRON_ORE]: '#8c7668',
+    [BLOCK.DIAMOND_ORE]: '#5c7f92',
   };
 
   const BREAK_TIME = {
@@ -83,6 +85,7 @@
     [BLOCK.CACTUS]: 0.4,
     [BLOCK.DRY_BUSH]: 0.15,
     [BLOCK.IRON_ORE]: 4.2,
+    [BLOCK.DIAMOND_ORE]: 6.4,
     [BLOCK.PILLAR]: 1.2,
     [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
@@ -111,6 +114,7 @@
     BLOCK.CACTUS,
     BLOCK.DRY_BUSH,
     BLOCK.IRON_ORE,
+    BLOCK.DIAMOND_ORE,
     BLOCK.TORCH,
     BLOCK.FURNACE,
   ]);

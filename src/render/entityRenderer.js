@@ -4,6 +4,7 @@
   const { selectedItemId, selectedToolId } = Game.inventory;
 
   function toolColor(tier, sword = false) {
+    if (tier === 'diamond') return sword ? '#9af2ff' : '#63d8ea';
     if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
     if (tier === 'stone') return sword ? '#d5dde8' : '#b4bfce';
     return sword ? '#d0b07d' : '#caa06c';

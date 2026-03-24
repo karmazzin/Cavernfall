@@ -189,6 +189,51 @@
       ],
       result: { id: ITEM.IRON_BOOTS, count: 1 },
     },
+    {
+      name: 'Большой алмаз',
+      pattern: [
+        [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],
+        [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],
+        [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],
+      ],
+      result: { id: ITEM.BIG_DIAMOND, count: 1 },
+    },
+    {
+      name: 'Алмазная кирка',
+      pattern: [
+        [ITEM.BIG_DIAMOND, ITEM.BIG_DIAMOND, ITEM.BIG_DIAMOND],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.DIAMOND_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Алмазный топор',
+      pattern: [
+        [ITEM.BIG_DIAMOND, ITEM.BIG_DIAMOND, null],
+        [ITEM.BIG_DIAMOND, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.DIAMOND_AXE, count: 1 },
+    },
+    {
+      name: 'Алмазная лопата',
+      pattern: [
+        [null, ITEM.BIG_DIAMOND, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.DIAMOND_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Алмазный меч',
+      pattern: [
+        [null, ITEM.BIG_DIAMOND, null],
+        [null, ITEM.BIG_DIAMOND, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.DIAMOND_SWORD, count: 1 },
+    },
   ];
 
   function trimPattern(pattern) {
