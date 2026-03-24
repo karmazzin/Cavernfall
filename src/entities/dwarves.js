@@ -6,6 +6,7 @@
   const { getBlock, blockSolid } = Game.world;
   const { moveEntity } = Game.physics;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
+  const { applyPlayerDamage } = Game.combat;
 
   const MAX_DWARVES = 24;
   const DWARF_STATE = {
@@ -402,9 +403,7 @@
         moveDirectToward(dwarf, state.player, dt);
         if (aabb(dwarf.x, dwarf.y, dwarf.w, dwarf.h, state.player.x, state.player.y, state.player.w, state.player.h) && dwarf.attackCd <= 0) {
           dwarf.attackCd = 0.85;
-          state.player.health = Math.max(0, state.player.health - 1);
-          state.attackFlash = 0.18;
-          if (state.player.health <= 0) state.gameOver = true;
+          applyPlayerDamage(state, 1, { flash: 0.18 });
         }
       } else {
         const playerDist = Math.hypot((state.player.x - dwarf.x), (state.player.y - dwarf.y));

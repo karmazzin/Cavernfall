@@ -119,6 +119,76 @@
       ],
       result: { id: ITEM.STONE_SWORD, count: 1 },
     },
+    {
+      name: 'Железная кирка',
+      pattern: [
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, ITEM.IRON_INGOT],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.IRON_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Железный топор',
+      pattern: [
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, null],
+        [ITEM.IRON_INGOT, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.IRON_AXE, count: 1 },
+    },
+    {
+      name: 'Железная лопата',
+      pattern: [
+        [null, ITEM.IRON_INGOT, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.IRON_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Железный меч',
+      pattern: [
+        [null, ITEM.IRON_INGOT, null],
+        [null, ITEM.IRON_INGOT, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.IRON_SWORD, count: 1 },
+    },
+    {
+      name: 'Железный шлем',
+      pattern: [
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+      ],
+      result: { id: ITEM.IRON_HELMET, count: 1 },
+    },
+    {
+      name: 'Железный нагрудник',
+      pattern: [
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, ITEM.IRON_INGOT],
+      ],
+      result: { id: ITEM.IRON_CHESTPLATE, count: 1 },
+    },
+    {
+      name: 'Железные поножи',
+      pattern: [
+        [ITEM.IRON_INGOT, ITEM.IRON_INGOT, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+      ],
+      result: { id: ITEM.IRON_LEGGINGS, count: 1 },
+    },
+    {
+      name: 'Железные ботинки',
+      pattern: [
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+        [ITEM.IRON_INGOT, null, ITEM.IRON_INGOT],
+      ],
+      result: { id: ITEM.IRON_BOOTS, count: 1 },
+    },
   ];
 
   function trimPattern(pattern) {

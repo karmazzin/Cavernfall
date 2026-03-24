@@ -6,6 +6,7 @@
   const { HOTBAR_SIZE } = Game.constants;
   const { createGameState } = Game.state;
   const { createSlot, normalizeSlot } = Game.inventory;
+  const { ARMOR_SLOT_ORDER, createArmorSlots } = Game.combat;
 
   function normalizeSlotArray(slots, size) {
     return Array.from({ length: size }, (_, index) => {
@@ -30,6 +31,19 @@
         burnTime: Number.isFinite(furnace.burnTime) ? furnace.burnTime : 0,
         burnTotal: Number.isFinite(furnace.burnTotal) ? furnace.burnTotal : 0,
       };
+    }
+    return result;
+  }
+
+  function normalizeArmorSlots(armor) {
+    const result = createArmorSlots();
+    for (const slotId of ARMOR_SLOT_ORDER) {
+      const raw = armor && armor[slotId] ? armor[slotId] : createSlot();
+      result[slotId] = normalizeSlot({
+        id: raw.id ?? null,
+        count: raw.count ?? 0,
+        durability: raw.durability ?? null,
+      });
     }
     return result;
   }
@@ -223,6 +237,7 @@
         Object.assign(state.player, data.player);
         state.player.hotbar = normalizeSlotArray(data.player.hotbar, HOTBAR_SIZE);
         state.player.inventory = normalizeSlotArray(data.player.inventory, 27);
+        state.player.armor = normalizeArmorSlots(data.player.armor);
       }
 
       state.crafting.open = false;

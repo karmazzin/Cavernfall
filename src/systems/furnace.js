@@ -25,6 +25,7 @@
   const SMELT_RECIPES = {
     [BLOCK.WOOD]: { id: ITEM.CHARCOAL, count: 1, time: 5 },
     [BLOCK.PLANK]: { id: ITEM.CHARCOAL, count: 1, time: 4.2 },
+    [ITEM.RAW_IRON]: { id: ITEM.IRON_INGOT, count: 1, time: 6 },
     [ITEM.RAW_GOLD]: { id: ITEM.GOLD_INGOT, count: 1, time: 6.2 },
   };
 

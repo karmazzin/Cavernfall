@@ -11,6 +11,8 @@
     getStorageSlots,
     addItemStackToSlots,
   } = Game.inventory;
+  const { ARMOR_SLOT_ORDER, ensureArmorSlots } = Game.combat;
+  const { isArmor, getArmorSlot } = Game.items;
   const { findMatchingRecipe } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { getNearestChest, getChestAt } = Game.chestSystem;
@@ -263,6 +265,24 @@
     return rects;
   }
 
+  function getArmorSlotRects(layout) {
+    if (layout.mobile) {
+      const startX = layout.panel.x + 14;
+      const y = layout.inventory[0].y - layout.slot - 18;
+      return ARMOR_SLOT_ORDER.map((slotId, index) => ({
+        slotId,
+        rect: slotRect(startX + index * (layout.slot + 6), y, layout.slot, layout.slot),
+      }));
+    }
+
+    const x = layout.panel.x + 332;
+    const startY = layout.panel.y + 96;
+    return ARMOR_SLOT_ORDER.map((slotId, index) => ({
+      slotId,
+      rect: slotRect(x, startY + index * 58, 48, 48),
+    }));
+  }
+
   function canMergeInto(slot, stack) {
     if (isSlotEmpty(slot) || isSlotEmpty(stack)) return false;
     return (
@@ -340,6 +360,15 @@
     else handleLeftClick(crafting.cursor, slot);
   }
 
+  function canPlaceArmor(cursor, armorSlotId) {
+    return isSlotEmpty(cursor) || (isArmor(cursor.id) && getArmorSlot(cursor.id) === armorSlotId);
+  }
+
+  function handleArmorSlotClick(crafting, slot, button, armorSlotId) {
+    if (!canPlaceArmor(crafting.cursor, armorSlotId)) return;
+    handleSlotClick(crafting, slot, button);
+  }
+
   function consumeCraftIngredients(crafting) {
     for (const slot of crafting.grid) {
       if (!isSlotEmpty(slot)) {
@@ -415,6 +444,7 @@
 
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
+    const armor = ensureArmorSlots(state.player);
     if (!crafting.open || !input.mouse.justPressed) return false;
 
     const layout = getCraftingLayout(canvas, state);
@@ -489,6 +519,15 @@
         input.mouse.justPressed = false;
         return true;
       }
+    }
+
+    const armorRects = getArmorSlotRects(layout);
+    for (const entry of armorRects) {
+      if (!contains(entry.rect, x, y)) continue;
+      handleArmorSlotClick(crafting, armor[entry.slotId], button, entry.slotId);
+      updateCraftingResult(state);
+      input.mouse.justPressed = false;
+      return true;
     }
 
     if (contains(layout.result, x, y)) {
@@ -567,5 +606,6 @@
     getActiveHumanTrader,
     openHumanTrade,
     handleCraftingPointer,
+    getArmorSlotRects,
   };
 })();

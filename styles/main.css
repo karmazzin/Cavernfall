@@ -179,6 +179,36 @@ body {
   margin-bottom: 18px;
 }
 
+.item-tooltip {
+  position: fixed;
+  z-index: 60;
+  max-width: 260px;
+  padding: 10px 12px;
+  background: rgba(14, 12, 10, 0.98);
+  border: 2px solid rgba(255, 220, 140, 0.96);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+}
+
+.item-tooltip.is-hidden {
+  display: none;
+}
+
+.item-tooltip-title {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.item-tooltip-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.84);
+}
+
 .world-list {
   display: flex;
   flex-direction: column;

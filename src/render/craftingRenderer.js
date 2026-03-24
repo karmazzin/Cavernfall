@@ -5,8 +5,10 @@
   const { getItemDefinition } = Game.items;
   const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
+  const { ARMOR_SLOT_ORDER, ensureArmorSlots } = Game.combat;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
   const { getTraderOffers, getTraderTitle, canAfford } = Game.tradeSystem;
+  const tooltipEl = document.getElementById('itemTooltip');
 
   function drawSlot(ctx, rect, slot, highlighted = false) {
     ctx.fillStyle = highlighted ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.45)';
@@ -24,6 +26,34 @@
       ctx.fillText(String(slot.count), rect.x + rect.w - 18, rect.y + rect.h - 10);
     }
     drawDurabilityBar(ctx, slot, rect.x, rect.y + rect.h, rect.w);
+  }
+
+  function showTooltip(canvas, anchorRect, title, subtitle) {
+    if (!tooltipEl) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const width = Math.min(260, Math.max(140, Math.max(title.length * 8, subtitle ? subtitle.length * 7 : 0) + 24));
+    const x = canvasRect.left + anchorRect.x + anchorRect.w + 12;
+    const y = canvasRect.top + anchorRect.y + anchorRect.h / 2 - 12;
+    tooltipEl.classList.remove('is-hidden');
+    tooltipEl.style.left = `${Math.max(8, Math.min(x, window.innerWidth - width - 8))}px`;
+    tooltipEl.style.top = `${Math.max(8, Math.min(y, window.innerHeight - 64))}px`;
+    tooltipEl.style.width = `${width}px`;
+    tooltipEl.innerHTML = `<div class="item-tooltip-title">${title}</div>${subtitle ? `<div class="item-tooltip-subtitle">${subtitle}</div>` : ''}`;
+  }
+
+  function hideTooltip() {
+    if (!tooltipEl) return;
+    tooltipEl.classList.add('is-hidden');
+  }
+
+  function slotTooltipText(slot) {
+    if (!slot || slot.id == null || slot.count <= 0) return null;
+    const def = getItemDefinition(slot.id);
+    if (!def) return null;
+    return {
+      title: def.label,
+      subtitle: `${slot.count} шт.`,
+    };
   }
 
   function drawSectionTitle(ctx, text, x, y, mobile = false) {
@@ -196,6 +226,29 @@
     for (let i = 0; i < slots.length; i += 1) drawSlot(ctx, slots[i], activeChest.chest.slots[i]);
   }
 
+  function armorSlotLabel(slotId) {
+    if (slotId === 'head') return 'Шлем';
+    if (slotId === 'chest') return 'Тело';
+    if (slotId === 'legs') return 'Ноги';
+    return 'Ступни';
+  }
+
+  function drawArmorSlots(ctx, layout, state) {
+    const armor = ensureArmorSlots(state.player);
+    const entries = Game.crafting.getArmorSlotRects(layout);
+    const titleX = layout.mobile ? layout.panel.x + 14 : layout.panel.x + 332;
+    const titleY = layout.mobile ? entries[0].rect.y - 10 : layout.panel.y + 82;
+    drawSectionTitle(ctx, 'Броня', titleX, titleY, layout.mobile);
+    ctx.font = `${layout.mobile ? 10 : 11}px Arial`;
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+
+    for (const entry of entries) {
+      drawSlot(ctx, entry.rect, armor[entry.slotId]);
+      if (layout.mobile) continue;
+      ctx.fillText(armorSlotLabel(entry.slotId), entry.rect.x + 60, entry.rect.y + 28);
+    }
+  }
+
   function drawTradePanel(ctx, layout, state, trader) {
     const panel = layout.trade.panel;
     const offers = getTraderOffers(trader);
@@ -237,6 +290,7 @@
     const activeChest = Game.crafting.getActiveChest(state);
     const trader = Game.crafting.getActiveTrader(state) || Game.crafting.getActiveHumanTrader(state);
     const creative = isCreativeMode(state);
+    let tooltipVisible = false;
     ctx.fillStyle = 'rgba(0,0,0,0.62)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -284,6 +338,13 @@
         const rect = { x: startX + col * (cell + gap), y: startY + row * (cell + gap), w: cell, h: cell };
         if (rect.y + rect.h > area.y + area.h - 8) break;
         drawSlot(ctx, rect, entries[i]);
+        if (input.mouse && input.mouse.x >= rect.x && input.mouse.x <= rect.x + rect.w && input.mouse.y >= rect.y && input.mouse.y <= rect.y + rect.h) {
+          const tip = slotTooltipText(entries[i]);
+          if (tip) {
+            showTooltip(canvas, rect, tip.title, tip.subtitle);
+            tooltipVisible = true;
+          }
+        }
       }
 
       if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
@@ -311,13 +372,28 @@
     drawSectionTitle(ctx, 'Результат', layout.result.x - 4, layout.result.y - 10, layout.mobile);
 
     drawSectionTitle(ctx, 'Инвентарь', layout.panel.x + (layout.mobile ? 14 : 32), layout.inventory[0].y - 12, layout.mobile);
+    drawArmorSlots(ctx, layout, state);
     for (let i = 0; i < layout.inventory.length; i += 1) {
       drawSlot(ctx, layout.inventory[i], state.player.inventory[i]);
+      if (input.mouse && input.mouse.x >= layout.inventory[i].x && input.mouse.x <= layout.inventory[i].x + layout.inventory[i].w && input.mouse.y >= layout.inventory[i].y && input.mouse.y <= layout.inventory[i].y + layout.inventory[i].h) {
+        const tip = slotTooltipText(state.player.inventory[i]);
+        if (tip) {
+          showTooltip(canvas, layout.inventory[i], tip.title, tip.subtitle);
+          tooltipVisible = true;
+        }
+      }
     }
 
     drawSectionTitle(ctx, 'Хотбар', layout.panel.x + (layout.mobile ? 14 : 32), layout.hotbar[0].y - 10, layout.mobile);
     for (let i = 0; i < layout.hotbar.length; i += 1) {
       drawSlot(ctx, layout.hotbar[i], state.player.hotbar[i], i === state.player.selectedSlot);
+      if (input.mouse && input.mouse.x >= layout.hotbar[i].x && input.mouse.x <= layout.hotbar[i].x + layout.hotbar[i].w && input.mouse.y >= layout.hotbar[i].y && input.mouse.y <= layout.hotbar[i].y + layout.hotbar[i].h) {
+        const tip = slotTooltipText(state.player.hotbar[i]);
+        if (tip) {
+          showTooltip(canvas, layout.hotbar[i], tip.title, tip.subtitle);
+          tooltipVisible = true;
+        }
+      }
     }
 
     if (resultSlot) {
@@ -336,6 +412,21 @@
       const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };
       drawSlot(ctx, cursorRect, state.crafting.cursor, true);
     }
+
+    if (input.mouse) {
+      const armor = ensureArmorSlots(state.player);
+      for (const entry of Game.crafting.getArmorSlotRects(layout)) {
+        if (input.mouse.x >= entry.rect.x && input.mouse.x <= entry.rect.x + entry.rect.w && input.mouse.y >= entry.rect.y && input.mouse.y <= entry.rect.y + entry.rect.h) {
+          const tip = slotTooltipText(armor[entry.slotId]);
+          if (tip) {
+            showTooltip(canvas, entry.rect, tip.title, tip.subtitle);
+            tooltipVisible = true;
+          }
+        }
+      }
+    }
+
+    if (!tooltipVisible) hideTooltip();
   }
 
   Game.craftingRenderer = { drawCraftingOverlay };

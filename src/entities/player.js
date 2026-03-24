@@ -5,6 +5,7 @@
   const { clamp } = Game.math;
   const { getBlock } = Game.world;
   const { moveEntity } = Game.physics;
+  const { applyPlayerDamage } = Game.combat;
   const audio = Game.audio;
   const LADDER_SPEED = 165;
 
@@ -102,11 +103,7 @@
 
     if (!creative && !wasOnGround && player.onGround && !player.inWater && preMoveVy > 700) {
       const damage = Math.ceil((preMoveVy - 700) / 180);
-      if (damage > 0) {
-        player.health = Math.max(0, player.health - damage);
-        state.attackFlash = 0.18;
-        if (player.health <= 0) state.gameOver = true;
-      }
+      if (damage > 0) applyPlayerDamage(state, damage, { flash: 0.18 });
     }
 
     const footTx = Math.floor((player.x + player.w / 2) / TILE);
@@ -115,8 +112,7 @@
     const inBody = getBlock(state, footTx, Math.floor((player.y + player.h / 2) / TILE));
 
     if (!creative && (under === BLOCK.LAVA || inBody === BLOCK.LAVA)) {
-      player.health = Math.max(0, player.health - dt * 2);
-      state.attackFlash = 0.2;
+      applyPlayerDamage(state, dt * 2, { flash: 0.2 });
       player.lavaSoundTimer -= dt;
       if (player.lavaSoundTimer <= 0) {
         audio.playBurn();

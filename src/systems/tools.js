@@ -4,7 +4,7 @@
   const { getItemDefinition, isTool } = Game.items;
 
   function preferredToolForBlock(blockId) {
-    if (blockId === BLOCK.STONE || blockId === BLOCK.COAL_ORE || blockId === BLOCK.GOLD_ORE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DEEP_ORE || blockId === BLOCK.FURNACE || blockId === BLOCK.SANDSTONE) return 'pickaxe';
+    if (blockId === BLOCK.STONE || blockId === BLOCK.COAL_ORE || blockId === BLOCK.IRON_ORE || blockId === BLOCK.GOLD_ORE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DEEP_ORE || blockId === BLOCK.FURNACE || blockId === BLOCK.SANDSTONE) return 'pickaxe';
     if (blockId === BLOCK.WOOD || blockId === BLOCK.PLANK) return 'axe';
     if (blockId === BLOCK.DIRT || blockId === BLOCK.GRASS || blockId === BLOCK.SAND) return 'shovel';
     if (blockId === BLOCK.COBWEB) return 'sword';
@@ -20,7 +20,11 @@
     const preferred = preferredToolForBlock(blockId);
     if (!preferred || tool.toolType !== preferred) return base;
 
-    if (tool.toolType === 'sword') return tool.tier === 'stone' ? base * 0.25 : base * 0.5;
+    if (tool.toolType === 'sword') {
+      if (tool.tier === 'iron') return base * 0.125;
+      return tool.tier === 'stone' ? base * 0.25 : base * 0.5;
+    }
+    if (tool.tier === 'iron') return base * 0.125;
     if (tool.tier === 'stone') return base * 0.25;
     if (tool.tier === 'wood') return base * 0.5;
     return base;

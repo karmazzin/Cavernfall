@@ -7,6 +7,7 @@
   const { BLOCK } = Game.blocks;
   const { getBlock, blockSolid, getLocationInfo, isLitAt } = Game.world;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
+  const { applyPlayerDamage } = Game.combat;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -240,9 +241,7 @@
       zombie.attackCd -= dt;
       if (targetIsPlayer && !creative && aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.7;
-        state.player.health = Math.max(0, state.player.health - 1);
-        state.attackFlash = 0.25;
-        if (state.player.health <= 0) state.gameOver = true;
+        applyPlayerDamage(state, 1, { flash: 0.25 });
       } else if (!targetIsPlayer && target && aabb(zombie.x, zombie.y, zombie.w, zombie.h, target.x, target.y, target.w, target.h) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.8;
         target.hp -= 1;

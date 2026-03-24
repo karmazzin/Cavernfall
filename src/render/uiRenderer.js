@@ -3,6 +3,7 @@
   const { TILE, HOTBAR_SIZE, BREATH_MAX, BREATH_CELL_SECONDS } = Game.constants;
   const { getLocationInfo } = Game.world;
   const { drawItem, drawDurabilityBar } = Game.itemRenderer;
+  const { getArmorValue } = Game.combat;
 
   function isMobileUi(canvas, state) {
     return !!(state.ui && state.ui.controlMode === 'touch') || canvas.width < 900;
@@ -114,10 +115,12 @@
     const infoX = mobile ? panelX + 132 : panelX + 148;
     const infoY1 = mobile ? panelY + 20 : panelY + 24;
     const infoY2 = mobile ? panelY + (creative ? 36 : 38) : panelY + (creative ? 46 : 46);
+    const infoY3 = mobile ? panelY + 56 : panelY + 68;
     ctx.font = `${mobile ? 11 : 16}px Arial`;
     ctx.fillText(`Биом: ${biome}`, infoX, infoY1);
     ctx.fillText(`Фаза: ${phaseLabel(phase.phase)}`, infoX, infoY2);
-    if (!mobile && !creative) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, panelY + 68);
+    if (!creative) ctx.fillText(`Броня: ${getArmorValue(state)}`, infoX, infoY3);
+    if (!mobile && !creative) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, infoY3);
 
     if (!creative) {
       const barW = mobile ? panelW - 24 : 240;

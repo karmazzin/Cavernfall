@@ -1,6 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { BREATH_CELL_SECONDS, BREATH_TOTAL } = Game.constants;
+  const { applyPlayerDamage } = Game.combat;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -39,9 +40,7 @@
       state.regenTick = 0;
       if (state.starvationTick >= 2.5) {
         state.starvationTick = 0;
-        state.player.health = Math.max(0, state.player.health - 1);
-        state.attackFlash = 0.18;
-        if (state.player.health <= 0) state.gameOver = true;
+        applyPlayerDamage(state, 1, { flash: 0.18, ignoreArmor: true });
       }
     } else {
       state.starvationTick = 0;
@@ -66,9 +65,7 @@
     if (state.player.underwater) {
       state.player.breath = Math.max(0, state.player.breath - dt);
       if (state.player.breath <= 0) {
-        state.player.health = Math.max(0, state.player.health - dt / BREATH_CELL_SECONDS);
-        state.attackFlash = 0.08;
-        if (state.player.health <= 0) state.gameOver = true;
+        applyPlayerDamage(state, dt / BREATH_CELL_SECONDS, { flash: 0.08, ignoreArmor: true });
       }
     } else {
       state.player.breath = Math.min(BREATH_TOTAL, state.player.breath + dt * 3);

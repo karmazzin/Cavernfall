@@ -8,6 +8,8 @@
     RAW_MUTTON: 'raw_mutton',
     COAL: 'coal',
     CHARCOAL: 'charcoal',
+    RAW_IRON: 'raw_iron',
+    IRON_INGOT: 'iron_ingot',
     RAW_GOLD: 'raw_gold',
     GOLD_INGOT: 'gold_ingot',
     COIN: 'coin',
@@ -22,6 +24,14 @@
     STONE_AXE: 'stone_axe',
     STONE_SHOVEL: 'stone_shovel',
     STONE_SWORD: 'stone_sword',
+    IRON_PICKAXE: 'iron_pickaxe',
+    IRON_AXE: 'iron_axe',
+    IRON_SHOVEL: 'iron_shovel',
+    IRON_SWORD: 'iron_sword',
+    IRON_HELMET: 'iron_helmet',
+    IRON_CHESTPLATE: 'iron_chestplate',
+    IRON_LEGGINGS: 'iron_leggings',
+    IRON_BOOTS: 'iron_boots',
   };
 
   const BLOCK_LABELS = {
@@ -40,6 +50,7 @@
     [BLOCK.FURNACE]: 'Печка',
     [BLOCK.BLACKSTONE]: 'Чёрный камень',
     [BLOCK.GOLD_ORE]: 'Золотая руда',
+    [BLOCK.IRON_ORE]: 'Железная руда',
     [BLOCK.PILLAR]: 'Столб',
     [BLOCK.LADDER]: 'Лестница',
     [BLOCK.DEEPSTONE]: 'Глубинный камень',
@@ -58,6 +69,8 @@
     [ITEM.RAW_MUTTON]: { id: ITEM.RAW_MUTTON, label: 'Сырая баранина', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 20 },
     [ITEM.COAL]: { id: ITEM.COAL, label: 'Уголь', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.CHARCOAL]: { id: ITEM.CHARCOAL, label: 'Древесный уголь', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.RAW_IRON]: { id: ITEM.RAW_IRON, label: 'Необработанное железо', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.IRON_INGOT]: { id: ITEM.IRON_INGOT, label: 'Железный слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.RAW_GOLD]: { id: ITEM.RAW_GOLD, label: 'Рудное золото', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.GOLD_INGOT]: { id: ITEM.GOLD_INGOT, label: 'Золотой слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.COIN]: { id: ITEM.COIN, label: 'Монета', kind: 'material', stackLimit: STACK_LIMIT },
@@ -144,6 +157,78 @@
       attackDamage: 3,
       durability: 131,
     },
+    [ITEM.IRON_PICKAXE]: {
+      id: ITEM.IRON_PICKAXE,
+      label: 'Железная кирка',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'pickaxe',
+      tier: 'iron',
+      attackDamage: 2,
+      durability: 250,
+    },
+    [ITEM.IRON_AXE]: {
+      id: ITEM.IRON_AXE,
+      label: 'Железный топор',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'axe',
+      tier: 'iron',
+      attackDamage: 2,
+      durability: 250,
+    },
+    [ITEM.IRON_SHOVEL]: {
+      id: ITEM.IRON_SHOVEL,
+      label: 'Железная лопата',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'shovel',
+      tier: 'iron',
+      attackDamage: 2,
+      durability: 250,
+    },
+    [ITEM.IRON_SWORD]: {
+      id: ITEM.IRON_SWORD,
+      label: 'Железный меч',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'sword',
+      tier: 'iron',
+      attackDamage: 5,
+      durability: 250,
+    },
+    [ITEM.IRON_HELMET]: {
+      id: ITEM.IRON_HELMET,
+      label: 'Железный шлем',
+      kind: 'armor',
+      armorSlot: 'head',
+      defense: 1,
+      stackLimit: 1,
+    },
+    [ITEM.IRON_CHESTPLATE]: {
+      id: ITEM.IRON_CHESTPLATE,
+      label: 'Железный нагрудник',
+      kind: 'armor',
+      armorSlot: 'chest',
+      defense: 3,
+      stackLimit: 1,
+    },
+    [ITEM.IRON_LEGGINGS]: {
+      id: ITEM.IRON_LEGGINGS,
+      label: 'Железные поножи',
+      kind: 'armor',
+      armorSlot: 'legs',
+      defense: 2,
+      stackLimit: 1,
+    },
+    [ITEM.IRON_BOOTS]: {
+      id: ITEM.IRON_BOOTS,
+      label: 'Железные ботинки',
+      kind: 'armor',
+      armorSlot: 'feet',
+      defense: 1,
+      stackLimit: 1,
+    },
   };
 
   function isBlockItem(itemId) {
@@ -174,6 +259,21 @@
     return !!(def && def.kind === 'tool');
   }
 
+  function isArmor(itemId) {
+    const def = getItemDefinition(itemId);
+    return !!(def && def.kind === 'armor');
+  }
+
+  function getArmorSlot(itemId) {
+    const def = getItemDefinition(itemId);
+    return def && def.kind === 'armor' ? def.armorSlot || null : null;
+  }
+
+  function getArmorDefense(itemId) {
+    const def = getItemDefinition(itemId);
+    return def && def.kind === 'armor' ? def.defense || 0 : 0;
+  }
+
   function getPlacedBlockId(itemId) {
     const def = getItemDefinition(itemId);
     return def && def.kind === 'block' ? def.blockId : null;
@@ -197,6 +297,9 @@
     isBlockItem,
     isPlaceableItem,
     isTool,
+    isArmor,
+    getArmorSlot,
+    getArmorDefense,
     getPlacedBlockId,
   };
 })();

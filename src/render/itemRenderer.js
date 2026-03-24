@@ -8,6 +8,48 @@
     ctx.fillRect(x + size * 0.44, y + size * 0.28, size * 0.12, size * 0.54);
   }
 
+  function toolColor(tier, sword = false) {
+    if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
+    if (tier === 'stone') return sword ? '#c4ccd9' : '#9ca4b3';
+    return sword ? '#d4b382' : '#c9a16b';
+  }
+
+  function drawArmorItem(ctx, def, x, y, size) {
+    ctx.fillStyle = '#b8c1ca';
+    ctx.strokeStyle = '#6f7b88';
+    ctx.lineWidth = Math.max(1, size * 0.04);
+    if (def.armorSlot === 'head') {
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.22, y + size * 0.60);
+      ctx.lineTo(x + size * 0.30, y + size * 0.28);
+      ctx.lineTo(x + size * 0.70, y + size * 0.28);
+      ctx.lineTo(x + size * 0.78, y + size * 0.60);
+      ctx.lineTo(x + size * 0.64, y + size * 0.60);
+      ctx.lineTo(x + size * 0.58, y + size * 0.48);
+      ctx.lineTo(x + size * 0.42, y + size * 0.48);
+      ctx.lineTo(x + size * 0.36, y + size * 0.60);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (def.armorSlot === 'chest') {
+      ctx.fillRect(x + size * 0.24, y + size * 0.22, size * 0.52, size * 0.50);
+      ctx.fillRect(x + size * 0.14, y + size * 0.26, size * 0.12, size * 0.28);
+      ctx.fillRect(x + size * 0.74, y + size * 0.26, size * 0.12, size * 0.28);
+      ctx.strokeRect(x + size * 0.24, y + size * 0.22, size * 0.52, size * 0.50);
+    } else if (def.armorSlot === 'legs') {
+      ctx.fillRect(x + size * 0.28, y + size * 0.20, size * 0.18, size * 0.54);
+      ctx.fillRect(x + size * 0.54, y + size * 0.20, size * 0.18, size * 0.54);
+      ctx.fillRect(x + size * 0.28, y + size * 0.20, size * 0.44, size * 0.16);
+      ctx.strokeRect(x + size * 0.28, y + size * 0.20, size * 0.18, size * 0.54);
+      ctx.strokeRect(x + size * 0.54, y + size * 0.20, size * 0.18, size * 0.54);
+    } else if (def.armorSlot === 'feet') {
+      ctx.fillRect(x + size * 0.22, y + size * 0.48, size * 0.20, size * 0.18);
+      ctx.fillRect(x + size * 0.56, y + size * 0.48, size * 0.20, size * 0.18);
+      ctx.fillRect(x + size * 0.22, y + size * 0.62, size * 0.28, size * 0.08);
+      ctx.fillRect(x + size * 0.56, y + size * 0.62, size * 0.28, size * 0.08);
+    }
+  }
+
   function drawItem(ctx, itemId, x, y, size = 24) {
     if (itemId == null) return;
 
@@ -52,6 +94,37 @@
       ctx.fill();
       ctx.fillStyle = 'rgba(255,220,180,0.12)';
       ctx.fillRect(x + size * 0.47, y + size * 0.30, size * 0.08, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.RAW_IRON) {
+      ctx.fillStyle = '#9f8e7d';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.26, y + size * 0.64);
+      ctx.lineTo(x + size * 0.34, y + size * 0.28);
+      ctx.lineTo(x + size * 0.62, y + size * 0.22);
+      ctx.lineTo(x + size * 0.76, y + size * 0.42);
+      ctx.lineTo(x + size * 0.56, y + size * 0.74);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(245,245,245,0.2)';
+      ctx.fillRect(x + size * 0.46, y + size * 0.30, size * 0.10, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.IRON_INGOT) {
+      ctx.fillStyle = '#c5ced8';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.20, y + size * 0.58);
+      ctx.lineTo(x + size * 0.30, y + size * 0.34);
+      ctx.lineTo(x + size * 0.70, y + size * 0.34);
+      ctx.lineTo(x + size * 0.80, y + size * 0.58);
+      ctx.lineTo(x + size * 0.68, y + size * 0.72);
+      ctx.lineTo(x + size * 0.32, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(x + size * 0.32, y + size * 0.40, size * 0.32, size * 0.08);
       return;
     }
 
@@ -154,24 +227,29 @@
       return;
     }
 
+    if (def.kind === 'armor') {
+      drawArmorItem(ctx, def, x, y, size);
+      return;
+    }
+
     drawToolHandle(ctx, x, y, size);
 
     if (def.toolType === 'pickaxe') {
-      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.fillRect(x + size * 0.18, y + size * 0.12, size * 0.64, size * 0.14);
       ctx.fillRect(x + size * 0.26, y + size * 0.22, size * 0.14, size * 0.12);
       ctx.fillRect(x + size * 0.60, y + size * 0.22, size * 0.14, size * 0.12);
     } else if (def.toolType === 'axe') {
-      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.fillRect(x + size * 0.18, y + size * 0.10, size * 0.32, size * 0.28);
       ctx.fillRect(x + size * 0.44, y + size * 0.16, size * 0.12, size * 0.1);
     } else if (def.toolType === 'shovel') {
-      ctx.fillStyle = def.tier === 'stone' ? '#9ca4b3' : '#c9a16b';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.beginPath();
       ctx.ellipse(x + size * 0.50, y + size * 0.22, size * 0.16, size * 0.14, 0, 0, Math.PI * 2);
       ctx.fill();
     } else if (def.toolType === 'sword') {
-      ctx.fillStyle = def.tier === 'stone' ? '#c4ccd9' : '#d4b382';
+      ctx.fillStyle = toolColor(def.tier, true);
       ctx.fillRect(x + size * 0.42, y + size * 0.08, size * 0.16, size * 0.48);
       ctx.fillStyle = '#7a5432';
       ctx.fillRect(x + size * 0.26, y + size * 0.54, size * 0.48, size * 0.08);

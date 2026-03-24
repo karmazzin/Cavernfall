@@ -1132,6 +1132,31 @@
     }
   }
 
+  function generateIronOre(state) {
+    const veinCount = Math.floor(rand(92, 138));
+    for (let i = 0; i < veinCount; i += 1) {
+      const tx = Math.floor(rand(8, WORLD_W - 9));
+      const roll = Math.random();
+      const band = roll < 0.34 ? 'upper' : roll < 0.76 ? 'dwarf' : 'deep';
+      const ty = band === 'upper'
+        ? Math.floor(rand(UPPER_CAVE_START - 2, UPPER_CAVE_END + 5))
+        : band === 'dwarf'
+          ? Math.floor(rand(dwarfStartAt(tx), dwarfEndAt(tx)))
+          : Math.floor(rand(deepStartAt(tx) - 1, WORLD_H - 7));
+      if (!oreHostMatches(getBlock(state, tx, ty))) continue;
+      const nearCave = getBlock(state, tx + 1, ty) === BLOCK.AIR || getBlock(state, tx - 1, ty) === BLOCK.AIR || getBlock(state, tx, ty + 1) === BLOCK.AIR || getBlock(state, tx, ty - 1) === BLOCK.AIR;
+      if (!nearCave && Math.random() < 0.79) continue;
+      const veinSize = band === 'deep' ? Math.floor(rand(4, 7)) : Math.floor(rand(4, 9));
+      let x = tx;
+      let y = ty;
+      for (let j = 0; j < veinSize; j += 1) {
+        if (oreHostMatches(getBlock(state, x, y))) setBlock(state, x, y, BLOCK.IRON_ORE);
+        x = clamp(x + Math.floor(rand(-1, 2)), 4, WORLD_W - 5);
+        y = clamp(y + Math.floor(rand(-1, 2)), 12, WORLD_H - 6);
+      }
+    }
+  }
+
   function countBlockInWorld(state, blockId) {
     let total = 0;
     for (let ty = 0; ty < WORLD_H; ty += 1) {
@@ -1143,6 +1168,7 @@
   }
 
   function retrofitWorldFeatures(state) {
+    if (countBlockInWorld(state, BLOCK.IRON_ORE) === 0) generateIronOre(state);
     if (countBlockInWorld(state, BLOCK.GOLD_ORE) === 0) generateGoldOre(state);
     if (countBlockInWorld(state, BLOCK.DEEP_ORE) === 0) generateDeepOre(state);
   }
@@ -1842,6 +1868,7 @@
     generateDeepZones(state, volcanoSegments);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
+    generateIronOre(state);
     generateGoldOre(state);
     generateDeepOre(state);
     for (const basin of basins) fillSurfaceBasin(state, basin);

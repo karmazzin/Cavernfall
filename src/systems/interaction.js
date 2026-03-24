@@ -29,6 +29,7 @@
 
   function getBlockDrop(blockId) {
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
+    if (blockId === BLOCK.IRON_ORE) return { id: ITEM.RAW_IRON, count: 1 };
     if (blockId === BLOCK.GOLD_ORE) return { id: ITEM.RAW_GOLD, count: 1 };
     if (blockId === BLOCK.DEEP_ORE) return { id: ITEM.DEEP_CRYSTAL, count: 1 };
     return { id: blockId, count: 1 };

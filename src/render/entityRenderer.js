@@ -3,6 +3,12 @@
   const { ITEM } = Game.items;
   const { selectedItemId, selectedToolId } = Game.inventory;
 
+  function toolColor(tier, sword = false) {
+    if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
+    if (tier === 'stone') return sword ? '#d5dde8' : '#b4bfce';
+    return sword ? '#d0b07d' : '#caa06c';
+  }
+
   function drawHeldTool(ctx, itemId, x, y, dir, swing = 0) {
     if (itemId == null) return;
     const def = Game.items.getItemDefinition(itemId);
@@ -15,20 +21,20 @@
     ctx.fillStyle = '#7a5432';
     ctx.fillRect(-1, -1, 2, 11);
     if (def.toolType === 'pickaxe') {
-      ctx.fillStyle = def.tier === 'stone' ? '#b4bfce' : '#caa06c';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.fillRect(-5, -4, 10, 3);
       ctx.fillRect(-5, -2, 3, 2);
       ctx.fillRect(2, -2, 3, 2);
     } else if (def.toolType === 'axe') {
-      ctx.fillStyle = def.tier === 'stone' ? '#b4bfce' : '#caa06c';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.fillRect(-5, -4, 6, 5);
     } else if (def.toolType === 'shovel') {
-      ctx.fillStyle = def.tier === 'stone' ? '#b4bfce' : '#caa06c';
+      ctx.fillStyle = toolColor(def.tier);
       ctx.beginPath();
       ctx.ellipse(0, -3, 3, 3, 0, 0, Math.PI * 2);
       ctx.fill();
     } else if (def.toolType === 'sword') {
-      ctx.fillStyle = def.tier === 'stone' ? '#d5dde8' : '#d0b07d';
+      ctx.fillStyle = toolColor(def.tier, true);
       ctx.fillRect(-1, -7, 2, 8);
       ctx.fillStyle = '#7a5432';
       ctx.fillRect(-4, 0, 8, 2);

@@ -3,6 +3,7 @@
   const { WORLD_W, SURFACE_BASE, TILE, HOTBAR_SIZE, BREATH_TOTAL } = Game.constants;
   const { createGrid } = Game.world;
   const { createSlot } = Game.inventory;
+  const { createArmorSlots } = Game.combat;
 
   function createPlayer() {
     return {
@@ -20,6 +21,7 @@
       selectedSlot: 0,
       inventory: Array.from({ length: 27 }, () => createSlot()),
       hotbar: Array.from({ length: HOTBAR_SIZE }, () => createSlot()),
+      armor: createArmorSlots(),
       breath: BREATH_TOTAL,
       inWater: false,
       underwater: false,

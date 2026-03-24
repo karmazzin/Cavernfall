@@ -7,6 +7,7 @@
   const { BLOCK } = Game.blocks;
   const { phaseInfo } = Game.dayCycle;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
+  const { applyPlayerDamage } = Game.combat;
 
   const MAX_SPIDERS = 14;
 
@@ -207,9 +208,7 @@
 
       if (targetIsPlayer && !creative && aabb(spider.x, spider.y, spider.w, spider.h, state.player.x, state.player.y, state.player.w, state.player.h) && spider.attackCd <= 0) {
         spider.attackCd = 0.9;
-        state.player.health = Math.max(0, state.player.health - 1);
-        state.attackFlash = 0.18;
-        if (state.player.health <= 0) state.gameOver = true;
+        applyPlayerDamage(state, 1, { flash: 0.18 });
       } else if (!targetIsPlayer && target && aabb(spider.x, spider.y, spider.w, spider.h, target.x, target.y, target.w, target.h) && spider.attackCd <= 0) {
         spider.attackCd = 0.95;
         target.hp -= 1;
