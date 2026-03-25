@@ -36,6 +36,10 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isSpectatorMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+  }
+
   function toggleCreativeFlight() {
     if (app.screen !== 'playing' || !isCreativeMode()) return;
     if (state.ui && state.ui.controlMode === 'touch') return;
@@ -58,6 +62,14 @@
     for (const key of Object.keys(state)) delete state[key];
     Object.assign(state, nextState);
     ensureCraftingState(state);
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') {
+      state.crafting.open = false;
+      state.crafting.chestOpenKey = null;
+      state.crafting.tradeSettlementId = null;
+      state.crafting.tradeHumanId = null;
+      state.crafting.tradeStatus = '';
+      state.player.creativeFlight = false;
+    }
     input.syncUiState();
     syncBodyUiState();
   }
@@ -90,7 +102,7 @@
     replaceState(nextState);
     withSeed(meta.seed, () => generateWorld(state));
     spawnAnimals(state);
-    if (meta.mode !== 'creative') seedStarterInventory();
+    if (meta.mode !== 'creative' && meta.mode !== 'spectator') seedStarterInventory();
   }
 
   function startNewWorld(options) {
@@ -234,10 +246,10 @@
 
   const input = setupInput(canvas, state, {
     eatFood: () => {
-      if (app.screen === 'playing') eatFood(state);
+      if (app.screen === 'playing' && !isSpectatorMode()) eatFood(state);
     },
     use: () => {
-      if (app.screen !== 'playing') return;
+      if (app.screen !== 'playing' || isSpectatorMode()) return;
       if (!useNearbyDoor(state, input, camera)) eatFood(state);
     },
     restart: () => {
@@ -246,7 +258,7 @@
     unlockAudio: () => Game.audio.unlock(),
     toggleCreativeFlight,
     toggleCrafting: () => {
-      if (app.screen !== 'playing') return;
+      if (app.screen !== 'playing' || isSpectatorMode()) return;
       toggleCrafting(state);
       syncBodyUiState();
     },
@@ -313,7 +325,7 @@
       if (human.clickCd) human.clickCd = Math.max(0, human.clickCd - dt);
     }
 
-    if (!isCreativeMode() && state.player.health <= 0) state.gameOver = true;
+    if (!isCreativeMode() && !isSpectatorMode() && state.player.health <= 0) state.gameOver = true;
   }
 
   const camera = createCamera(state, canvas);

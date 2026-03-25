@@ -9,8 +9,8 @@
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
   const { applyPlayerDamage } = Game.combat;
 
-  function isCreative(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  function ignoresPlayer(state) {
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
   }
 
   function isMineLike(state, tx, ty) {
@@ -131,7 +131,7 @@
   }
 
   function updateZombies(state, dt) {
-    const creative = isCreative(state);
+    const creative = ignoresPlayer(state);
     const phase = phaseInfo(state).phase;
     const sunlight = phase === 'day' || phase === 'sunrise';
 

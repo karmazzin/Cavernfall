@@ -38,8 +38,8 @@
 
   function applyPlayerDamage(state, amount, options = {}) {
     if (!Number.isFinite(amount) || amount <= 0) return 0;
-    const creative = !!(state.worldMeta && state.worldMeta.mode === 'creative');
-    if (creative) return 0;
+    const noDamage = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
+    if (noDamage) return 0;
 
     const ignoreArmor = !!options.ignoreArmor;
     const flash = options.flash ?? 0.18;

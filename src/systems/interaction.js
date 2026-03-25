@@ -27,6 +27,10 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isSpectator(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+  }
+
   function getBlockDrop(blockId) {
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
     if (blockId === BLOCK.IRON_ORE) return { id: ITEM.RAW_IRON, count: 1 };
@@ -96,6 +100,7 @@
   }
 
   function useNearbyDoor(state, input, camera) {
+    if (isSpectator(state)) return false;
     const target = findUsableDoor(state, input, camera);
     if (!target) return false;
     toggleDoor(state, target.tx, target.ty);
@@ -103,6 +108,12 @@
   }
 
   function handleMouse(state, input, camera, dt) {
+    if (isSpectator(state)) {
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
     if (state.pause && state.pause.open) {
       state.breaking = null;
       input.mouse.justPressed = false;

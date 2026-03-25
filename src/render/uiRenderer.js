@@ -91,6 +91,8 @@
   function drawUI(ctx, canvas, state, phase) {
     const mobile = isMobileUi(canvas, state);
     const creative = !!(state.worldMeta && state.worldMeta.mode === 'creative');
+    const spectator = !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+    if (spectator) return;
     const panelW = mobile ? Math.min(canvas.width - 24, 252) : 280;
     const panelH = creative ? (mobile ? 54 : 72) : mobile ? 82 : 110;
     const panelX = 12;

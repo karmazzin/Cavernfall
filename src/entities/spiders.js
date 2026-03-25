@@ -11,8 +11,8 @@
 
   const MAX_SPIDERS = 14;
 
-  function isCreative(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  function ignoresPlayer(state) {
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
   }
 
   function isMineLike(state, tx, ty) {
@@ -110,7 +110,7 @@
   }
 
   function updateSpiders(state, dt) {
-    const creative = isCreative(state);
+    const creative = ignoresPlayer(state);
     const phase = phaseInfo(state).phase;
     if (phase === 'night') {
       state.spiderSpawnTick += dt;

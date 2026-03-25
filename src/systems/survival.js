@@ -7,8 +7,12 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isNonSurvivalMode(state) {
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
+  }
+
   function updateSatiety(state, input, dt) {
-    if (isCreative(state)) {
+    if (isNonSurvivalMode(state)) {
       state.player.health = 10;
       state.player.satiety = 100;
       state.starvationTick = 0;
@@ -57,7 +61,7 @@
   }
 
   function updateBreath(state, dt) {
-    if (isCreative(state)) {
+    if (isNonSurvivalMode(state)) {
       state.player.breath = BREATH_TOTAL;
       return;
     }

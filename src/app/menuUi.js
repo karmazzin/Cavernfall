@@ -11,7 +11,9 @@
   }
 
   function modeLabel(mode) {
-    return mode === 'creative' ? 'Творческий' : 'Выживание';
+    if (mode === 'creative') return 'Творческий';
+    if (mode === 'spectator') return 'Спектатор';
+    return 'Выживание';
   }
 
   function renderMain() {
@@ -48,9 +50,14 @@
           <div class="menu-mode-row">
             <button class="menu-mode-btn ${model.mode === 'survival' ? 'is-active' : ''}" data-menu-mode="survival">Выживание</button>
             <button class="menu-mode-btn ${model.mode === 'creative' ? 'is-active' : ''}" data-menu-mode="creative">Творческий</button>
+            <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
           </div>
         </div>
-        <div class="menu-hint">В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.</div>
+        <div class="menu-hint">${model.mode === 'spectator'
+          ? 'В режиме спектатора игрок проходит сквозь блоки, не получает урон, не видит HUD и не может ни с чем взаимодействовать.'
+          : model.mode === 'creative'
+            ? 'В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.'
+            : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>
         <div class="menu-actions menu-actions-inline">
           <button class="menu-btn menu-btn-primary" data-menu-action="create-world">Создать</button>
           <button class="menu-btn" data-menu-action="back-main">Назад</button>

@@ -13,6 +13,10 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isSpectator(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+  }
+
   function updatePlayer(state, input, dt) {
     const { player } = state;
     if (player.facing !== -1 && player.facing !== 1) player.facing = 1;
@@ -34,6 +38,7 @@
     const inCobweb = blockCenter === BLOCK.COBWEB || blockHead === BLOCK.COBWEB || blockFeet === BLOCK.COBWEB;
     const onLadder = blockCenter === BLOCK.LADDER || blockHead === BLOCK.LADDER || blockFeet === BLOCK.LADDER;
     const creative = isCreative(state);
+    const spectator = isSpectator(state);
     const creativeFlight = creative && (touchMode || player.creativeFlight);
 
     player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
@@ -45,6 +50,24 @@
     if (right) player.vx += PLAYER_SPEED;
     if (player.vx < -1) player.facing = -1;
     else if (player.vx > 1) player.facing = 1;
+
+    if (spectator) {
+      const flyingDown = !controlsLocked && input.keys.has('KeyS');
+      player.inWater = false;
+      player.underwater = false;
+      player.onLadder = false;
+      player.onGround = false;
+      player.vy = 0;
+      if (jump) player.vy = -SWIM_SPEED;
+      else if (flyingDown) player.vy = SWIM_SPEED;
+      player.x += player.vx * dt;
+      player.y += player.vy * dt;
+      player.x = clamp(player.x, 0, WORLD_W * TILE - player.w);
+      player.y = clamp(player.y, 0, state.world.length * TILE - player.h);
+      player.stepUpHeight = 0;
+      player.lavaSoundTimer = 0;
+      return;
+    }
 
     if (creativeFlight) {
       const flyingDown = !controlsLocked && input.keys.has('KeyS');

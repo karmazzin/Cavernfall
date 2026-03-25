@@ -17,6 +17,10 @@
     ALERT: 'alert',
   };
 
+  function ignoresPlayer(state) {
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
+  }
+
   function ensureColony(state) {
     if (!state.dwarfColony || typeof state.dwarfColony !== 'object') {
       state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
@@ -257,6 +261,7 @@
   }
 
   function getNearestTrader(state, maxDistance = 72) {
+    if (ignoresPlayer(state)) return null;
     ensureColony(state);
     let best = null;
     let bestDist = maxDistance;
@@ -357,6 +362,7 @@
 
   function updateDwarves(state, dt) {
     ensureColony(state);
+    const ignorePlayer = ignoresPlayer(state);
 
     for (const settlement of state.dwarfColony.settlements) {
       settlement.alertTimer = Math.max(0, (settlement.alertTimer || 0) - dt);
@@ -396,7 +402,7 @@
           dwarf.attackCd = 0.7;
           hitHostile(threat, 1);
         }
-      } else if (settlement && settlement.hostileToPlayer) {
+      } else if (!ignorePlayer && settlement && settlement.hostileToPlayer) {
         dwarf.state = DWARF_STATE.FIGHT;
         dwarf.targetX = Math.floor((state.player.x + state.player.w / 2) / TILE);
         dwarf.targetY = Math.floor((state.player.y + state.player.h / 2) / TILE);
@@ -406,8 +412,8 @@
           applyPlayerDamage(state, 1, { flash: 0.18 });
         }
       } else {
-        const playerDist = Math.hypot((state.player.x - dwarf.x), (state.player.y - dwarf.y));
-        if (playerDist < 34 && settlement && !settlement.hostileToPlayer && dwarf.state !== DWARF_STATE.MINE) {
+        const playerDist = ignorePlayer ? Infinity : Math.hypot((state.player.x - dwarf.x), (state.player.y - dwarf.y));
+        if (!ignorePlayer && playerDist < 34 && settlement && !settlement.hostileToPlayer && dwarf.state !== DWARF_STATE.MINE) {
           dwarf.vx = 0;
           dwarf.dir = state.player.x < dwarf.x ? -1 : 1;
           dwarf.vy += GRAVITY * dt;
@@ -483,6 +489,7 @@
   }
 
   function onChestLootTaken(state, ownerSettlementId) {
+    if (ignoresPlayer(state)) return false;
     if (!ownerSettlementId) return false;
     const settlement = findSettlement(state, ownerSettlementId);
     if (!settlement) return false;

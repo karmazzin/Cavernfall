@@ -93,6 +93,7 @@
 
   function getHoveredChest(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     if (input.mouse.x < 0 || input.mouse.y < 0 || input.mouse.x > canvas.width || input.mouse.y > canvas.height) return null;
     const tx = Math.floor((input.mouse.x / VIEW_ZOOM + camera.x) / TILE);
@@ -109,6 +110,7 @@
 
   function getHoveredHuman(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     const wx = input.mouse.x / VIEW_ZOOM + camera.x;
     const wy = input.mouse.y / VIEW_ZOOM + camera.y;
