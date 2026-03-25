@@ -68,10 +68,12 @@
     const dwarfEnd = DWARF_END + offset;
     const upperEnd = UPPER_CAVE_END + offset;
     const caveBiome = ty >= deepStart ? 'deep' : ty > upperEnd && ty <= dwarfEnd ? 'dwarf_caves' : 'cave';
+    const fireRegion = state.fireCaves && state.fireCaves.region;
+    const inFireCaves = !!(fireRegion && tx >= fireRegion.x0 && tx <= fireRegion.x1 && ty >= fireRegion.y0 && ty <= fireRegion.y1);
     const surfaceBiome = state.biomeAt[safeTx];
     const surfaceClimate = state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate';
-    const biome = inCave ? caveBiome : surfaceBiome;
-    const climate = inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
+    const biome = inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
+    const climate = inFireCaves ? 'warm' : inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
     return {
       biome,
       climate,

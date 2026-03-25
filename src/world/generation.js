@@ -14,7 +14,7 @@
   const { BLOCK } = Game.blocks;
   const { rand, clamp } = Game.math;
   const { getBlock, setBlock } = Game.world;
-  const { chestKey, createChestState, fillChestLoot } = Game.chestSystem;
+  const { chestKey, createChestState, fillChestLoot, ensureChestAt } = Game.chestSystem;
   const { placeDoor } = Game.doorSystem;
   const DWARF_COLORS = [
     { tunic: '#8a5c34', hood: '#6c727f' },
@@ -40,6 +40,36 @@
     TEMPERATE: 'temperate',
     WARM: 'warm',
   };
+
+  function clearChestSlots(chest) {
+    for (let i = 0; i < chest.slots.length; i += 1) chest.slots[i] = { id: null, count: 0, durability: null };
+  }
+
+  function chestHasItem(chest, itemId, count = 1) {
+    let total = 0;
+    for (const slot of chest.slots) {
+      if (slot && slot.id === itemId) total += slot.count || 0;
+      if (total >= count) return true;
+    }
+    return false;
+  }
+
+  function removeItemFromChest(chest, itemId, count = 1) {
+    let left = count;
+    for (const slot of chest.slots) {
+      if (!slot || slot.id !== itemId || !slot.count) continue;
+      const take = Math.min(left, slot.count);
+      slot.count -= take;
+      left -= take;
+      if (slot.count <= 0) {
+        slot.id = null;
+        slot.count = 0;
+        slot.durability = null;
+      }
+      if (left <= 0) return true;
+    }
+    return false;
+  }
 
   function isUpperBand(y) {
     return y >= UPPER_CAVE_START && y <= UPPER_CAVE_END;
@@ -1082,6 +1112,103 @@
     }
   }
 
+  function generateFireCaves(state) {
+    const centerX = Math.floor(rand(120, WORLD_W - 120));
+    const centerY = Math.floor(rand(DEEP_START + 10, WORLD_H - 18));
+    const radiusX = Math.floor(rand(34, 54));
+    const radiusY = Math.floor(rand(10, 16));
+    const region = {
+      x0: centerX - radiusX - 2,
+      x1: centerX + radiusX + 2,
+      y0: centerY - radiusY - 4,
+      y1: Math.min(WORLD_H - 6, centerY + radiusY + 6),
+      centerX,
+      centerY,
+    };
+
+    for (let ty = region.y0; ty <= region.y1; ty += 1) {
+      for (let tx = region.x0; tx <= region.x1; tx += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2 || ty < DEEP_START - 2 || ty >= WORLD_H - 2) continue;
+        const nx = (tx - centerX) / radiusX;
+        const ny = (ty - centerY) / radiusY;
+        const oval = nx * nx + ny * ny;
+        if (oval <= 1.18) {
+          const rim = oval > 0.84;
+          setBlock(state, tx, ty, rim ? BLOCK.BASALT : BLOCK.AIR);
+          if (!rim && ty > centerY + 2 && Math.random() < 0.58) setBlock(state, tx, ty, BLOCK.LAVA);
+          if (!rim && ty <= centerY + 2 && Math.random() < 0.22) setBlock(state, tx, ty, BLOCK.BASALT);
+        }
+      }
+    }
+
+    for (let i = 0; i < 5; i += 1) {
+      const lx = Math.floor(rand(region.x0 + 6, region.x1 - 6));
+      const ly = Math.floor(rand(centerY, region.y1 - 3));
+      carveCircle(state, lx, ly, Math.floor(rand(3, 6)), BLOCK.LAVA);
+      carveCircle(state, lx, ly - 1, Math.floor(rand(3, 5)), BLOCK.AIR);
+      for (let ty = ly - 3; ty <= ly + 4; ty += 1) {
+        for (let tx = lx - 6; tx <= lx + 6; tx += 1) {
+          if (getBlock(state, tx, ty) === BLOCK.DEEPSTONE || getBlock(state, tx, ty) === BLOCK.BLACKSTONE || getBlock(state, tx, ty) === BLOCK.STONE) {
+            setBlock(state, tx, ty, BLOCK.BASALT);
+          }
+        }
+      }
+    }
+
+    const domeRadiusX = 8;
+    const domeRadiusY = 6;
+    const shrineFloorY = centerY + domeRadiusY - 1;
+    for (let ty = centerY - domeRadiusY - 1; ty <= centerY + domeRadiusY + 1; ty += 1) {
+      for (let tx = centerX - domeRadiusX - 1; tx <= centerX + domeRadiusX + 1; tx += 1) {
+        const nx = (tx - centerX) / domeRadiusX;
+        const ny = (ty - centerY) / domeRadiusY;
+        const oval = nx * nx + ny * ny;
+        if (oval <= 1.1) {
+          if (oval >= 0.72) setBlock(state, tx, ty, BLOCK.FIRE_SEAL);
+          else setBlock(state, tx, ty, BLOCK.AIR);
+        }
+      }
+    }
+    for (let tx = centerX - domeRadiusX + 1; tx <= centerX + domeRadiusX - 1; tx += 1) setBlock(state, tx, shrineFloorY + 1, BLOCK.BASALT);
+    setBlock(state, centerX - 2, shrineFloorY, BLOCK.BASALT);
+    setBlock(state, centerX + 2, shrineFloorY, BLOCK.BASALT);
+    placeTorchPair(state, centerX - 3, centerY - 2, 1);
+    placeTorchPair(state, centerX + 3, centerY - 2, 1);
+
+    const altarChestX = centerX;
+    const altarChestY = shrineFloorY;
+    setBlock(state, altarChestX, altarChestY, BLOCK.CHEST);
+    const altarChest = ensureChestAt(state, altarChestX, altarChestY, null);
+    clearChestSlots(altarChest);
+
+    state.fireCaves.region = region;
+    state.fireCaves.shrine = {
+      altarChestX,
+      altarChestY,
+      rewardChestX: centerX + 4,
+      rewardChestY: shrineFloorY,
+      activated: false,
+      rewardSpawned: false,
+    };
+  }
+
+  function checkFireShrineActivation(state, tx, ty) {
+    const shrine = state.fireCaves && state.fireCaves.shrine;
+    if (!shrine || shrine.activated) return false;
+    if (tx !== shrine.altarChestX || ty !== shrine.altarChestY) return false;
+    const chest = state.chests && state.chests[chestKey(tx, ty)];
+    if (!chest || !chestHasItem(chest, Game.items.ITEM.DEEP_DIAMOND, 1)) return false;
+
+    removeItemFromChest(chest, Game.items.ITEM.DEEP_DIAMOND, 1);
+    setBlock(state, shrine.rewardChestX, shrine.rewardChestY, BLOCK.CHEST);
+    const rewardChest = ensureChestAt(state, shrine.rewardChestX, shrine.rewardChestY, null);
+    clearChestSlots(rewardChest);
+    rewardChest.slots[0] = { id: Game.items.ITEM.FIRE_CRYSTAL, count: 1, durability: null };
+    shrine.activated = true;
+    shrine.rewardSpawned = true;
+    return true;
+  }
+
   function oreHostMatches(blockId) {
     return blockId === BLOCK.STONE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE;
   }
@@ -1826,6 +1953,7 @@
     state.humans.length = 0;
     state.dwarves.length = 0;
     state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
     ensureClimateAt(state);
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
     state.dwarfColony = {
@@ -1890,6 +2018,7 @@
     generateDwarfEntrances(state, dwarfSettlements);
     generateFalseDwarfSeals(state, Math.floor(rand(2, 5)));
     generateDeepZones(state, volcanoSegments);
+    generateFireCaves(state);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
     generateIronOre(state);
@@ -1911,5 +2040,5 @@
     state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
   }
 
-  Game.generation = { generateWorld, retrofitWorldFeatures };
+  Game.generation = { generateWorld, retrofitWorldFeatures, checkFireShrineActivation };
 })();

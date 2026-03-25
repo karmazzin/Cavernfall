@@ -5,7 +5,7 @@
   const TIER_ORDER = { wood: 0, stone: 1, iron: 2, diamond: 3 };
 
   function preferredToolForBlock(blockId) {
-    if (blockId === BLOCK.STONE || blockId === BLOCK.COAL_ORE || blockId === BLOCK.IRON_ORE || blockId === BLOCK.GOLD_ORE || blockId === BLOCK.DIAMOND_ORE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DEEP_ORE || blockId === BLOCK.FURNACE || blockId === BLOCK.SANDSTONE) return 'pickaxe';
+    if (blockId === BLOCK.STONE || blockId === BLOCK.COAL_ORE || blockId === BLOCK.IRON_ORE || blockId === BLOCK.GOLD_ORE || blockId === BLOCK.DIAMOND_ORE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DEEP_ORE || blockId === BLOCK.FURNACE || blockId === BLOCK.SANDSTONE || blockId === BLOCK.BASALT || blockId === BLOCK.FIRE_SEAL) return 'pickaxe';
     if (blockId === BLOCK.WOOD || blockId === BLOCK.PLANK) return 'axe';
     if (blockId === BLOCK.DIRT || blockId === BLOCK.GRASS || blockId === BLOCK.SAND) return 'shovel';
     if (blockId === BLOCK.COBWEB) return 'sword';
@@ -14,6 +14,7 @@
 
   function requiredHarvestTier(blockId) {
     if (blockId === BLOCK.DIAMOND_ORE) return 'iron';
+    if (blockId === BLOCK.FIRE_SEAL) return 'diamond';
     return null;
   }
 

@@ -72,6 +72,10 @@
       chests: {},
       furnaces: {},
       doors: {},
+      fireCaves: {
+        region: null,
+        shrine: null,
+      },
       player: createPlayer(),
       gameOver: false,
       cycleTime: 0,

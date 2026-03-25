@@ -116,6 +116,29 @@
       ctx.fillRect(x + 7, y + 10, 3, 3);
       ctx.fillStyle = 'rgba(245,236,255,0.18)';
       ctx.fillRect(x + 4, y + 4, 1, 2);
+    } else if (id === BLOCK.BASALT) {
+      ctx.fillStyle = '#474247';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#5a545a';
+      ctx.fillRect(x + 2, y + 2, 5, 3);
+      ctx.fillRect(x + 9, y + 6, 4, 3);
+      ctx.fillStyle = '#2d292d';
+      ctx.fillRect(x + 5, y + 10, 6, 3);
+    } else if (id === BLOCK.FIRE_SEAL) {
+      ctx.fillStyle = '#5f352f';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7d4d43';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.strokeStyle = '#b86b4c';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + 4);
+      ctx.lineTo(x + 11, y + 8);
+      ctx.lineTo(x + 8, y + 12);
+      ctx.lineTo(x + 5, y + 8);
+      ctx.closePath();
+      ctx.stroke();
     } else if (id === BLOCK.TORCH) {
       const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);
       const flameW = 3 + Math.round(flicker * 2);

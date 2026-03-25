@@ -20,6 +20,7 @@
   const { getTraderOffers, performTrade } = Game.tradeSystem;
   const { onChestLootTaken, getNearestTrader } = Game.dwarvesEntity;
   const { getNearestHumanTrader } = Game.humansEntity;
+  const { checkFireShrineActivation } = Game.generation;
 
   function ensureCraftingState(state) {
     if (state.crafting) return state.crafting;
@@ -608,6 +609,7 @@
         handleSlotClick(crafting, activeChest.chest.slots[i], button);
         const afterCount = activeChest.chest.slots.reduce((sum, slot) => sum + (slot && slot.count ? slot.count : 0), 0);
         if (afterCount < beforeCount) onChestLootTaken(state, activeChest.chest.ownerSettlementId);
+        checkFireShrineActivation(state, activeChest.tx, activeChest.ty);
         input.mouse.justPressed = false;
         return true;
       }

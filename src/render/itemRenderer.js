@@ -220,6 +220,40 @@
       return;
     }
 
+    if (itemId === ITEM.DEEP_DIAMOND) {
+      ctx.fillStyle = '#6ac9ff';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.08);
+      ctx.lineTo(x + size * 0.78, y + size * 0.34);
+      ctx.lineTo(x + size * 0.64, y + size * 0.80);
+      ctx.lineTo(x + size * 0.36, y + size * 0.80);
+      ctx.lineTo(x + size * 0.22, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#8a63d4';
+      ctx.fillRect(x + size * 0.44, y + size * 0.30, size * 0.12, size * 0.24);
+      ctx.fillStyle = 'rgba(245,255,255,0.34)';
+      ctx.fillRect(x + size * 0.47, y + size * 0.18, size * 0.08, size * 0.14);
+      return;
+    }
+
+    if (itemId === ITEM.FIRE_CRYSTAL) {
+      ctx.fillStyle = '#ff7a2a';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.12);
+      ctx.lineTo(x + size * 0.74, y + size * 0.34);
+      ctx.lineTo(x + size * 0.60, y + size * 0.78);
+      ctx.lineTo(x + size * 0.40, y + size * 0.78);
+      ctx.lineTo(x + size * 0.26, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffd36e';
+      ctx.fillRect(x + size * 0.45, y + size * 0.26, size * 0.10, size * 0.18);
+      ctx.fillStyle = 'rgba(255,245,205,0.32)';
+      ctx.fillRect(x + size * 0.48, y + size * 0.16, size * 0.06, size * 0.12);
+      return;
+    }
+
     if (itemId === ITEM.WHEAT) {
       ctx.fillStyle = '#c8ad4e';
       ctx.fillRect(x + size * 0.48, y + size * 0.18, size * 0.06, size * 0.56);

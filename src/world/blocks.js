@@ -31,6 +31,8 @@
     DRY_BUSH: 26,
     IRON_ORE: 27,
     DIAMOND_ORE: 28,
+    BASALT: 29,
+    FIRE_SEAL: 30,
   };
 
   const BLOCK_COLORS = {
@@ -62,6 +64,8 @@
     [BLOCK.DRY_BUSH]: '#8d7445',
     [BLOCK.IRON_ORE]: '#8c7668',
     [BLOCK.DIAMOND_ORE]: '#5c7f92',
+    [BLOCK.BASALT]: '#4a4549',
+    [BLOCK.FIRE_SEAL]: '#6e4038',
   };
 
   const BREAK_TIME = {
@@ -86,6 +90,8 @@
     [BLOCK.DRY_BUSH]: 0.15,
     [BLOCK.IRON_ORE]: 4.2,
     [BLOCK.DIAMOND_ORE]: 6.4,
+    [BLOCK.BASALT]: 5.6,
+    [BLOCK.FIRE_SEAL]: 9.5,
     [BLOCK.PILLAR]: 1.2,
     [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
@@ -115,6 +121,8 @@
     BLOCK.DRY_BUSH,
     BLOCK.IRON_ORE,
     BLOCK.DIAMOND_ORE,
+    BLOCK.BASALT,
+    BLOCK.FIRE_SEAL,
     BLOCK.TORCH,
     BLOCK.FURNACE,
   ]);

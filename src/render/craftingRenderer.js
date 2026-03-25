@@ -212,7 +212,7 @@
     return rects;
   }
 
-  function drawChestPanel(ctx, layout, activeChest) {
+  function drawChestPanel(ctx, layout, state, activeChest) {
     const panel = layout.chest.panel;
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     ctx.fillRect(panel.x, panel.y, panel.w, panel.h);
@@ -221,7 +221,13 @@
     ctx.strokeRect(panel.x, panel.y, panel.w, panel.h);
     ctx.fillStyle = '#fff';
     ctx.font = `bold ${layout.mobile ? 14 : 18}px Arial`;
-    ctx.fillText('Сундук', panel.x + 12, panel.y + 22);
+    const shrine = state.fireCaves && state.fireCaves.shrine;
+    const title = shrine && activeChest.tx === shrine.altarChestX && activeChest.ty === shrine.altarChestY
+      ? 'Алтарный сундук'
+      : shrine && activeChest.tx === shrine.rewardChestX && activeChest.ty === shrine.rewardChestY
+        ? 'Наградный сундук'
+        : 'Сундук';
+    ctx.fillText(title, panel.x + 12, panel.y + 22);
     const slots = getChestSlotRects(layout);
     for (let i = 0; i < slots.length; i += 1) drawSlot(ctx, slots[i], activeChest.chest.slots[i]);
   }
@@ -423,7 +429,7 @@
 
     drawRecipeHints(ctx, layout);
     if (activeFurnace) drawFurnacePanel(ctx, layout, activeFurnace);
-    if (activeChest) drawChestPanel(ctx, layout, activeChest);
+    if (activeChest) drawChestPanel(ctx, layout, state, activeChest);
     if (trader) drawTradePanel(ctx, layout, state, trader);
 
     if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {

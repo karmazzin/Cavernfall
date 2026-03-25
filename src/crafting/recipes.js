@@ -234,6 +234,14 @@
       ],
       result: { id: ITEM.DIAMOND_SWORD, count: 1 },
     },
+    {
+      name: 'Глубинный алмаз',
+      pattern: [
+        [null, ITEM.BIG_DIAMOND, null],
+        [null, ITEM.DEEP_CRYSTAL, null],
+      ],
+      result: { id: ITEM.DEEP_DIAMOND, count: 1 },
+    },
   ];
 
   function trimPattern(pattern) {

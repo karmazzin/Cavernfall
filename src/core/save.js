@@ -91,6 +91,7 @@
       chests: state.chests,
       furnaces: state.furnaces,
       doors: state.doors,
+      fireCaves: state.fireCaves,
       player: state.player,
       gameOver: state.gameOver,
       cycleTime: state.cycleTime,
@@ -221,6 +222,12 @@
       state.chests = normalizeChests(data.chests);
       state.furnaces = normalizeFurnaces(data.furnaces);
       state.doors = normalizeDoors(data.doors);
+      state.fireCaves = data.fireCaves && typeof data.fireCaves === 'object'
+        ? {
+            region: data.fireCaves.region || null,
+            shrine: data.fireCaves.shrine || null,
+          }
+        : state.fireCaves;
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;

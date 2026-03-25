@@ -78,6 +78,7 @@
     if (biomeKey === 'cave') return 'Пещера';
     if (biomeKey === 'dwarf_caves') return 'Пещеры гномов';
     if (biomeKey === 'deep') return 'Глубины';
+    if (biomeKey === 'fire_caves') return 'Огненные пещеры';
     if (biomeKey === 'mountains') return 'Горы';
     if (biomeKey === 'desert') return 'Пустыня';
     if (biomeKey === 'volcano') return 'Вулкан';
