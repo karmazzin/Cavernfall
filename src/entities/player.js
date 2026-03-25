@@ -8,6 +8,8 @@
   const { applyPlayerDamage } = Game.combat;
   const audio = Game.audio;
   const LADDER_SPEED = 165;
+  const WALK_FACTOR = 0.9;
+  const SPRINT_FACTOR = 1.35;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -25,6 +27,7 @@
     const left = !controlsLocked && input.keys.has('KeyA');
     const right = !controlsLocked && input.keys.has('KeyD');
     const jump = !controlsLocked && (input.keys.has('KeyW') || input.keys.has('Space'));
+    const sprintKey = !controlsLocked && (input.keys.has('ShiftLeft') || input.keys.has('ShiftRight'));
     const wasOnGround = player.onGround;
     const preMoveVy = player.vy;
 
@@ -40,14 +43,18 @@
     const creative = isCreative(state);
     const spectator = isSpectator(state);
     const creativeFlight = creative && (touchMode || player.creativeFlight);
+    const sprintMultiplier = sprintKey ? SPRINT_FACTOR : WALK_FACTOR;
+    const moveSpeed = PLAYER_SPEED * sprintMultiplier;
+    const flightSpeed = SWIM_SPEED * sprintMultiplier;
 
     player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
     player.underwater = blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER;
     player.onLadder = onLadder;
+    player.sprinting = !!(sprintKey && (left || right) && !player.inWater && !onLadder && !creativeFlight && !spectator);
 
     player.vx = 0;
-    if (left) player.vx -= PLAYER_SPEED;
-    if (right) player.vx += PLAYER_SPEED;
+    if (left) player.vx -= moveSpeed;
+    if (right) player.vx += moveSpeed;
     if (player.vx < -1) player.facing = -1;
     else if (player.vx > 1) player.facing = 1;
 
@@ -58,8 +65,8 @@
       player.onLadder = false;
       player.onGround = false;
       player.vy = 0;
-      if (jump) player.vy = -SWIM_SPEED;
-      else if (flyingDown) player.vy = SWIM_SPEED;
+      if (jump) player.vy = -flightSpeed;
+      else if (flyingDown) player.vy = flightSpeed;
       player.x += player.vx * dt;
       player.y += player.vy * dt;
       player.x = clamp(player.x, 0, WORLD_W * TILE - player.w);
@@ -75,8 +82,8 @@
       player.underwater = false;
       player.onLadder = false;
       player.vy = 0;
-      if (jump) player.vy = -SWIM_SPEED;
-      else if (flyingDown) player.vy = SWIM_SPEED;
+      if (jump) player.vy = -flightSpeed;
+      else if (flyingDown) player.vy = flightSpeed;
     } else if (creative) {
       const diving = !controlsLocked && input.keys.has('KeyS');
       if (player.inWater) {

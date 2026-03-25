@@ -24,6 +24,8 @@
         code === 'KeyA' ||
         code === 'KeyS' ||
         code === 'KeyD' ||
+        code === 'ShiftLeft' ||
+        code === 'ShiftRight' ||
         code === 'KeyE' ||
         code === 'KeyF' ||
         code === 'KeyR' ||

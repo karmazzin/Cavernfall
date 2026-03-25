@@ -32,7 +32,7 @@
       Math.abs(state.player.vx) > 10 ||
       Math.abs(state.player.vy) > 45;
 
-    const drainInterval = active ? 2.2 : 5;
+    const drainInterval = state.player.sprinting ? 1.45 : active ? 2.8 : 5.5;
     state.satietyTick += dt;
     if (state.satietyTick >= drainInterval) {
       state.satietyTick = 0;

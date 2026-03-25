@@ -27,6 +27,7 @@
       underwater: false,
       onLadder: false,
       creativeFlight: false,
+      sprinting: false,
       stepSoundTimer: 0,
       swimSoundTimer: 0,
       lavaSoundTimer: 0,
