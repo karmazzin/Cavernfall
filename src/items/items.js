@@ -74,6 +74,7 @@
     [BLOCK.BASALT]: 'Базальт',
     [BLOCK.FIRE_SEAL]: 'Огненная печать',
     [BLOCK.FIRE_PORTAL]: 'Портал в огненный мир',
+    [BLOCK.RED_EARTH]: 'Красная земля',
   };
 
   const ITEM_DEFS = {

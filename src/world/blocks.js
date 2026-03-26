@@ -34,6 +34,7 @@
     BASALT: 29,
     FIRE_SEAL: 30,
     FIRE_PORTAL: 31,
+    RED_EARTH: 32,
   };
 
   const BLOCK_COLORS = {
@@ -68,6 +69,7 @@
     [BLOCK.BASALT]: '#4a4549',
     [BLOCK.FIRE_SEAL]: '#6e4038',
     [BLOCK.FIRE_PORTAL]: '#ff7a1a',
+    [BLOCK.RED_EARTH]: '#874738',
   };
 
   const BREAK_TIME = {
@@ -95,6 +97,7 @@
     [BLOCK.BASALT]: 5.6,
     [BLOCK.FIRE_SEAL]: 9.5,
     [BLOCK.FIRE_PORTAL]: Infinity,
+    [BLOCK.RED_EARTH]: 1.2,
     [BLOCK.PILLAR]: 1.2,
     [BLOCK.LADDER]: 0.4,
     [BLOCK.TORCH]: 0.2,
@@ -126,6 +129,7 @@
     BLOCK.DIAMOND_ORE,
     BLOCK.BASALT,
     BLOCK.FIRE_SEAL,
+    BLOCK.RED_EARTH,
     BLOCK.TORCH,
     BLOCK.FURNACE,
   ]);

@@ -66,19 +66,21 @@
     const ritual = getRitual(state);
     if (!pyramid || !ritual || ritual.bossSpawned || state.fireBoss) return;
     state.fireBoss = {
-      x: pyramid.centerX * TILE - 8,
-      y: (pyramid.baseY - 5) * TILE,
-      w: 20,
-      h: 28,
+      x: pyramid.centerX * TILE - 15,
+      y: (pyramid.baseY - 6) * TILE,
+      w: 30,
+      h: 42,
       vx: 0,
       vy: 0,
       onGround: false,
-      hp: 45,
-      maxHp: 45,
+      hp: 70,
+      maxHp: 70,
       attackCd: 0,
       dir: 1,
       phase: 'idle',
       arenaX: pyramid.centerX,
+      isBoss: true,
+      name: 'Огненный страж',
     };
     ritual.bossSpawned = true;
   }
@@ -86,8 +88,8 @@
   function createPortal(state, x, y) {
     const pyramid = state.firePyramid;
     const ritual = getRitual(state);
-    const tx = Math.floor((x + 8) / TILE);
-    const ty = Math.floor((y + 20) / TILE);
+    const tx = Math.floor((x + 15) / TILE);
+    const ty = Math.floor((y + 30) / TILE);
     setBlock(state, tx, ty, BLOCK.FIRE_PORTAL);
     if (ritual) ritual.portalCreated = true;
     if (pyramid) {

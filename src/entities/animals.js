@@ -91,6 +91,7 @@
   }
 
   function updateAnimals(state, dt) {
+    if (state.activeDimension === 'fire') return;
     for (const animal of state.animals) {
       animal.stateTimer -= dt;
       animal.hopCd -= dt;

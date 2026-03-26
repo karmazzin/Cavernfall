@@ -278,24 +278,76 @@
   function drawFireBoss(ctx, boss, camera, time) {
     const x = boss.x - camera.x;
     const y = boss.y - camera.y;
-    const bob = Math.sin(time * 6) * 1.2;
-    const flame = 0.5 + 0.5 * Math.sin(time * 10);
-    ctx.fillStyle = '#2b1510';
-    ctx.fillRect(x + 3, y + 10 + bob, 14, 14);
-    ctx.fillStyle = '#5a2217';
-    ctx.fillRect(x + 2, y + 8 + bob, 16, 10);
-    ctx.fillStyle = '#8e2f1f';
-    ctx.fillRect(x + 4, y + 3 + bob * 0.5, 12, 9);
-    ctx.fillStyle = '#ffb14d';
-    ctx.fillRect(x + 6, y + 6, 2, 2);
-    ctx.fillRect(x + 12, y + 6, 2, 2);
-    ctx.fillStyle = '#ff6a1a';
-    ctx.fillRect(x + 7, y + 1 - flame, 2, 4 + flame);
-    ctx.fillRect(x + 11, y + 0 - flame, 2, 5 + flame);
-    ctx.fillStyle = '#3e1f12';
-    ctx.fillRect(x + 4, y + 24, 4, 4);
-    ctx.fillRect(x + 12, y + 24, 4, 4);
+    const bob = Math.sin(time * 5.6) * 1.2;
+    const stride = Math.sin(time * 7.2) * Math.min(2.6, Math.abs(boss.vx) / 26);
+    const flame = 0.5 + 0.5 * Math.sin(time * 11 + boss.x * 0.01);
+    const eyeGlow = 0.6 + 0.4 * Math.sin(time * 9);
+
+    ctx.fillStyle = '#2a120d';
+    ctx.fillRect(x + 8, y + 18 + bob, 14, 18);
+    ctx.fillRect(x + 5, y + 22 + bob, 4, 10);
+    ctx.fillRect(x + 21, y + 22 + bob, 4, 10);
+
+    ctx.fillStyle = '#4e1f14';
+    ctx.fillRect(x + 6, y + 10 + bob, 18, 12);
+    ctx.fillRect(x + 4, y + 13 + bob, 22, 8);
+    ctx.fillRect(x + 7, y + 4 + bob * 0.4, 16, 9);
+
+    ctx.fillStyle = '#7d2f1d';
+    ctx.fillRect(x + 9, y + 5 + bob * 0.4, 12, 7);
+    ctx.fillRect(x + 10, y + 21 + bob, 3, 12);
+    ctx.fillRect(x + 17, y + 21 + bob, 3, 12);
+
+    ctx.fillStyle = '#ff7a26';
+    ctx.fillRect(x + 10, y + 7 + bob * 0.4, 2, 2);
+    ctx.fillRect(x + 18, y + 7 + bob * 0.4, 2, 2);
+    ctx.fillStyle = `rgba(255,193,92,${0.5 + eyeGlow * 0.35})`;
+    ctx.fillRect(x + 9, y + 6 + bob * 0.4, 4, 4);
+    ctx.fillRect(x + 17, y + 6 + bob * 0.4, 4, 4);
+
+    ctx.fillStyle = '#ff5f18';
+    ctx.fillRect(x + 11, y + 1 - flame, 3, 5 + flame);
+    ctx.fillRect(x + 16, y + 0 - flame * 1.1, 3, 6 + flame * 1.1);
+    ctx.fillRect(x + 6, y + 3 - flame * 0.5, 2, 4 + flame * 0.5);
+    ctx.fillRect(x + 22, y + 2 - flame * 0.4, 2, 4 + flame * 0.4);
+
+    ctx.fillStyle = '#2f170f';
+    ctx.fillRect(x + 4, y + 18 + bob + Math.max(0, stride), 4, 10 - Math.max(0, stride) * 0.9);
+    ctx.fillRect(x + 22, y + 18 + bob + Math.max(0, -stride), 4, 10 - Math.max(0, -stride) * 0.9);
+    ctx.fillRect(x + 9, y + 35 + Math.max(0, stride), 5, 7 - Math.max(0, stride) * 0.7);
+    ctx.fillRect(x + 17, y + 35 + Math.max(0, -stride), 5, 7 - Math.max(0, -stride) * 0.7);
+
+    ctx.fillStyle = '#ff8f42';
+    ctx.fillRect(x + 12, y + 16 + bob, 6, 2);
+    ctx.fillRect(x + 13, y + 26 + bob, 4, 2);
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss };
+  function drawBossHealthBar(ctx, boss, camera) {
+    if (!boss || !boss.isBoss || !Number.isFinite(boss.maxHp) || boss.maxHp <= 0) return;
+    const ratio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+    const width = Math.max(42, boss.w + 12);
+    const height = 7;
+    const x = boss.x - camera.x + boss.w / 2 - width / 2;
+    const y = boss.y - camera.y - 16;
+    const label = boss.name || 'Босс';
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 8, 8, 0.88)';
+    ctx.fillRect(x - 2, y - 12, width + 4, height + 16);
+    ctx.strokeStyle = 'rgba(255, 200, 120, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 1.5, y - 11.5, width + 3, height + 15);
+    ctx.fillStyle = '#f9d7a3';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${label} ${Math.max(0, Math.ceil(boss.hp))}/${boss.maxHp}`, x + width / 2, y - 5);
+    ctx.fillStyle = '#3c1d16';
+    ctx.fillRect(x, y, width, height);
+    ctx.fillStyle = ratio > 0.45 ? '#ff6b2f' : ratio > 0.2 ? '#ff9d2e' : '#ffd24d';
+    ctx.fillRect(x, y, width * ratio, height);
+    ctx.restore();
+  }
+
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss, drawBossHealthBar };
 })();

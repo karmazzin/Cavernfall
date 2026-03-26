@@ -131,6 +131,7 @@
   }
 
   function updateZombies(state, dt) {
+    if (state.activeDimension === 'fire') return;
     const creative = ignoresPlayer(state);
     const phase = phaseInfo(state).phase;
     const sunlight = phase === 'day' || phase === 'sunrise';

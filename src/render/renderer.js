@@ -7,12 +7,13 @@
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock, drawDoor } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
   const { getLightSourcesInView } = Game.furnaceSystem;
   const { getDoorAt } = Game.doorSystem;
+  const { findUsablePortal } = Game.portalSystem;
 
   let darknessMaskCanvas = null;
   let darknessMaskCtx = null;
@@ -124,6 +125,16 @@
     return null;
   }
 
+  function getHoveredPortal(state, camera, input, canvas) {
+    if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.ui && state.ui.controlMode === 'touch') return null;
+    if (input.mouse.x < 0 || input.mouse.y < 0 || input.mouse.x > canvas.width || input.mouse.y > canvas.height) return null;
+    const target = findUsablePortal(state, input, camera);
+    if (!target) return null;
+    return { tx: target.tx, ty: target.ty, sx: target.tx * TILE - camera.x, sy: target.ty * TILE - camera.y };
+  }
+
   function drawChestHint(ctx, chest) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 225, 150, 0.95)';
@@ -170,6 +181,33 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, sx, sy + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
+  function drawPortalHint(ctx, portal) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 140, 80, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(portal.sx + 1, portal.sy + 1, TILE - 2, TILE - 2);
+    ctx.fillStyle = 'rgba(255, 120, 64, 0.16)';
+    ctx.fillRect(portal.sx + 1, portal.sy + 1, TILE - 2, TILE - 2);
+
+    const label = 'Войти в портал';
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = portal.sx + TILE / 2 - boxW / 2;
+    const boxY = portal.sy - 24;
+    ctx.fillStyle = 'rgba(20, 10, 8, 0.92)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(255, 160, 96, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#ffe2c8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, portal.sx + TILE / 2, boxY + boxH / 2 + 0.5);
     ctx.restore();
   }
 
@@ -229,8 +267,10 @@
 
     const hoveredChest = getHoveredChest(state, camera, input, canvas);
     const hoveredHuman = getHoveredHuman(state, camera, input, canvas);
+    const hoveredPortal = getHoveredPortal(state, camera, input, canvas);
     if (hoveredChest) drawChestHint(ctx, hoveredChest);
     if (hoveredHuman) drawHumanHint(ctx, hoveredHuman, camera);
+    if (hoveredPortal) drawPortalHint(ctx, hoveredPortal);
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - camera.x;
@@ -259,6 +299,7 @@
     for (const human of state.humans || []) drawHuman(ctx, human, camera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
     if (state.fireBoss) drawFireBoss(ctx, state.fireBoss, camera, time);
+    if (state.fireBoss) drawBossHealthBar(ctx, state.fireBoss, camera);
 
     drawPlayer(ctx, state, camera, time);
 

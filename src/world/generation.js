@@ -13,9 +13,11 @@
   } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { rand, clamp } = Game.math;
-  const { getBlock, setBlock } = Game.world;
+  const { createGrid, getBlock, setBlock } = Game.world;
   const { chestKey, createChestState, fillChestLoot, ensureChestAt } = Game.chestSystem;
   const { placeDoor } = Game.doorSystem;
+  const { createGameState, captureDimensionState } = Game.state;
+  const { withSeed } = Game.random;
   const DWARF_COLORS = [
     { tunic: '#8a5c34', hood: '#6c727f' },
     { tunic: '#5a6f8f', hood: '#7e868f' },
@@ -2182,5 +2184,117 @@
     state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
   }
 
-  Game.generation = { generateWorld, retrofitWorldFeatures, checkFireShrineActivation };
+  function carveFireArrivalChamber(state, centerX, portalY) {
+    for (let tx = centerX - 10; tx <= centerX + 10; tx += 1) {
+      if (tx < 0 || tx >= WORLD_W) continue;
+      state.biomeAt[tx] = 'red_land';
+    }
+    for (let tx = centerX - 8; tx <= centerX + 8; tx += 1) {
+      for (let ty = portalY - 7; ty <= portalY + 5; ty += 1) {
+        if (tx <= 1 || tx >= WORLD_W - 2 || ty <= 1 || ty >= WORLD_H - 2) continue;
+        const shell = tx === centerX - 8 || tx === centerX + 8 || ty === portalY - 7 || ty === portalY + 5;
+        setBlock(state, tx, ty, shell ? BLOCK.BASALT : BLOCK.AIR);
+      }
+      setBlock(state, tx, portalY + 6, BLOCK.BASALT);
+      if (tx >= centerX - 3 && tx <= centerX + 3) setBlock(state, tx, portalY + 4, BLOCK.BLACKSTONE);
+    }
+    setBlock(state, centerX, portalY, BLOCK.FIRE_PORTAL);
+    setBlock(state, centerX - 4, portalY + 3, BLOCK.TORCH);
+    setBlock(state, centerX + 4, portalY + 3, BLOCK.TORCH);
+  }
+
+  function generateFireDimension(state) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill('red_land');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.WARM);
+    state.surfaceAt = Array(WORLD_W).fill(6);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.zombieSpawnTick = 0;
+    state.zombieCaveSpawnTick = 0;
+    state.spiderSpawnTick = 0;
+    state.spiderCaveSpawnTick = 0;
+    state.fluidTick = 0;
+
+    const lavaSegments = [];
+    let x = 18;
+    while (x < WORLD_W - 24) {
+      const warmGap = Math.floor(rand(36, 82));
+      x += warmGap;
+      if (x >= WORLD_W - 24) break;
+      const len = Math.floor(rand(26, 56));
+      lavaSegments.push({ x0: x, x1: Math.min(WORLD_W - 20, x + len) });
+      x += len;
+    }
+    for (const segment of lavaSegments) {
+      for (let tx = segment.x0; tx <= segment.x1; tx += 1) state.biomeAt[tx] = 'lava_lake';
+    }
+
+    const ceil = Array(WORLD_W).fill(8);
+    const floor = Array(WORLD_W).fill(WORLD_H - 10);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      const ceiling = Math.round(8 + Math.sin(tx / 23) * 2 + Math.sin(tx / 9) * 1.4);
+      let floorY = Math.round(WORLD_H - 14 + Math.sin(tx / 31) * 4 + Math.sin(tx / 13) * 2);
+      if (state.biomeAt[tx] === 'lava_lake') floorY += 5;
+      ceil[tx] = clamp(ceiling, 5, 14);
+      floor[tx] = clamp(floorY, WORLD_H - 24, WORLD_H - 8);
+      state.surfaceAt[tx] = ceil[tx];
+      for (let ty = 0; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          setBlock(state, tx, ty, BLOCK.BEDROCK);
+          continue;
+        }
+        if (ty <= ceil[tx] || ty >= floor[tx]) {
+          const useRed = state.biomeAt[tx] === 'red_land' && (ty >= floor[tx] - 5 || (ty > ceil[tx] && Math.sin((tx + ty) / 8) > 0.35));
+          setBlock(state, tx, ty, useRed ? BLOCK.RED_EARTH : BLOCK.BASALT);
+        } else {
+          setBlock(state, tx, ty, BLOCK.AIR);
+        }
+      }
+      if (state.biomeAt[tx] === 'lava_lake') {
+        const lavaTop = floor[tx] - Math.floor(rand(4, 8));
+        for (let ty = lavaTop; ty < floor[tx]; ty += 1) setBlock(state, tx, ty, BLOCK.LAVA);
+        for (let ty = lavaTop - 2; ty < lavaTop; ty += 1) if (getBlock(state, tx, ty) !== BLOCK.LAVA) setBlock(state, tx, ty, BLOCK.BASALT);
+      }
+    }
+
+    for (let tx = 2; tx < WORLD_W - 2; tx += 1) {
+      for (let ty = ceil[tx] + 1; ty < floor[tx] - 1; ty += 1) {
+        const noise = Math.sin(tx / 19) + Math.sin(ty / 11) + Math.sin((tx + ty) / 17);
+        if (state.biomeAt[tx] === 'red_land' && noise > 1.85 && ty > WORLD_H / 2) setBlock(state, tx, ty, BLOCK.RED_EARTH);
+        if (state.biomeAt[tx] === 'lava_lake' && noise > 1.65 && ty < floor[tx] - 6) setBlock(state, tx, ty, BLOCK.BASALT);
+      }
+    }
+
+    const portalX = Math.floor(WORLD_W / 2);
+    const portalY = Math.floor(WORLD_H / 2);
+    carveFireArrivalChamber(state, portalX, portalY);
+    state.fireWorldMeta = {
+      portalX,
+      portalY,
+      name: 'Огненный мир',
+    };
+    state.player.x = portalX * TILE;
+    state.player.y = (portalY - 2) * TILE;
+  }
+
+  function generateFireDimensionBundle(worldMeta, seed) {
+    const temp = createGameState(worldMeta);
+    withSeed(`${seed || ''}:fire`, () => generateFireDimension(temp));
+    return captureDimensionState(temp);
+  }
+
+  Game.generation = { generateWorld, generateFireDimensionBundle, retrofitWorldFeatures, checkFireShrineActivation };
 })();

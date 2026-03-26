@@ -60,6 +60,14 @@
 
   function getLocationInfo(state, tx, ty) {
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
+    if (state.activeDimension === 'fire') {
+      return {
+        biome: state.biomeAt[safeTx] || 'red_land',
+        climate: 'warm',
+        inCave: true,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
     const surfaceY = state.surfaceAt[safeTx];
     const block = getBlock(state, tx, ty);
     const airLike = block === BLOCK.AIR || block === BLOCK.COBWEB || block === BLOCK.TORCH || block === BLOCK.PILLAR || block === BLOCK.LADDER || liquid(block);

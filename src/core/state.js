@@ -4,6 +4,32 @@
   const { createGrid } = Game.world;
   const { createSlot } = Game.inventory;
   const { createArmorSlots } = Game.combat;
+  const DIMENSION_KEYS = [
+    'world',
+    'biomeAt',
+    'climateAt',
+    'surfaceAt',
+    'animals',
+    'zombies',
+    'spiders',
+    'humans',
+    'dwarves',
+    'humanSettlements',
+    'dwarfColony',
+    'foods',
+    'chests',
+    'furnaces',
+    'doors',
+    'fireCaves',
+    'firePyramid',
+    'fireBoss',
+    'fireWorldMeta',
+    'zombieSpawnTick',
+    'zombieCaveSpawnTick',
+    'spiderSpawnTick',
+    'spiderCaveSpawnTick',
+    'fluidTick',
+  ];
 
   function createPlayer() {
     return {
@@ -28,6 +54,7 @@
       onLadder: false,
       creativeFlight: false,
       sprinting: false,
+      portalCooldown: 0,
       stepSoundTimer: 0,
       swimSoundTimer: 0,
       lavaSoundTimer: 0,
@@ -79,6 +106,15 @@
       },
       firePyramid: null,
       fireBoss: null,
+      fireWorldMeta: null,
+      dimensions: {
+        overworld: null,
+        fire: null,
+      },
+      activeDimension: 'overworld',
+      portalLinks: {
+        fireGate: null,
+      },
       player: createPlayer(),
       gameOver: false,
       cycleTime: 0,
@@ -120,5 +156,47 @@
     };
   }
 
-  Game.state = { createGameState };
+  function captureDimensionState(state) {
+    const bundle = {};
+    for (const key of DIMENSION_KEYS) bundle[key] = state[key];
+    return bundle;
+  }
+
+  function applyDimensionState(state, bundle) {
+    if (!bundle) return;
+    for (const key of DIMENSION_KEYS) state[key] = bundle[key];
+  }
+
+  function ensureDimensions(state) {
+    if (!state.dimensions || typeof state.dimensions !== 'object') {
+      state.dimensions = { overworld: null, fire: null };
+    }
+    if (!state.dimensions.overworld) state.dimensions.overworld = captureDimensionState(state);
+    if (!state.activeDimension) state.activeDimension = 'overworld';
+    if (!state.portalLinks || typeof state.portalLinks !== 'object') state.portalLinks = { fireGate: null };
+    if (!('fireGate' in state.portalLinks)) state.portalLinks.fireGate = null;
+  }
+
+  function syncActiveDimension(state) {
+    ensureDimensions(state);
+    state.dimensions[state.activeDimension] = captureDimensionState(state);
+  }
+
+  function switchDimension(state, name) {
+    ensureDimensions(state);
+    if (!state.dimensions[name]) return false;
+    state.dimensions[state.activeDimension] = captureDimensionState(state);
+    state.activeDimension = name;
+    applyDimensionState(state, state.dimensions[name]);
+    state.breaking = null;
+    if (state.crafting) {
+      state.crafting.chestOpenKey = null;
+      state.crafting.tradeSettlementId = null;
+      state.crafting.tradeHumanId = null;
+      state.crafting.tradeStatus = '';
+    }
+    return true;
+  }
+
+  Game.state = { createGameState, captureDimensionState, applyDimensionState, ensureDimensions, syncActiveDimension, switchDimension, DIMENSION_KEYS };
 })();

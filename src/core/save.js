@@ -4,7 +4,7 @@
   const WORLD_PREFIX = 'cavernfall-world-';
   const LEGACY_SAVE_KEY = 'mc2d-save-v1';
   const { HOTBAR_SIZE } = Game.constants;
-  const { createGameState } = Game.state;
+  const { createGameState, ensureDimensions, syncActiveDimension } = Game.state;
   const { createSlot, normalizeSlot } = Game.inventory;
   const { ARMOR_SLOT_ORDER, createArmorSlots } = Game.combat;
 
@@ -94,6 +94,10 @@
       fireCaves: state.fireCaves,
       firePyramid: state.firePyramid,
       fireBoss: state.fireBoss,
+      fireWorldMeta: state.fireWorldMeta,
+      dimensions: state.dimensions,
+      activeDimension: state.activeDimension,
+      portalLinks: state.portalLinks,
       player: state.player,
       gameOver: state.gameOver,
       cycleTime: state.cycleTime,
@@ -166,6 +170,8 @@
   function saveWorld(state, preview = null) {
     if (!state.worldMeta || !state.worldMeta.id) return false;
     try {
+      ensureDimensions(state);
+      syncActiveDimension(state);
       const nextMeta = {
         ...state.worldMeta,
         updatedAt: Date.now(),
@@ -236,6 +242,21 @@
       state.fireBoss = data.fireBoss && typeof data.fireBoss === 'object'
         ? data.fireBoss
         : state.fireBoss;
+      state.fireWorldMeta = data.fireWorldMeta && typeof data.fireWorldMeta === 'object'
+        ? data.fireWorldMeta
+        : state.fireWorldMeta;
+      state.dimensions = data.dimensions && typeof data.dimensions === 'object'
+        ? {
+            overworld: data.dimensions.overworld || null,
+            fire: data.dimensions.fire || null,
+          }
+        : state.dimensions;
+      state.activeDimension = typeof data.activeDimension === 'string' ? data.activeDimension : 'overworld';
+      state.portalLinks = data.portalLinks && typeof data.portalLinks === 'object'
+        ? {
+            fireGate: data.portalLinks.fireGate || null,
+          }
+        : { fireGate: null };
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;
@@ -266,6 +287,9 @@
       state.pause.confirmRestart = false;
       state.pause.statusText = '';
       state.autosaveTick = 0;
+      ensureDimensions(state);
+      if (!data.dimensions) syncActiveDimension(state);
+      else if (state.dimensions[state.activeDimension]) Game.state.applyDimensionState(state, state.dimensions[state.activeDimension]);
       return state;
     } catch (error) {
       return null;

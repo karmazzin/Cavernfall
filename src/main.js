@@ -2,6 +2,7 @@
   const Game = window.MC2D;
   const { BLOCK } = Game.blocks;
   const { createGameState } = Game.state;
+  const { ensureDimensions } = Game.state;
   const { createAppState } = Game.appState;
   const { generateWorld, retrofitWorldFeatures } = Game.generation;
   const { withSeed, makeSeed } = Game.random;
@@ -13,6 +14,7 @@
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFirePyramid } = Game.firePyramidSystem;
+  const { updatePortals, useNearbyPortal } = Game.portalSystem;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
@@ -102,6 +104,7 @@
     const nextState = createGameState(meta);
     replaceState(nextState);
     withSeed(meta.seed, () => generateWorld(state));
+    ensureDimensions(state);
     spawnAnimals(state);
     if (meta.mode !== 'creative' && meta.mode !== 'spectator') seedStarterInventory();
   }
@@ -127,6 +130,7 @@
     if (!loadedState) return false;
     replaceState(loadedState);
     retrofitWorldFeatures(state);
+    ensureDimensions(state);
     app.currentWorldId = worldId;
     app.screen = 'playing';
     app.pendingInitialSave = false;
@@ -251,7 +255,7 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (!useNearbyDoor(state, input, camera)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
@@ -301,6 +305,7 @@
     updateDwarves(state, dt);
     updateFood(state, dt);
     updateFirePyramid(state, dt);
+    updatePortals(state, dt);
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
