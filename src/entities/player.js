@@ -141,7 +141,7 @@
     const under = getBlock(state, footTx, footTy);
     const inBody = getBlock(state, footTx, Math.floor((player.y + player.h / 2) / TILE));
 
-    if (!creative && (under === BLOCK.LAVA || inBody === BLOCK.LAVA)) {
+    if (!creative && !spectator && (under === BLOCK.LAVA || inBody === BLOCK.LAVA)) {
       applyPlayerDamage(state, dt * 2, { flash: 0.2 });
       player.lavaSoundTimer -= dt;
       if (player.lavaSoundTimer <= 0) {

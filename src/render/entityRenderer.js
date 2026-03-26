@@ -275,5 +275,27 @@
     }
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf };
+  function drawFireBoss(ctx, boss, camera, time) {
+    const x = boss.x - camera.x;
+    const y = boss.y - camera.y;
+    const bob = Math.sin(time * 6) * 1.2;
+    const flame = 0.5 + 0.5 * Math.sin(time * 10);
+    ctx.fillStyle = '#2b1510';
+    ctx.fillRect(x + 3, y + 10 + bob, 14, 14);
+    ctx.fillStyle = '#5a2217';
+    ctx.fillRect(x + 2, y + 8 + bob, 16, 10);
+    ctx.fillStyle = '#8e2f1f';
+    ctx.fillRect(x + 4, y + 3 + bob * 0.5, 12, 9);
+    ctx.fillStyle = '#ffb14d';
+    ctx.fillRect(x + 6, y + 6, 2, 2);
+    ctx.fillRect(x + 12, y + 6, 2, 2);
+    ctx.fillStyle = '#ff6a1a';
+    ctx.fillRect(x + 7, y + 1 - flame, 2, 4 + flame);
+    ctx.fillRect(x + 11, y + 0 - flame, 2, 5 + flame);
+    ctx.fillStyle = '#3e1f12';
+    ctx.fillRect(x + 4, y + 24, 4, 4);
+    ctx.fillRect(x + 12, y + 24, 4, 4);
+  }
+
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss };
 })();

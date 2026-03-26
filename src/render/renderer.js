@@ -7,7 +7,7 @@
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock, drawDoor } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -258,8 +258,26 @@
     for (const spider of state.spiders) drawSpider(ctx, spider, camera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, camera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
+    if (state.fireBoss) drawFireBoss(ctx, state.fireBoss, camera, time);
 
     drawPlayer(ctx, state, camera, time);
+
+    if (state.firePyramid && state.firePyramid.ritual && state.firePyramid.ritual.active) {
+      const beamX = state.firePyramid.lavaX * TILE - camera.x + TILE / 2;
+      const beamBottom = state.firePyramid.lavaY * TILE - camera.y + TILE / 2;
+      let alpha = 0.85;
+      if (state.firePyramid.ritual.phase === 'beam_rise') alpha = 0.55 + 0.3 * Math.min(1, state.firePyramid.ritual.timer / 1.6);
+      if (state.firePyramid.ritual.phase === 'beam_fade') alpha = 0.85 * Math.max(0, 1 - state.firePyramid.ritual.timer / 0.9);
+      const width = 18;
+      const grad = ctx.createLinearGradient(beamX, 0, beamX, beamBottom);
+      grad.addColorStop(0, `rgba(255,248,200,${alpha})`);
+      grad.addColorStop(0.4, `rgba(255,168,64,${alpha})`);
+      grad.addColorStop(1, `rgba(255,92,20,${alpha * 0.92})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(beamX - width / 2, 0, width, Math.max(0, beamBottom));
+      ctx.fillStyle = `rgba(255,240,180,${alpha * 0.45})`;
+      ctx.fillRect(beamX - 4, 0, 8, Math.max(0, beamBottom));
+    }
 
     if (darkness > 0) drawDarknessMask(ctx, view, state, camera, input, location, darkness);
 

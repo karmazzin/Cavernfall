@@ -12,6 +12,7 @@
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
+  const { updateFirePyramid } = Game.firePyramidSystem;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
@@ -299,6 +300,7 @@
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
+    updateFirePyramid(state, dt);
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);

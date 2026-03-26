@@ -139,6 +139,17 @@
       ctx.lineTo(x + 5, y + 8);
       ctx.closePath();
       ctx.stroke();
+    } else if (id === BLOCK.FIRE_PORTAL) {
+      ctx.fillStyle = '#2b1014';
+      ctx.fillRect(x + 2, y + 1, TILE - 4, TILE - 2);
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6 + x * 0.1);
+      ctx.fillStyle = '#ff6f1d';
+      ctx.fillRect(x + 4, y + 3, TILE - 8, TILE - 6);
+      ctx.fillStyle = `rgba(255,208,92,${0.35 + pulse * 0.25})`;
+      ctx.fillRect(x + 6, y + 4, TILE - 12, TILE - 8);
+      ctx.strokeStyle = '#7a2518';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 2.5, y + 1.5, TILE - 5, TILE - 3);
     } else if (id === BLOCK.TORCH) {
       const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);
       const flameW = 3 + Math.round(flicker * 2);

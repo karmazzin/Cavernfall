@@ -77,6 +77,8 @@
         region: null,
         shrine: null,
       },
+      firePyramid: null,
+      fireBoss: null,
       player: createPlayer(),
       gameOver: false,
       cycleTime: 0,

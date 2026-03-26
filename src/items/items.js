@@ -73,6 +73,7 @@
     [BLOCK.DRY_BUSH]: 'Сухой куст',
     [BLOCK.BASALT]: 'Базальт',
     [BLOCK.FIRE_SEAL]: 'Огненная печать',
+    [BLOCK.FIRE_PORTAL]: 'Портал в огненный мир',
   };
 
   const ITEM_DEFS = {

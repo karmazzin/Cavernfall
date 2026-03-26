@@ -92,6 +92,8 @@
       furnaces: state.furnaces,
       doors: state.doors,
       fireCaves: state.fireCaves,
+      firePyramid: state.firePyramid,
+      fireBoss: state.fireBoss,
       player: state.player,
       gameOver: state.gameOver,
       cycleTime: state.cycleTime,
@@ -228,6 +230,12 @@
             shrine: data.fireCaves.shrine || null,
           }
         : state.fireCaves;
+      state.firePyramid = data.firePyramid && typeof data.firePyramid === 'object'
+        ? data.firePyramid
+        : state.firePyramid;
+      state.fireBoss = data.fireBoss && typeof data.fireBoss === 'object'
+        ? data.fireBoss
+        : state.fireBoss;
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;

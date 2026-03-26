@@ -1525,9 +1525,11 @@
   function plantDesertFlora(state, surfaceFluidColumns) {
     let cactusCount = 0;
     let bushCount = 0;
+    const inFirePyramid = (tx) => !!(state.firePyramid && state.firePyramid.bounds && tx >= state.firePyramid.bounds.x0 - 1 && tx <= state.firePyramid.bounds.x1 + 1);
     function tryPlace(skipVillageBounds) {
       for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
         if (state.biomeAt[tx] !== 'desert' || surfaceFluidColumns.has(tx)) continue;
+        if (inFirePyramid(tx)) continue;
         if (!skipVillageBounds && (state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
         const s = state.surfaceAt[tx];
         if (getBlock(state, tx, s) !== BLOCK.SAND || getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
@@ -1548,6 +1550,7 @@
       for (const skipVillageBounds of [false, true]) {
         for (let tx = 6; tx < WORLD_W - 6; tx += 1) {
           if (state.biomeAt[tx] !== 'desert' || surfaceFluidColumns.has(tx)) continue;
+          if (inFirePyramid(tx)) continue;
           if (!skipVillageBounds && (state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
           const s = state.surfaceAt[tx];
           if (getBlock(state, tx, s) !== BLOCK.SAND) continue;
@@ -1599,6 +1602,141 @@
       state.chests[key] = createChestState(ownerSettlementId);
       fillChestLoot(state.chests[key]);
     }
+  }
+
+  function canHostFirePyramid(state, centerX) {
+    if (centerX < 10 || centerX > WORLD_W - 11) return false;
+    if ((state.climateAt[centerX] || CLIMATE.TEMPERATE) !== CLIMATE.WARM) return false;
+    const biome = state.biomeAt[centerX];
+    if (biome !== 'desert') return false;
+    const baseY = state.surfaceAt[centerX];
+    for (let tx = centerX - 7; tx <= centerX + 7; tx += 1) {
+      if ((state.climateAt[tx] || CLIMATE.TEMPERATE) !== CLIMATE.WARM) return false;
+      if (state.biomeAt[tx] !== biome) return false;
+      if (Math.abs(state.surfaceAt[tx] - baseY) > 3) return false;
+      if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 - 6 && tx <= village.bounds.x1 + 6)) return false;
+    }
+    return true;
+  }
+
+  function stampFirePyramid(state, centerX) {
+    const baseY = state.surfaceAt[centerX];
+    const biome = state.biomeAt[centerX];
+    const x0 = centerX - 7;
+    const x1 = centerX + 7;
+    const y0 = baseY - 10;
+    const y1 = baseY;
+
+    for (let tx = x0 - 1; tx <= x1 + 1; tx += 1) {
+      state.surfaceAt[tx] = baseY;
+      setBlock(state, tx, baseY, BLOCK.SAND);
+      setBlock(state, tx, baseY + 1, BLOCK.SANDSTONE);
+      setBlock(state, tx, baseY + 2, BLOCK.SANDSTONE);
+      for (let ty = y0; ty < baseY; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.BEDROCK) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+      state.biomeAt[tx] = 'desert';
+      state.climateAt[tx] = CLIMATE.WARM;
+    }
+
+    const set = (dx, dy, block) => setBlock(state, centerX + dx, baseY + dy, block);
+
+    for (let dx = -4; dx <= 4; dx += 1) set(dx, 0, BLOCK.BLACKSTONE);
+    for (let dx = -3; dx <= 3; dx += 1) set(dx, -1, BLOCK.BLACKSTONE);
+    for (let dx = -2; dx <= 2; dx += 1) set(dx, -2, BLOCK.BLACKSTONE);
+    set(0, -2, BLOCK.LAVA);
+
+    for (let y = -1; y >= -8; y -= 1) {
+      set(-6, y, BLOCK.CACTUS);
+      set(6, y, BLOCK.CACTUS);
+    }
+
+    set(-5, -1, BLOCK.TORCH);
+    set(5, -1, BLOCK.TORCH);
+
+    for (let dx = -7; dx <= -5; dx += 1) set(dx, -5, BLOCK.BLACKSTONE);
+    for (let dx = -6; dx <= -4; dx += 1) set(dx, -6, BLOCK.BLACKSTONE);
+    for (let dx = -6; dx <= -5; dx += 1) set(dx, -7, BLOCK.BLACKSTONE);
+    set(-5, -8, BLOCK.DRY_BUSH);
+
+    for (let dx = 5; dx <= 7; dx += 1) set(dx, -5, BLOCK.BLACKSTONE);
+    for (let dx = 4; dx <= 6; dx += 1) set(dx, -6, BLOCK.BLACKSTONE);
+    for (let dx = 5; dx <= 6; dx += 1) set(dx, -7, BLOCK.BLACKSTONE);
+    set(5, -8, BLOCK.DRY_BUSH);
+
+    set(-1, -6, BLOCK.BLACKSTONE);
+    set(0, -6, BLOCK.BLACKSTONE);
+    set(1, -6, BLOCK.BLACKSTONE);
+    set(0, -7, BLOCK.BLACKSTONE);
+    set(0, -8, BLOCK.CACTUS);
+    set(0, -9, BLOCK.CACTUS);
+    set(0, -10, BLOCK.CACTUS);
+
+    state.firePyramid = {
+      centerX,
+      baseY,
+      bounds: { x0, x1, y0, y1 },
+      climate: CLIMATE.WARM,
+      biome,
+      name: 'Пирамида огня',
+      lavaX: centerX,
+      lavaY: baseY - 2,
+      ritual: {
+        active: false,
+        phase: 'idle',
+        timer: 0,
+        clearedToY: baseY - 2,
+        noonTriggered: false,
+        completed: false,
+        bossSpawned: false,
+        portalCreated: false,
+      },
+    };
+  }
+
+  function generateFirePyramid(state) {
+    state.firePyramid = null;
+    const candidates = [];
+    for (let tx = 10; tx < WORLD_W - 10; tx += 1) {
+      if (!canHostFirePyramid(state, tx)) continue;
+      let score = 0;
+      const baseY = state.surfaceAt[tx];
+      for (let xx = tx - 7; xx <= tx + 7; xx += 1) score += Math.abs(state.surfaceAt[xx] - baseY);
+      candidates.push({ tx, score });
+    }
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.score - b.score);
+      const topPool = candidates.slice(0, Math.min(6, candidates.length));
+      const chosen = topPool[Math.floor(rand(0, topPool.length))];
+      stampFirePyramid(state, chosen.tx);
+      return;
+    }
+
+    const desertSegments = findBiomeSegments(state, 'desert')
+      .filter((segment) => segment.end - segment.start >= 18)
+      .sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (desertSegments.length === 0) return;
+
+    for (const segment of desertSegments) {
+      const minX = Math.max(10, segment.start + 7);
+      const maxX = Math.min(WORLD_W - 11, segment.end - 7);
+      if (minX > maxX) continue;
+      const fallback = [];
+      for (let tx = minX; tx <= maxX; tx += 1) {
+        if ((state.climateAt[tx] || CLIMATE.TEMPERATE) !== CLIMATE.WARM) continue;
+        if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 - 10 && tx <= village.bounds.x1 + 10)) continue;
+        let score = 0;
+        const baseY = state.surfaceAt[tx];
+        for (let xx = tx - 7; xx <= tx + 7; xx += 1) score += Math.abs(state.surfaceAt[xx] - baseY);
+        fallback.push({ tx, score });
+      }
+      if (!fallback.length) continue;
+      fallback.sort((a, b) => a.score - b.score);
+      stampFirePyramid(state, fallback[0].tx);
+      return;
+    }
+
+    stampFirePyramid(state, clamp(desertSegments[0].center, 10, WORLD_W - 11));
   }
 
   function spawnVillageSheep(state, tx, groundY, dir = 1) {
@@ -1937,6 +2075,7 @@
       const biome = state.biomeAt[tx];
       if (blockedColumns.has(tx) || biome === 'mountains' || biome === 'volcano') continue;
       if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
+      if (state.firePyramid && state.firePyramid.bounds && tx >= state.firePyramid.bounds.x0 && tx <= state.firePyramid.bounds.x1) continue;
       const surfaceBlock = getBlock(state, tx, state.surfaceAt[tx]);
       if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx - 1]) > 1) continue;
@@ -1954,6 +2093,8 @@
     state.dwarves.length = 0;
     state.doors = {};
     state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
     ensureClimateAt(state);
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
     state.dwarfColony = {
@@ -2031,6 +2172,7 @@
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
     generateVillages(state);
+    generateFirePyramid(state);
     plantDesertFlora(state, surfaceFluidColumns);
 
     for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);

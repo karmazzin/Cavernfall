@@ -21,6 +21,7 @@
   const { toggleDoor, removeDoorAt, resolveDoorBase } = Game.doorSystem;
   const { onColonyBlockBroken, hitDwarf, removeDwarf, getNearestTrader } = Game.dwarvesEntity;
   const { getNearestHumanTrader } = Game.humansEntity;
+  const { removeFromSlot } = Game.inventory;
   const audio = Game.audio;
 
   function isCreative(state) {
@@ -129,6 +130,7 @@
     const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
     const wx = input.mouse.x / VIEW_ZOOM + camera.x;
     const wy = input.mouse.y / VIEW_ZOOM + camera.y;
+    const rightClick = input.mouse.button === 2;
     const dist = Math.hypot(
       tx * TILE + TILE / 2 - (state.player.x + state.player.w / 2),
       ty * TILE + TILE / 2 - (state.player.y + state.player.h / 2)
@@ -140,9 +142,22 @@
       return;
     }
 
+    if (state.fireBoss && wx >= state.fireBoss.x && wx <= state.fireBoss.x + state.fireBoss.w && wy >= state.fireBoss.y && wy <= state.fireBoss.y + state.fireBoss.h) {
+      if (!rightClick && input.mouse.justPressed && Game.firePyramidSystem && Game.firePyramidSystem.hitFireBoss(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
       if (wx >= zombie.x && wx <= zombie.x + zombie.w && wy >= zombie.y && wy <= zombie.y + zombie.h) {
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (!zombie.clickCd || zombie.clickCd <= 0) {
           zombie.hp -= getAttackDamage(selectedToolId(state));
           zombie.clickCd = 0.25;
@@ -158,6 +173,10 @@
     for (let i = state.spiders.length - 1; i >= 0; i -= 1) {
       const spider = state.spiders[i];
       if (wx >= spider.x && wx <= spider.x + spider.w && wy >= spider.y && wy <= spider.y + spider.h) {
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (!spider.clickCd || spider.clickCd <= 0) {
           spider.hp -= getAttackDamage(selectedToolId(state));
           spider.clickCd = 0.25;
@@ -173,6 +192,10 @@
     for (let i = state.animals.length - 1; i >= 0; i -= 1) {
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (!animal.clickCd || animal.clickCd <= 0) {
           animal.hp -= getAttackDamage(selectedToolId(state));
           animal.clickCd = 0.25;
@@ -202,6 +225,10 @@
         const settlement = state.dwarfColony && state.dwarfColony.settlements
           ? state.dwarfColony.settlements.find((entry) => entry.id === dwarf.settlementId)
           : null;
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (input.mouse.justPressed && settlement && !settlement.hostileToPlayer && (settlement.alertLevel || 0) === 0) {
           Game.crafting.openTrade(state, dwarf.settlementId);
           input.mouse.justPressed = false;
@@ -222,6 +249,10 @@
     for (let i = state.humans.length - 1; i >= 0; i -= 1) {
       const human = state.humans[i];
       if (wx >= human.x && wx <= human.x + human.w && wy >= human.y && wy <= human.y + human.h) {
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (input.mouse.justPressed && human.role !== 'guard') {
           Game.crafting.openHumanTrade(state, human.id);
           input.mouse.justPressed = false;
@@ -239,6 +270,28 @@
     }
 
     const block = getBlock(state, tx, ty);
+
+    if (rightClick && input.mouse.justPressed) {
+      const slot = state.player.hotbar[state.player.selectedSlot];
+      if (slot && slot.id != null && slot.count > 0) {
+        const itemId = slot.id;
+        const durability = slot.durability ?? null;
+        removeFromSlot(slot, 1);
+        state.foods.push({
+          x: tx * TILE + 3,
+          y: ty * TILE + 3,
+          w: 10,
+          h: 10,
+          itemId,
+          amount: 1,
+          durability,
+          t: 0,
+        });
+      }
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
 
     if (block === BLOCK.DOOR && input.mouse.justPressed) {
       toggleDoor(state, tx, ty);
