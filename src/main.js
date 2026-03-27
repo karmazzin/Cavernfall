@@ -41,6 +41,10 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isInfiniteInventoryMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'infinite_inventory');
+  }
+
   function isSpectatorMode() {
     return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
   }
@@ -108,7 +112,7 @@
     withSeed(meta.seed, () => generateWorld(state));
     ensureDimensions(state);
     spawnAnimals(state);
-    if (meta.mode !== 'creative' && meta.mode !== 'spectator') seedStarterInventory();
+    if (meta.mode !== 'creative' && meta.mode !== 'spectator' && meta.mode !== 'infinite_inventory') seedStarterInventory();
   }
 
   function startNewWorld(options) {
@@ -339,7 +343,7 @@
       if (human.clickCd) human.clickCd = Math.max(0, human.clickCd - dt);
     }
 
-    if (!isCreativeMode() && !isSpectatorMode() && state.player.health <= 0) state.gameOver = true;
+    if (!isCreativeMode() && !isSpectatorMode() && !isInfiniteInventoryMode() && state.player.health <= 0) state.gameOver = true;
   }
 
   const camera = createCamera(state, canvas);

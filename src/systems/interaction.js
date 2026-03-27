@@ -28,6 +28,10 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function hasCreativePlacement(state) {
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'infinite_inventory'));
+  }
+
   function isSpectator(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
   }
@@ -54,7 +58,7 @@
   }
 
   function canPlaceBlock(state, tx, ty, id) {
-    if (!PLACEABLE.has(id) && !(isCreative(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
+    if (!PLACEABLE.has(id) && !(hasCreativePlacement(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
     const targetBlock = getBlock(state, tx, ty);
     if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER) return false;
 
@@ -337,9 +341,9 @@
 
     if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
-        const id = isCreative(state) ? selectedItemId(state) : selectedPlaceableId(state);
+        const id = hasCreativePlacement(state) ? selectedItemId(state) : selectedPlaceableId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
-          const used = isCreative(state) ? id : consumeSelectedPlaceable(state);
+          const used = hasCreativePlacement(state) ? id : consumeSelectedPlaceable(state);
           if (used) {
             setBlock(state, tx, ty, used);
             if (used === BLOCK.FURNACE) ensureFurnaceAt(state, tx, ty);

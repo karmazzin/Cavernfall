@@ -12,6 +12,7 @@
 
   function modeLabel(mode) {
     if (mode === 'creative') return 'Творческий';
+    if (mode === 'infinite_inventory') return 'Бесконечный инвентарь';
     if (mode === 'spectator') return 'Спектатор';
     return 'Выживание';
   }
@@ -50,11 +51,14 @@
           <div class="menu-mode-row">
             <button class="menu-mode-btn ${model.mode === 'survival' ? 'is-active' : ''}" data-menu-mode="survival">Выживание</button>
             <button class="menu-mode-btn ${model.mode === 'creative' ? 'is-active' : ''}" data-menu-mode="creative">Творческий</button>
+            <button class="menu-mode-btn ${model.mode === 'infinite_inventory' ? 'is-active' : ''}" data-menu-mode="infinite_inventory">Бесконечный инвентарь</button>
             <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
           </div>
         </div>
         <div class="menu-hint">${model.mode === 'spectator'
           ? 'В режиме спектатора игрок проходит сквозь блоки, не получает урон, не видит HUD и не может ни с чем взаимодействовать.'
+          : model.mode === 'infinite_inventory'
+            ? 'Это выживание с бесконечным творческим каталогом предметов. При смерти игрок возрождается на месте без экрана поражения.'
           : model.mode === 'creative'
             ? 'В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.'
             : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>

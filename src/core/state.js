@@ -61,6 +61,7 @@
       swimSoundTimer: 0,
       lavaSoundTimer: 0,
       fallDistance: 0,
+      respawnInvuln: 0,
     };
   }
 

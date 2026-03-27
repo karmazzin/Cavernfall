@@ -21,6 +21,7 @@
 
   function updatePlayer(state, input, dt) {
     const { player } = state;
+    player.respawnInvuln = Math.max(0, (player.respawnInvuln || 0) - dt);
     if (player.facing !== -1 && player.facing !== 1) player.facing = 1;
     const controlsLocked = (state.crafting && state.crafting.open) || (state.pause && state.pause.open);
     const touchMode = !!(state.ui && state.ui.controlMode === 'touch');

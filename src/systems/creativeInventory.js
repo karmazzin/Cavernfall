@@ -5,7 +5,7 @@
   const { createItemStack } = Game.inventory;
 
   function isCreativeMode(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'infinite_inventory'));
   }
 
   function getCreativeEntries() {
