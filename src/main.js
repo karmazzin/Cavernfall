@@ -10,6 +10,8 @@
   const { updatePlayer } = Game.playerEntity;
   const { updateZombies } = Game.zombiesEntity;
   const { updateSpiders } = Game.spidersEntity;
+  const { updateFireGuards } = Game.fireGuardsEntity;
+  const { updateFireKing } = Game.fireKingEntity;
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
@@ -301,6 +303,8 @@
     updateAnimals(state, dt);
     updateZombies(state, dt);
     updateSpiders(state, dt);
+    updateFireGuards(state, dt);
+    updateFireKing(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
@@ -327,6 +331,9 @@
     }
     for (const dwarf of state.dwarves) {
       if (dwarf.clickCd) dwarf.clickCd = Math.max(0, dwarf.clickCd - dt);
+    }
+    for (const guard of state.fireGuards || []) {
+      if (guard.clickCd) guard.clickCd = Math.max(0, guard.clickCd - dt);
     }
     for (const human of state.humans) {
       if (human.clickCd) human.clickCd = Math.max(0, human.clickCd - dt);

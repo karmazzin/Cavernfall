@@ -151,12 +151,12 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 2.5, y + 1.5, TILE - 5, TILE - 3);
     } else if (id === BLOCK.RED_EARTH) {
-      ctx.fillStyle = '#7d4133';
+      ctx.fillStyle = '#6d1f2b';
       ctx.fillRect(x, y, TILE, TILE);
-      ctx.fillStyle = '#9a5645';
+      ctx.fillStyle = '#983446';
       ctx.fillRect(x + 2, y + 3, 5, 4);
       ctx.fillRect(x + 9, y + 5, 4, 3);
-      ctx.fillStyle = '#5c2d25';
+      ctx.fillStyle = '#45101b';
       ctx.fillRect(x + 5, y + 10, 6, 3);
     } else if (id === BLOCK.TORCH) {
       const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);

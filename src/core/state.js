@@ -12,6 +12,7 @@
     'animals',
     'zombies',
     'spiders',
+    'fireGuards',
     'humans',
     'dwarves',
     'humanSettlements',
@@ -23,6 +24,7 @@
     'fireCaves',
     'firePyramid',
     'fireBoss',
+    'fireKing',
     'fireWorldMeta',
     'zombieSpawnTick',
     'zombieCaveSpawnTick',
@@ -79,6 +81,7 @@
       animals: [],
       zombies: [],
       spiders: [],
+      fireGuards: [],
       humans: [],
       dwarves: [],
       humanSettlements: {
@@ -106,6 +109,7 @@
       },
       firePyramid: null,
       fireBoss: null,
+      fireKing: null,
       fireWorldMeta: null,
       dimensions: {
         overworld: null,

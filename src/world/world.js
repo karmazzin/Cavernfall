@@ -61,8 +61,10 @@
   function getLocationInfo(state, tx, ty) {
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
     if (state.activeDimension === 'fire') {
+      const fireMeta = state.fireWorldMeta || {};
+      const lavaLakeStart = Number.isFinite(fireMeta.lavaLakeStart) ? fireMeta.lavaLakeStart : WORLD_H - 18;
       return {
-        biome: state.biomeAt[safeTx] || 'red_land',
+        biome: ty >= lavaLakeStart ? 'lava_lake' : (state.biomeAt[safeTx] || 'red_land'),
         climate: 'warm',
         inCave: true,
         surfaceY: state.surfaceAt[safeTx] || 0,

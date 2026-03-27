@@ -7,7 +7,7 @@
   const { phaseInfo } = Game.dayCycle;
   const { drawBlock, drawDoor } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -218,29 +218,34 @@
     const playerTileX = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const playerTileY = Math.floor((state.player.y + state.player.h / 2) / TILE);
     const location = getLocationInfo(state, playerTileX, playerTileY);
-    const caveDarkness = location.inCave ? 0.72 : 0;
+    const inFireDimension = state.activeDimension === 'fire';
+    const caveDarkness = inFireDimension ? 0.42 : location.inCave ? 0.72 : 0;
     const darkness = Math.max(phase.darkness, caveDarkness);
-    const skyTop = phase.phase === 'night'
-      ? '#08111f'
-      : phase.phase === 'sunset'
-        ? '#ff9a5a'
-        : phase.phase === 'sunrise'
-          ? '#ffbf75'
-          : '#7ec8ff';
-    const skyBottom = phase.phase === 'night' ? '#13243d' : '#cfefff';
+    const skyTop = inFireDimension
+      ? '#070304'
+      : phase.phase === 'night'
+        ? '#08111f'
+        : phase.phase === 'sunset'
+          ? '#ff9a5a'
+          : phase.phase === 'sunrise'
+            ? '#ffbf75'
+            : '#7ec8ff';
+    const skyBottom = inFireDimension ? '#341017' : phase.phase === 'night' ? '#13243d' : '#cfefff';
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, skyTop);
     gradient.addColorStop(1, skyBottom);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const skyProgress = (state.cycleTime % CYCLE) / CYCLE;
-    const celestialX = canvas.width * skyProgress;
-    const celestialY = 80 + Math.sin(skyProgress * Math.PI) * -140;
-    ctx.beginPath();
-    ctx.fillStyle = phase.phase === 'night' ? '#e9edf5' : '#ffd84d';
-    ctx.arc(celestialX, celestialY, 24, 0, Math.PI * 2);
-    ctx.fill();
+    if (!inFireDimension) {
+      const skyProgress = (state.cycleTime % CYCLE) / CYCLE;
+      const celestialX = canvas.width * skyProgress;
+      const celestialY = 80 + Math.sin(skyProgress * Math.PI) * -140;
+      ctx.beginPath();
+      ctx.fillStyle = phase.phase === 'night' ? '#e9edf5' : '#ffd84d';
+      ctx.arc(celestialX, celestialY, 24, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.save();
     ctx.scale(VIEW_ZOOM, VIEW_ZOOM);
@@ -296,10 +301,13 @@
     for (const animal of state.animals) drawSheep(ctx, animal, camera, time);
     for (const zombie of state.zombies) drawZombie(ctx, zombie, camera, time);
     for (const spider of state.spiders) drawSpider(ctx, spider, camera, time);
+    for (const guard of state.fireGuards || []) drawFireGuard(ctx, guard, camera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, camera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
     if (state.fireBoss) drawFireBoss(ctx, state.fireBoss, camera, time);
     if (state.fireBoss) drawBossHealthBar(ctx, state.fireBoss, camera);
+    if (state.fireKing) drawFireKing(ctx, state.fireKing, camera, time);
+    if (state.fireKing) drawBossHealthBar(ctx, state.fireKing, camera);
 
     drawPlayer(ctx, state, camera, time);
 

@@ -151,6 +151,34 @@
       return;
     }
 
+    if (state.fireKing && wx >= state.fireKing.x && wx <= state.fireKing.x + state.fireKing.w && wy >= state.fireKing.y && wy <= state.fireKing.y + state.fireKing.h) {
+      if (!rightClick && input.mouse.justPressed && Game.fireKingEntity && Game.fireKingEntity.hitFireKing(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
+      const guard = state.fireGuards[i];
+      if (wx >= guard.x && wx <= guard.x + guard.w && wy >= guard.y && wy <= guard.y + guard.h) {
+        if (rightClick) {
+          input.mouse.justPressed = false;
+          return;
+        }
+        if (!guard.clickCd || guard.clickCd <= 0) {
+          guard.hp -= getAttackDamage(selectedToolId(state));
+          guard.clickCd = 0.25;
+          audio.playHit();
+          useSelectedTool(state);
+          if (guard.hp <= 0) state.fireGuards.splice(i, 1);
+        }
+        input.mouse.justPressed = false;
+        return;
+      }
+    }
+
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
       if (wx >= zombie.x && wx <= zombie.x + zombie.w && wy >= zombie.y && wy <= zombie.y + zombie.h) {

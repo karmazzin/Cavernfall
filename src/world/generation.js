@@ -2203,14 +2203,153 @@
     setBlock(state, centerX + 4, portalY + 3, BLOCK.TORCH);
   }
 
+  function spawnFireGuard(state, tx, walkFloor, dir = 1, role = 'guard') {
+    state.fireGuards.push({
+      x: tx * TILE + 1,
+      y: (walkFloor - 2) * TILE,
+      w: 14,
+      h: 24,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      hp: 50,
+      maxHp: 50,
+      dir,
+      attackCd: 0,
+      jumpCd: 0,
+      obstacleTimer: 0,
+      patrolTimer: rand(1.2, 3.6),
+      role,
+      breakTimer: 0,
+      miningSwing: 0,
+    });
+  }
+
+  function carveFireCastleRoad(state, x0, x1, roadY) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = roadY - 1; ty <= roadY; ty += 1) setBlock(state, tx, ty, BLOCK.BLACKSTONE);
+      if (tx % 8 === 0) {
+        setBlock(state, tx, roadY - 2, BLOCK.PILLAR);
+        setBlock(state, tx, roadY - 3, BLOCK.TORCH);
+      }
+      for (let ty = roadY - 8; ty < roadY - 1; ty += 1) {
+        if (ty > 2) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+  }
+
+  function buildFireKingCastle(state, centerX, roadY) {
+    const width = 45;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const baseY = roadY;
+    const leftTowerX1 = x0 + 7;
+    const rightTowerX0 = x1 - 7;
+    const roofY = baseY - 22;
+    const wallTopY = baseY - 15;
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = baseY - 1; ty <= baseY + 4; ty += 1) setBlock(state, tx, ty, BLOCK.BLACKSTONE);
+    }
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      const tower = tx <= leftTowerX1 || tx >= rightTowerX0;
+      const topY = tower ? roofY : wallTopY;
+      for (let ty = topY; ty <= baseY - 2; ty += 1) {
+        if (tx === x0 || tx === x1 || tx === leftTowerX1 || tx === rightTowerX0 || ty === topY || ty === baseY - 2) {
+          setBlock(state, tx, ty, BLOCK.BLACKSTONE);
+        } else if (tx < leftTowerX1 || tx > rightTowerX0) {
+          setBlock(state, tx, ty, BLOCK.AIR);
+        }
+      }
+    }
+
+    for (let tx = leftTowerX1; tx <= rightTowerX0; tx += 1) {
+      for (let ty = wallTopY; ty <= baseY - 2; ty += 1) {
+        if (tx === leftTowerX1 || tx === rightTowerX0 || ty === wallTopY || ty === baseY - 2) {
+          setBlock(state, tx, ty, BLOCK.BLACKSTONE);
+        } else {
+          setBlock(state, tx, ty, BLOCK.AIR);
+        }
+      }
+    }
+
+    for (let tx = x0; tx <= x1; tx += 2) {
+      setBlock(state, tx, roofY, BLOCK.BLACKSTONE);
+      setBlock(state, tx, wallTopY, BLOCK.BLACKSTONE);
+    }
+
+    for (let tx = centerX - 18; tx <= centerX + 18; tx += 1) {
+      setBlock(state, tx, baseY - 2, BLOCK.BLACKSTONE);
+    }
+    for (let tx = centerX - 10; tx <= centerX + 10; tx += 1) {
+      setBlock(state, tx, baseY - 7, BLOCK.BLACKSTONE);
+      if (tx <= centerX - 7 || tx >= centerX + 7) setBlock(state, tx, baseY - 8, BLOCK.BLACKSTONE);
+    }
+    for (let tx = centerX - 2; tx <= centerX + 2; tx += 1) {
+      setBlock(state, tx, baseY - 9, BLOCK.BLACKSTONE);
+      setBlock(state, tx, baseY - 10, BLOCK.BLACKSTONE);
+    }
+    setBlock(state, centerX, baseY - 11, BLOCK.BLACKSTONE);
+    setBlock(state, centerX - 8, baseY - 3, BLOCK.TORCH);
+    setBlock(state, centerX + 8, baseY - 3, BLOCK.TORCH);
+    setBlock(state, centerX - 15, baseY - 10, BLOCK.TORCH);
+    setBlock(state, centerX + 15, baseY - 10, BLOCK.TORCH);
+    setBlock(state, x0 + 4, baseY - 4, BLOCK.TORCH);
+    setBlock(state, x1 - 4, baseY - 4, BLOCK.TORCH);
+    setBlock(state, leftTowerX1 - 2, roofY + 2, BLOCK.TORCH);
+    setBlock(state, rightTowerX0 + 2, roofY + 2, BLOCK.TORCH);
+
+    for (let tx = x0 + 3; tx <= x1 - 3; tx += 1) {
+      if ((tx - x0) % 6 === 0) {
+        setBlock(state, tx, wallTopY + 2, BLOCK.BLACKSTONE);
+        setBlock(state, tx, wallTopY + 3, BLOCK.BLACKSTONE);
+      }
+    }
+    for (let tx = x0 + 2; tx <= x0 + 8; tx += 1) setBlock(state, tx, baseY - 9, BLOCK.BLACKSTONE);
+    for (let tx = x1 - 8; tx <= x1 - 2; tx += 1) setBlock(state, tx, baseY - 9, BLOCK.BLACKSTONE);
+
+    for (let tx = centerX - 16; tx <= centerX + 16; tx += 1) {
+      for (let ty = roofY + 2; ty <= baseY - 3; ty += 1) {
+        if (tx >= centerX - 12 && tx <= centerX + 12 && ty >= baseY - 12) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+
+    const gateY0 = baseY - 6;
+    const gateY1 = baseY - 2;
+    for (let tx = x0; tx <= x0 + 2; tx += 1) {
+      for (let ty = gateY0; ty <= gateY1; ty += 1) setBlock(state, tx, ty, BLOCK.AIR);
+    }
+
+    return {
+      x0,
+      x1,
+      baseY,
+      throneFloorY: baseY - 12,
+      throneX: centerX,
+      throneY: baseY - 12,
+      guardSpots: [
+        { tx: x0 + 4, ty: baseY - 3 },
+        { tx: x0 + 10, ty: baseY - 3 },
+        { tx: centerX - 10, ty: baseY - 3 },
+        { tx: centerX + 10, ty: baseY - 3 },
+        { tx: x1 - 10, ty: baseY - 3 },
+        { tx: x1 - 4, ty: baseY - 3 },
+        { tx: leftTowerX1 - 2, ty: roofY - 1 },
+        { tx: rightTowerX0 + 2, ty: roofY - 1 },
+      ],
+    };
+  }
+
   function generateFireDimension(state) {
     state.world = createGrid();
     state.biomeAt = Array(WORLD_W).fill('red_land');
     state.climateAt = Array(WORLD_W).fill(CLIMATE.WARM);
-    state.surfaceAt = Array(WORLD_W).fill(6);
+    state.surfaceAt = Array(WORLD_W).fill(8);
     state.animals = [];
     state.zombies = [];
     state.spiders = [];
+    state.fireGuards = [];
     state.humans = [];
     state.dwarves = [];
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
@@ -2222,19 +2361,21 @@
     state.fireCaves = { region: null, shrine: null };
     state.firePyramid = null;
     state.fireBoss = null;
+    state.fireKing = null;
     state.zombieSpawnTick = 0;
     state.zombieCaveSpawnTick = 0;
     state.spiderSpawnTick = 0;
     state.spiderCaveSpawnTick = 0;
     state.fluidTick = 0;
 
+    const lavaLakeStart = Math.floor(WORLD_H * 0.56);
     const lavaSegments = [];
-    let x = 18;
+    let x = 20;
     while (x < WORLD_W - 24) {
-      const warmGap = Math.floor(rand(36, 82));
+      const warmGap = Math.floor(rand(52, 104));
       x += warmGap;
       if (x >= WORLD_W - 24) break;
-      const len = Math.floor(rand(26, 56));
+      const len = Math.floor(rand(20, 42));
       lavaSegments.push({ x0: x, x1: Math.min(WORLD_W - 20, x + len) });
       x += len;
     }
@@ -2243,17 +2384,21 @@
     }
 
     const ceil = Array(WORLD_W).fill(8);
-    const floor = Array(WORLD_W).fill(WORLD_H - 10);
+    const floor = Array(WORLD_W).fill(lavaLakeStart - 24);
     for (let tx = 0; tx < WORLD_W; tx += 1) {
-      const ceiling = Math.round(8 + Math.sin(tx / 23) * 2 + Math.sin(tx / 9) * 1.4);
-      let floorY = Math.round(WORLD_H - 14 + Math.sin(tx / 31) * 4 + Math.sin(tx / 13) * 2);
-      if (state.biomeAt[tx] === 'lava_lake') floorY += 5;
-      ceil[tx] = clamp(ceiling, 5, 14);
-      floor[tx] = clamp(floorY, WORLD_H - 24, WORLD_H - 8);
+      const ceiling = Math.round(8 + Math.sin(tx / 21) * 1.8 + Math.sin(tx / 9) * 1.1);
+      let floorY = Math.round(40 + Math.sin(tx / 31) * 4 + Math.sin(tx / 14) * 2.3);
+      if (state.biomeAt[tx] === 'lava_lake') floorY += 3;
+      ceil[tx] = clamp(ceiling, 6, 13);
+      floor[tx] = clamp(floorY, 32, lavaLakeStart - 6);
       state.surfaceAt[tx] = ceil[tx];
       for (let ty = 0; ty < WORLD_H; ty += 1) {
         if (ty === WORLD_H - 1) {
           setBlock(state, tx, ty, BLOCK.BEDROCK);
+          continue;
+        }
+        if (ty >= lavaLakeStart) {
+          setBlock(state, tx, ty, ty < WORLD_H - 1 ? BLOCK.LAVA : BLOCK.BEDROCK);
           continue;
         }
         if (ty <= ceil[tx] || ty >= floor[tx]) {
@@ -2264,7 +2409,7 @@
         }
       }
       if (state.biomeAt[tx] === 'lava_lake') {
-        const lavaTop = floor[tx] - Math.floor(rand(4, 8));
+        const lavaTop = floor[tx] - Math.floor(rand(2, 5));
         for (let ty = lavaTop; ty < floor[tx]; ty += 1) setBlock(state, tx, ty, BLOCK.LAVA);
         for (let ty = lavaTop - 2; ty < lavaTop; ty += 1) if (getBlock(state, tx, ty) !== BLOCK.LAVA) setBlock(state, tx, ty, BLOCK.BASALT);
       }
@@ -2273,18 +2418,77 @@
     for (let tx = 2; tx < WORLD_W - 2; tx += 1) {
       for (let ty = ceil[tx] + 1; ty < floor[tx] - 1; ty += 1) {
         const noise = Math.sin(tx / 19) + Math.sin(ty / 11) + Math.sin((tx + ty) / 17);
-        if (state.biomeAt[tx] === 'red_land' && noise > 1.85 && ty > WORLD_H / 2) setBlock(state, tx, ty, BLOCK.RED_EARTH);
+        if (state.biomeAt[tx] === 'red_land' && noise > 1.85 && ty > lavaLakeStart - 24) setBlock(state, tx, ty, BLOCK.RED_EARTH);
         if (state.biomeAt[tx] === 'lava_lake' && noise > 1.65 && ty < floor[tx] - 6) setBlock(state, tx, ty, BLOCK.BASALT);
       }
     }
 
     const portalX = Math.floor(WORLD_W / 2);
-    const portalY = Math.floor(WORLD_H / 2);
+    const portalY = Math.floor((ceil[portalX] + floor[portalX]) / 2);
     carveFireArrivalChamber(state, portalX, portalY);
+    for (let tx = portalX - 18; tx <= portalX + 18; tx += 1) {
+      if (tx < 2 || tx >= WORLD_W - 2) continue;
+      for (let ty = portalY - 6; ty <= portalY + 4; ty += 1) {
+        if (ty > 1 && ty < lavaLakeStart - 1 && getBlock(state, tx, ty) !== BLOCK.LAVA) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+      if (getBlock(state, tx, portalY + 5) === BLOCK.AIR) setBlock(state, tx, portalY + 5, BLOCK.BASALT);
+    }
+
+    const castleCenterX = WORLD_W - 72;
+    const roadY = Math.min(lavaLakeStart - 10, Math.max(portalY + 9, floor[Math.min(WORLD_W - 1, castleCenterX)] - 2));
+    carveFireCastleRoad(state, portalX + 12, castleCenterX - 23, roadY);
+    const castle = buildFireKingCastle(state, castleCenterX, roadY);
+
+    for (const spot of castle.guardSpots) {
+      spawnFireGuard(state, spot.tx, spot.ty, spot.tx < castleCenterX ? 1 : -1);
+    }
+    for (let tx = portalX + 24; tx < castle.x0 - 4; tx += 18) {
+      const role = tx < portalX + 80 ? 'destroyer' : 'guard';
+      spawnFireGuard(state, tx, roadY - 1, Math.random() < 0.5 ? -1 : 1, role);
+    }
+
+    let guardsPlaced = 0;
+    for (let attempt = 0; attempt < 120 && guardsPlaced < 7; attempt += 1) {
+      const tx = Math.floor(rand(12, WORLD_W - 12));
+      const walkFloor = floor[tx] - 1;
+      if (state.biomeAt[tx] !== 'red_land') continue;
+      if (Math.abs(tx - portalX) < 26) continue;
+      if (tx >= castle.x0 - 8 && tx <= castle.x1 + 8) continue;
+      if (walkFloor >= lavaLakeStart - 1 || walkFloor <= ceil[tx] + 3) continue;
+      if (getBlock(state, tx, walkFloor - 1) !== BLOCK.AIR) continue;
+      if (getBlock(state, tx, walkFloor) === BLOCK.LAVA || getBlock(state, tx, walkFloor + 1) === BLOCK.LAVA) continue;
+      spawnFireGuard(state, tx, walkFloor, Math.random() < 0.5 ? -1 : 1);
+      guardsPlaced += 1;
+    }
+
     state.fireWorldMeta = {
       portalX,
       portalY,
+      lavaLakeStart,
+      castle,
+      road: { x0: portalX + 12, x1: castleCenterX - 23, y: roadY },
       name: 'Огненный мир',
+    };
+    state.fireKing = {
+      x: castle.throneX * TILE - 40,
+      y: (castle.baseY - 10) * TILE,
+      w: 5 * TILE,
+      h: 10 * TILE,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      hp: 100,
+      maxHp: 100,
+      attackCd: 0,
+      phaseTimer: 0,
+      phase: 'idle',
+      dir: -1,
+      awakened: false,
+      summonStage: 0,
+      castleCenterX: castle.throneX,
+      castleBaseY: castle.baseY,
+      isBoss: true,
+      name: 'Огненный король',
     };
     state.player.x = portalX * TILE;
     state.player.y = (portalY - 2) * TILE;

@@ -254,6 +254,24 @@
       return;
     }
 
+    if (itemId === ITEM.FIRE_DUNGEON_KEY) {
+      ctx.fillStyle = '#d79a38';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.34, y + size * 0.38, size * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#341810';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.34, y + size * 0.38, size * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d79a38';
+      ctx.fillRect(x + size * 0.34, y + size * 0.34, size * 0.34, size * 0.08);
+      ctx.fillRect(x + size * 0.56, y + size * 0.42, size * 0.08, size * 0.16);
+      ctx.fillRect(x + size * 0.48, y + size * 0.46, size * 0.08, size * 0.10);
+      ctx.fillStyle = '#ffd37c';
+      ctx.fillRect(x + size * 0.26, y + size * 0.28, size * 0.08, size * 0.04);
+      return;
+    }
+
     if (itemId === ITEM.WHEAT) {
       ctx.fillStyle = '#c8ad4e';
       ctx.fillRect(x + size * 0.48, y + size * 0.18, size * 0.06, size * 0.56);

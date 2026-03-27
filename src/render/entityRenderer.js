@@ -275,6 +275,55 @@
     }
   }
 
+  function drawFireGuard(ctx, guard, camera, time) {
+    const x = guard.x - camera.x;
+    const y = guard.y - camera.y;
+    const walk = Math.sin(time * 7.8 + guard.x * 0.03) * Math.min(2.4, Math.abs(guard.vx) / 24);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 9 + guard.x * 0.02);
+    const destroyer = guard.role === 'destroyer';
+
+    ctx.fillStyle = '#25110d';
+    ctx.fillRect(x + 3, y + 8, 8, 12);
+    ctx.fillRect(x + 1, y + 11, 2, 8);
+    ctx.fillRect(x + 11, y + 11, 2, 8);
+
+    ctx.fillStyle = '#4a1d15';
+    ctx.fillRect(x + 2, y + 2, 10, 8);
+    ctx.fillRect(x + 1, y + 9, 12, 3);
+
+    ctx.fillStyle = destroyer ? '#8b2f18' : '#7a2c1c';
+    ctx.fillRect(x + 4, y + 4, 6, 4);
+    ctx.fillRect(x + 4, y + 12, 6, 2);
+
+    ctx.fillStyle = '#ff7a2e';
+    ctx.fillRect(x + 4, y + 5, 2, 2);
+    ctx.fillRect(x + 8, y + 5, 2, 2);
+    ctx.fillStyle = `rgba(255,214,120,${0.35 + pulse * 0.45})`;
+    ctx.fillRect(x + 3, y + 4, 4, 4);
+    ctx.fillRect(x + 7, y + 4, 4, 4);
+
+    ctx.fillStyle = '#ff5a18';
+    ctx.fillRect(x + 4, y - pulse, 2, 3 + pulse);
+    ctx.fillRect(x + 8, y - pulse * 1.1, 2, 4 + pulse * 1.1);
+
+    ctx.fillStyle = '#2e1711';
+    ctx.fillRect(x + 3, y + 19 + Math.max(0, walk), 3, 5 - Math.min(2, Math.max(0, walk)) * 0.5);
+    ctx.fillRect(x + 8, y + 19 + Math.max(0, -walk), 3, 5 - Math.min(2, Math.max(0, -walk)) * 0.5);
+
+    ctx.fillStyle = '#6b3c1f';
+    const toolX = guard.dir > 0 ? 10 : 1;
+    const swing = destroyer ? Math.sin((guard.miningSwing || 0)) * 1.8 : 0;
+    ctx.fillRect(x + toolX, y + 10 + swing, 2, 8);
+    ctx.fillStyle = '#e9a84b';
+    ctx.fillRect(x + (guard.dir > 0 ? 11 : 0), y + 8 + swing, 1, 3);
+    if (destroyer && (guard.breakTimer || 0) > 0.1) {
+      ctx.fillStyle = '#c1b6a5';
+      ctx.fillRect(x + (guard.dir > 0 ? 14 : -2), y + 11, 2, 2);
+      ctx.fillRect(x + (guard.dir > 0 ? 16 : -4), y + 8, 1, 1);
+      ctx.fillRect(x + (guard.dir > 0 ? 13 : -1), y + 6, 1, 1);
+    }
+  }
+
   function drawFireBoss(ctx, boss, camera, time) {
     const x = boss.x - camera.x;
     const y = boss.y - camera.y;
@@ -322,6 +371,64 @@
     ctx.fillRect(x + 13, y + 26 + bob, 4, 2);
   }
 
+  function drawFireKing(ctx, king, camera, time) {
+    const x = king.x - camera.x;
+    const y = king.y - camera.y;
+    const stride = Math.sin(time * 4.6) * Math.min(4.5, Math.abs(king.vx) / 24);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 7.5 + king.x * 0.003);
+    const castPulse = king.phase === 'cast' ? 0.7 + 0.3 * Math.sin(time * 18) : 0;
+    const slamOffset = king.phase === 'slam' ? Math.sin(time * 26) * 1.4 : 0;
+
+    ctx.fillStyle = '#180708';
+    ctx.fillRect(x + 18, y + 52 + slamOffset, 44, 72);
+    ctx.fillRect(x + 10, y + 62 + slamOffset, 8, 40);
+    ctx.fillRect(x + 62, y + 62 + slamOffset, 8, 40);
+
+    ctx.fillStyle = '#3a1112';
+    ctx.fillRect(x + 12, y + 20 + slamOffset, 56, 42);
+    ctx.fillRect(x + 18, y + 8 + slamOffset, 44, 24);
+    ctx.fillRect(x + 6, y + 30 + slamOffset, 68, 14);
+
+    ctx.fillStyle = '#68221b';
+    ctx.fillRect(x + 22, y + 12 + slamOffset, 36, 18);
+    ctx.fillRect(x + 24, y + 56 + slamOffset, 14, 38);
+    ctx.fillRect(x + 42, y + 56 + slamOffset, 14, 38);
+    ctx.fillRect(x + 15, y + 30 + slamOffset, 50, 8);
+
+    ctx.fillStyle = '#ff7b2a';
+    ctx.fillRect(x + 28, y + 18 + slamOffset, 6, 6);
+    ctx.fillRect(x + 46, y + 18 + slamOffset, 6, 6);
+    ctx.fillStyle = `rgba(255,215,130,${0.36 + pulse * 0.5})`;
+    ctx.fillRect(x + 26, y + 16 + slamOffset, 10, 10);
+    ctx.fillRect(x + 44, y + 16 + slamOffset, 10, 10);
+    ctx.fillStyle = `rgba(255,115,40,${0.25 + pulse * 0.35 + castPulse * 0.2})`;
+    ctx.fillRect(x + 33, y + 42 + slamOffset, 14, 16);
+
+    ctx.fillStyle = '#ff531c';
+    ctx.fillRect(x + 22, y + 2 - pulse * 3 + slamOffset, 6, 10 + pulse * 3);
+    ctx.fillRect(x + 52, y + 1 - pulse * 3.2 + slamOffset, 6, 11 + pulse * 3.2);
+    ctx.fillRect(x + 14, y + 9 - pulse * 1.4 + slamOffset, 4, 7 + pulse * 1.4);
+    ctx.fillRect(x + 62, y + 7 - pulse * 1.2 + slamOffset, 4, 7 + pulse * 1.2);
+
+    ctx.fillStyle = '#24090a';
+    ctx.fillRect(x + 18, y + 120 + Math.max(0, stride), 14, 30 - Math.max(0, stride) * 1.2);
+    ctx.fillRect(x + 48, y + 120 + Math.max(0, -stride), 14, 30 - Math.max(0, -stride) * 1.2);
+    ctx.fillRect(x + 4, y + 64 + Math.max(0, stride * 0.7), 10, 34);
+    ctx.fillRect(x + 66, y + 64 + Math.max(0, -stride * 0.7), 10, 34);
+
+    ctx.fillStyle = '#8f5a22';
+    ctx.fillRect(x + (king.dir > 0 ? 71 : 2), y + 58, 5, 40);
+    ctx.fillStyle = '#f0bc62';
+    ctx.fillRect(x + (king.dir > 0 ? 73 : 0), y + 50, 2, 10);
+
+    if (king.phase === 'cast') {
+      ctx.fillStyle = `rgba(255,140,60,${0.18 + castPulse * 0.25})`;
+      ctx.beginPath();
+      ctx.arc(x + 40, y + 54, 24 + castPulse * 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function drawBossHealthBar(ctx, boss, camera) {
     if (!boss || !boss.isBoss || !Number.isFinite(boss.maxHp) || boss.maxHp <= 0) return;
     const ratio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
@@ -349,5 +456,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireBoss, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawBossHealthBar };
 })();

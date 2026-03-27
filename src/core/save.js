@@ -83,6 +83,7 @@
       animals: state.animals,
       zombies: state.zombies,
       spiders: state.spiders,
+      fireGuards: state.fireGuards,
       humans: state.humans,
       humanSettlements: state.humanSettlements,
       dwarves: state.dwarves,
@@ -94,6 +95,7 @@
       fireCaves: state.fireCaves,
       firePyramid: state.firePyramid,
       fireBoss: state.fireBoss,
+      fireKing: state.fireKing,
       fireWorldMeta: state.fireWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
@@ -205,6 +207,7 @@
       state.animals = Array.isArray(data.animals) ? data.animals : state.animals;
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
+      state.fireGuards = Array.isArray(data.fireGuards) ? data.fireGuards : state.fireGuards;
       state.humans = Array.isArray(data.humans) ? data.humans : state.humans;
       state.humanSettlements = data.humanSettlements && typeof data.humanSettlements === 'object'
         ? {
@@ -242,6 +245,9 @@
       state.fireBoss = data.fireBoss && typeof data.fireBoss === 'object'
         ? data.fireBoss
         : state.fireBoss;
+      state.fireKing = data.fireKing && typeof data.fireKing === 'object'
+        ? data.fireKing
+        : state.fireKing;
       state.fireWorldMeta = data.fireWorldMeta && typeof data.fireWorldMeta === 'object'
         ? data.fireWorldMeta
         : state.fireWorldMeta;

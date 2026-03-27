@@ -18,6 +18,7 @@
     DEEP_CRYSTAL: 'deep_crystal',
     DEEP_DIAMOND: 'deep_diamond',
     FIRE_CRYSTAL: 'fire_crystal',
+    FIRE_DUNGEON_KEY: 'fire_dungeon_key',
     WHEAT: 'wheat',
     CARROT: 'carrot',
     WOODEN_PICKAXE: 'wooden_pickaxe',
@@ -92,6 +93,7 @@
     [ITEM.DEEP_CRYSTAL]: { id: ITEM.DEEP_CRYSTAL, label: 'Глубинный кристалл', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.DEEP_DIAMOND]: { id: ITEM.DEEP_DIAMOND, label: 'Глубинный алмаз', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.FIRE_CRYSTAL]: { id: ITEM.FIRE_CRYSTAL, label: 'Огненный кристалл', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.FIRE_DUNGEON_KEY]: { id: ITEM.FIRE_DUNGEON_KEY, label: 'Ключ от огненной темницы', kind: 'material', stackLimit: 1 },
     [ITEM.WHEAT]: { id: ITEM.WHEAT, label: 'Пшеница', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.CARROT]: { id: ITEM.CARROT, label: 'Морковь', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 12 },
     [ITEM.WOODEN_PICKAXE]: {
