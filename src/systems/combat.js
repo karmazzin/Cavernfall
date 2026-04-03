@@ -2,7 +2,7 @@
   const Game = window.MC2D;
   const { BREATH_TOTAL } = Game.constants;
   const { createSlot, normalizeSlot } = Game.inventory;
-  const { getArmorDefense } = Game.items;
+  const { getArmorDefense, getArmorBonusHealth } = Game.items;
 
   const ARMOR_SLOT_ORDER = ['head', 'chest', 'legs', 'feet'];
 
@@ -33,6 +33,26 @@
     return total;
   }
 
+  function getArmorHealthBonus(state) {
+    const armor = ensureArmorSlots(state.player);
+    let total = 0;
+    for (const slotId of ARMOR_SLOT_ORDER) {
+      const slot = armor[slotId];
+      if (slot && slot.id != null && slot.count > 0) total += getArmorBonusHealth(slot.id);
+    }
+    return total;
+  }
+
+  function getMaxHealth(state) {
+    return 10 + getArmorHealthBonus(state);
+  }
+
+  function clampPlayerHealthToMax(state) {
+    const maxHealth = getMaxHealth(state);
+    state.player.health = Math.min(state.player.health, maxHealth);
+    return maxHealth;
+  }
+
   function getDamageMultiplier(state) {
     return Math.max(0.32, 1 - getArmorValue(state) * 0.08);
   }
@@ -51,7 +71,7 @@
     if (flash > 0) state.attackFlash = Math.max(state.attackFlash || 0, flash);
     if (state.player.health <= 0) {
       if (infiniteInventory) {
-        state.player.health = 10;
+        state.player.health = getMaxHealth(state);
         state.player.breath = BREATH_TOTAL;
         state.player.vx = 0;
         state.player.vy = 0;
@@ -69,6 +89,9 @@
     createArmorSlots,
     ensureArmorSlots,
     getArmorValue,
+    getArmorHealthBonus,
+    getMaxHealth,
+    clampPlayerHealthToMax,
     getDamageMultiplier,
     applyPlayerDamage,
   };

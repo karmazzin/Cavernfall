@@ -3,7 +3,7 @@
   const { TILE, HOTBAR_SIZE, BREATH_MAX, BREATH_CELL_SECONDS } = Game.constants;
   const { getLocationInfo } = Game.world;
   const { drawItem, drawDurabilityBar } = Game.itemRenderer;
-  const { getArmorValue } = Game.combat;
+  const { getArmorValue, getMaxHealth } = Game.combat;
 
   function isMobileUi(canvas, state) {
     return !!(state.ui && state.ui.controlMode === 'touch') || canvas.width < 900;
@@ -106,8 +106,9 @@
 
     ctx.fillStyle = '#fff';
     ctx.font = `${mobile ? 12 : 16}px Arial`;
+    const maxHealth = getMaxHealth(state);
     if (!creative) {
-      ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/10`, panelX + 12, panelY + 20);
+      ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/${maxHealth}`, panelX + 12, panelY + 20);
       ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, panelX + 12, panelY + 38);
     } else {
       const flight = (mobile || state.player.creativeFlight) ? 'вкл' : 'выкл';
@@ -134,7 +135,7 @@
       ctx.fillStyle = '#444';
       ctx.fillRect(panelX + 12, healthBarY, barW, 10);
       ctx.fillStyle = '#e53935';
-      ctx.fillRect(panelX + 12, healthBarY, barW * (state.player.health / 10), 10);
+      ctx.fillRect(panelX + 12, healthBarY, barW * Math.max(0, Math.min(1, state.player.health / maxHealth)), 10);
 
       ctx.fillStyle = '#444';
       ctx.fillRect(panelX + 12, satietyBarY, barW, 10);

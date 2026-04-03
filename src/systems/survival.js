@@ -1,7 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { BREATH_CELL_SECONDS, BREATH_TOTAL } = Game.constants;
-  const { applyPlayerDamage } = Game.combat;
+  const { applyPlayerDamage, getMaxHealth } = Game.combat;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -13,7 +13,7 @@
 
   function updateSatiety(state, input, dt) {
     if (isNonSurvivalMode(state)) {
-      state.player.health = 10;
+      state.player.health = getMaxHealth(state);
       state.player.satiety = 100;
       state.starvationTick = 0;
       state.regenTick = 0;
@@ -48,11 +48,12 @@
       }
     } else {
       state.starvationTick = 0;
-      if (state.player.health < 10) {
+      const maxHealth = getMaxHealth(state);
+      if (state.player.health < maxHealth) {
         state.regenTick += dt;
         if (state.regenTick >= 6) {
           state.regenTick = 0;
-          state.player.health = Math.min(10, state.player.health + 1);
+          state.player.health = Math.min(maxHealth, state.player.health + 1);
         }
       } else {
         state.regenTick = 0;

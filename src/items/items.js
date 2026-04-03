@@ -230,6 +230,7 @@
       kind: 'armor',
       armorSlot: 'head',
       defense: 1,
+      bonusHealth: 1,
       stackLimit: 1,
     },
     [ITEM.IRON_CHESTPLATE]: {
@@ -238,6 +239,7 @@
       kind: 'armor',
       armorSlot: 'chest',
       defense: 3,
+      bonusHealth: 3,
       stackLimit: 1,
     },
     [ITEM.IRON_LEGGINGS]: {
@@ -246,6 +248,7 @@
       kind: 'armor',
       armorSlot: 'legs',
       defense: 2,
+      bonusHealth: 2,
       stackLimit: 1,
     },
     [ITEM.IRON_BOOTS]: {
@@ -254,6 +257,7 @@
       kind: 'armor',
       armorSlot: 'feet',
       defense: 1,
+      bonusHealth: 1,
       stackLimit: 1,
     },
     [ITEM.DIAMOND_PICKAXE]: {
@@ -381,6 +385,11 @@
     return def && def.kind === 'armor' ? def.defense || 0 : 0;
   }
 
+  function getArmorBonusHealth(itemId) {
+    const def = getItemDefinition(itemId);
+    return def && def.kind === 'armor' ? def.bonusHealth || 0 : 0;
+  }
+
   function getPlacedBlockId(itemId) {
     const def = getItemDefinition(itemId);
     return def && def.kind === 'block' ? def.blockId : null;
@@ -407,6 +416,7 @@
     isArmor,
     getArmorSlot,
     getArmorDefense,
+    getArmorBonusHealth,
     getPlacedBlockId,
   };
 })();

@@ -20,6 +20,7 @@
   const { updatePortals, useNearbyPortal } = Game.portalSystem;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
+  const { getMaxHealth, clampPlayerHealthToMax } = Game.combat;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
   const { handleMouse, useNearbyDoor, useNearbyDungeonSeal } = Game.interaction;
@@ -262,7 +263,7 @@
 
     if (mode !== 'spectator') {
       state.gameOver = false;
-      if (state.player.health <= 0) state.player.health = 10;
+      if (state.player.health <= 0) state.player.health = getMaxHealth(state);
     }
 
     state.pause.showModePicker = false;
@@ -391,6 +392,8 @@
 
     if (app.screen !== 'playing') return;
     if (state.pause.open || state.gameOver) return;
+
+    clampPlayerHealthToMax(state);
 
     if (!state.crafting.open) state.cycleTime += dt;
     if (state.attackFlash > 0) state.attackFlash -= dt;
