@@ -19,6 +19,7 @@
     DEEP_DIAMOND: 'deep_diamond',
     FIRE_CRYSTAL: 'fire_crystal',
     FIRE_DUNGEON_KEY: 'fire_dungeon_key',
+    FRIENDSHIP_INGOT: 'friendship_ingot',
     WHEAT: 'wheat',
     CARROT: 'carrot',
     WOODEN_PICKAXE: 'wooden_pickaxe',
@@ -41,6 +42,10 @@
     DIAMOND_AXE: 'diamond_axe',
     DIAMOND_SHOVEL: 'diamond_shovel',
     DIAMOND_SWORD: 'diamond_sword',
+    FRIENDSHIP_PICKAXE: 'friendship_pickaxe',
+    FRIENDSHIP_AXE: 'friendship_axe',
+    FRIENDSHIP_SHOVEL: 'friendship_shovel',
+    FRIENDSHIP_SWORD: 'friendship_sword',
   };
 
   const BLOCK_LABELS = {
@@ -76,6 +81,8 @@
     [BLOCK.FIRE_SEAL]: 'Огненная печать',
     [BLOCK.FIRE_PORTAL]: 'Портал в огненный мир',
     [BLOCK.RED_EARTH]: 'Красная земля',
+    [BLOCK.FRIENDSHIP_ORE]: 'Руда дружбы',
+    [BLOCK.FRIENDSHIP_AMULET]: 'Амулет дружбы',
   };
 
   const ITEM_DEFS = {
@@ -94,6 +101,7 @@
     [ITEM.DEEP_DIAMOND]: { id: ITEM.DEEP_DIAMOND, label: 'Глубинный алмаз', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.FIRE_CRYSTAL]: { id: ITEM.FIRE_CRYSTAL, label: 'Огненный кристалл', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.FIRE_DUNGEON_KEY]: { id: ITEM.FIRE_DUNGEON_KEY, label: 'Ключ от огненной темницы', kind: 'material', stackLimit: 1 },
+    [ITEM.FRIENDSHIP_INGOT]: { id: ITEM.FRIENDSHIP_INGOT, label: 'Дружный слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WHEAT]: { id: ITEM.WHEAT, label: 'Пшеница', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.CARROT]: { id: ITEM.CARROT, label: 'Морковь', kind: 'food', stackLimit: STACK_LIMIT, foodRestore: 12 },
     [ITEM.WOODEN_PICKAXE]: {
@@ -287,6 +295,46 @@
       tier: 'diamond',
       attackDamage: 7,
       durability: 1561,
+    },
+    [ITEM.FRIENDSHIP_PICKAXE]: {
+      id: ITEM.FRIENDSHIP_PICKAXE,
+      label: 'Кирка дружбы',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'pickaxe',
+      tier: 'friendship',
+      attackDamage: 4,
+      durability: 2200,
+    },
+    [ITEM.FRIENDSHIP_AXE]: {
+      id: ITEM.FRIENDSHIP_AXE,
+      label: 'Топор дружбы',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'axe',
+      tier: 'friendship',
+      attackDamage: 5,
+      durability: 2200,
+    },
+    [ITEM.FRIENDSHIP_SHOVEL]: {
+      id: ITEM.FRIENDSHIP_SHOVEL,
+      label: 'Лопата дружбы',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'shovel',
+      tier: 'friendship',
+      attackDamage: 4,
+      durability: 2200,
+    },
+    [ITEM.FRIENDSHIP_SWORD]: {
+      id: ITEM.FRIENDSHIP_SWORD,
+      label: 'Меч дружбы',
+      kind: 'tool',
+      stackLimit: 1,
+      toolType: 'sword',
+      tier: 'friendship',
+      attackDamage: 9,
+      durability: 2200,
     },
   };
 

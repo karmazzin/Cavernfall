@@ -14,6 +14,21 @@
     }
   }
 
+  function hasNearbyFriendshipAmulet(state, tx, ty, radius = 6) {
+    for (let yy = ty - radius; yy <= ty + radius; yy += 1) {
+      for (let xx = tx - radius; xx <= tx + radius; xx += 1) {
+        if (getBlock(state, xx, yy) !== BLOCK.FRIENDSHIP_AMULET) continue;
+        if (Math.hypot(xx - tx, yy - ty) <= radius) return true;
+      }
+    }
+    return false;
+  }
+
+  function createFriendshipOre(state, x0, y0, x1, y1) {
+    setBlock(state, x0, y0, BLOCK.FRIENDSHIP_ORE);
+    setBlock(state, x1, y1, BLOCK.FRIENDSHIP_ORE);
+  }
+
   function reactFluidsAt(state, tx, ty) {
     const id = getBlock(state, tx, ty);
     if (!liquid(id)) return;
@@ -22,8 +37,11 @@
     for (const [dx, dy] of neighbors) {
       const other = getBlock(state, tx + dx, ty + dy);
       if ((id === BLOCK.WATER && other === BLOCK.LAVA) || (id === BLOCK.LAVA && other === BLOCK.WATER)) {
-        setBlock(state, tx, ty, BLOCK.STONE);
-        setBlock(state, tx + dx, ty + dy, BLOCK.STONE);
+        if (hasNearbyFriendshipAmulet(state, tx, ty) || hasNearbyFriendshipAmulet(state, tx + dx, ty + dy)) createFriendshipOre(state, tx, ty, tx + dx, ty + dy);
+        else {
+          setBlock(state, tx, ty, BLOCK.STONE);
+          setBlock(state, tx + dx, ty + dy, BLOCK.STONE);
+        }
         return;
       }
     }
@@ -103,7 +121,10 @@
 
     for (const move of moves) {
       if (move.stone) {
-        if (move.x >= 0 && move.x < WORLD_W && move.y >= 0 && move.y < WORLD_H - 1) setBlock(state, move.x, move.y, BLOCK.STONE);
+        if (move.x >= 0 && move.x < WORLD_W && move.y >= 0 && move.y < WORLD_H - 1) {
+          if (hasNearbyFriendshipAmulet(state, move.x, move.y)) setBlock(state, move.x, move.y, BLOCK.FRIENDSHIP_ORE);
+          else setBlock(state, move.x, move.y, BLOCK.STONE);
+        }
         addReactionPoint(reactionPoints, move.x, move.y);
         continue;
       }

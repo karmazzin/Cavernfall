@@ -12,6 +12,7 @@
   const { updateSpiders } = Game.spidersEntity;
   const { updateFireGuards } = Game.fireGuardsEntity;
   const { updateFireKing } = Game.fireKingEntity;
+  const { updateFriendlyFireKing } = Game.friendlyFireKingEntity;
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
@@ -20,8 +21,8 @@
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateFluids } = Game.fluids;
-  const { addToInventory, eatFood } = Game.inventory;
-  const { handleMouse, useNearbyDoor } = Game.interaction;
+  const { addToInventory, eatFood, countItem } = Game.inventory;
+  const { handleMouse, useNearbyDoor, useNearbyDungeonSeal } = Game.interaction;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
@@ -53,6 +54,50 @@
     if (app.screen !== 'playing' || !isCreativeMode()) return;
     if (state.ui && state.ui.controlMode === 'touch') return;
     state.player.creativeFlight = !state.player.creativeFlight;
+  }
+
+  function inventoryHasFriendshipAmulet() {
+    return countItem(state, BLOCK.FRIENDSHIP_AMULET) > 0;
+  }
+
+  function bundleHasFriendshipAmulet(bundle) {
+    if (!bundle || typeof bundle !== 'object') return false;
+    if (Array.isArray(bundle.foods) && bundle.foods.some((food) => food && food.itemId === BLOCK.FRIENDSHIP_AMULET)) return true;
+    if (bundle.chests && typeof bundle.chests === 'object') {
+      for (const chest of Object.values(bundle.chests)) {
+        if (!chest || !Array.isArray(chest.slots)) continue;
+        if (chest.slots.some((slot) => slot && slot.id === BLOCK.FRIENDSHIP_AMULET && (slot.count || 0) > 0)) return true;
+      }
+    }
+    if (Array.isArray(bundle.world)) {
+      for (const row of bundle.world) {
+        if (Array.isArray(row) && row.includes(BLOCK.FRIENDSHIP_AMULET)) return true;
+      }
+    }
+    return false;
+  }
+
+  function friendshipAmuletWasGranted() {
+    if (state.fireDungeon && state.fireDungeon.giftGiven) return true;
+    const fireBundle = state.dimensions && state.dimensions.fire;
+    return !!(fireBundle && fireBundle.fireDungeon && fireBundle.fireDungeon.giftGiven);
+  }
+
+  function amuletExistsSomewhere() {
+    if (inventoryHasFriendshipAmulet()) return true;
+    if (bundleHasFriendshipAmulet(state)) return true;
+    if (!state.dimensions) return false;
+    const otherDimension = state.activeDimension === 'fire' ? state.dimensions.overworld : state.dimensions.fire;
+    return bundleHasFriendshipAmulet(otherDimension);
+  }
+
+  function ensureFriendshipAmulet() {
+    if (!friendshipAmuletWasGranted()) return;
+    if (amuletExistsSomewhere()) return;
+    if (addToInventory(state, BLOCK.FRIENDSHIP_AMULET, 1)) {
+      state.ui.noticeText = 'Амулет дружбы возвращён в инвентарь.';
+      state.ui.noticeTimer = 5;
+    }
   }
 
   function syncBodyUiState() {
@@ -171,6 +216,7 @@
     state.pause.open = false;
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
+    state.pause.showModePicker = false;
     state.pause.statusText = '';
     syncBodyUiState();
   }
@@ -183,8 +229,44 @@
     state.pause.open = true;
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
+    state.pause.showModePicker = false;
     state.pause.statusText = '';
     syncBodyUiState();
+  }
+
+  function applyWorldMode(mode) {
+    if (!state.worldMeta) return;
+    const currentMode = state.worldMeta.mode || 'survival';
+    const modeLabels = {
+      survival: 'Выживание',
+      creative: 'Творческий',
+      infinite_inventory: 'Бесконечный инвентарь',
+      spectator: 'Спектатор',
+    };
+    if (currentMode === mode) {
+      state.pause.statusText = `Режим уже: ${modeLabels[mode] || 'Выживание'}`;
+      state.pause.showModePicker = false;
+      return;
+    }
+
+    state.worldMeta.mode = mode;
+    state.worldMeta.updatedAt = Date.now();
+
+    if (mode !== 'creative') state.player.creativeFlight = false;
+
+    if (mode === 'spectator') {
+      closeCrafting(state);
+      state.player.creativeFlight = false;
+      state.breaking = null;
+    }
+
+    if (mode !== 'spectator') {
+      state.gameOver = false;
+      if (state.player.health <= 0) state.player.health = 10;
+    }
+
+    state.pause.showModePicker = false;
+    state.pause.statusText = `Режим: ${modeLabels[mode] || 'Выживание'}`;
   }
 
   function togglePause() {
@@ -203,6 +285,12 @@
       if (button.id === 'continue') closePause();
       if (button.id === 'controls') state.pause.showControls = true;
       if (button.id === 'controls_back') state.pause.showControls = false;
+      if (button.id === 'choose_mode') state.pause.showModePicker = true;
+      if (button.id === 'mode_back') state.pause.showModePicker = false;
+      if (button.id === 'mode_survival') applyWorldMode('survival');
+      if (button.id === 'mode_creative') applyWorldMode('creative');
+      if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
+      if (button.id === 'mode_spectator') applyWorldMode('spectator');
       if (button.id === 'save') state.pause.statusText = saveCurrentWorld() ? 'Игра сохранена' : 'Сохранение не удалось';
       if (button.id === 'fullscreen') input.toggleFullscreen();
       if (button.id === 'restart') state.pause.confirmRestart = true;
@@ -261,7 +349,7 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (!useNearbyPortal(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
@@ -291,6 +379,15 @@
       state.ui.fpsFrames = 0;
       state.ui.fpsAccum = 0;
     }
+    if (state.ui.noticeTimer > 0) {
+      state.ui.noticeTimer = Math.max(0, state.ui.noticeTimer - dt);
+      if (state.ui.noticeTimer <= 0) state.ui.noticeText = '';
+    }
+    state.friendshipAmuletTick += dt;
+    if (state.friendshipAmuletTick >= 2) {
+      state.friendshipAmuletTick = 0;
+      ensureFriendshipAmulet();
+    }
 
     if (app.screen !== 'playing') return;
     if (state.pause.open || state.gameOver) return;
@@ -309,6 +406,7 @@
     updateSpiders(state, dt);
     updateFireGuards(state, dt);
     updateFireKing(state, dt);
+    updateFriendlyFireKing(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);

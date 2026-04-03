@@ -242,6 +242,42 @@
       ],
       result: { id: ITEM.DEEP_DIAMOND, count: 1 },
     },
+    {
+      name: 'Кирка дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.FRIENDSHIP_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Топор дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, null],
+        [ITEM.FRIENDSHIP_INGOT, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.FRIENDSHIP_AXE, count: 1 },
+    },
+    {
+      name: 'Лопата дружбы',
+      pattern: [
+        [null, ITEM.FRIENDSHIP_INGOT, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.FRIENDSHIP_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Меч дружбы',
+      pattern: [
+        [null, ITEM.FRIENDSHIP_INGOT, null],
+        [null, ITEM.FRIENDSHIP_INGOT, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.FRIENDSHIP_SWORD, count: 1 },
+    },
   ];
 
   function trimPattern(pattern) {

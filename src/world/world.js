@@ -21,7 +21,8 @@
       id !== BLOCK.LADDER &&
       id !== BLOCK.CHEST &&
       id !== BLOCK.DRY_BUSH &&
-      id !== BLOCK.FIRE_PORTAL
+      id !== BLOCK.FIRE_PORTAL &&
+      id !== BLOCK.FRIENDSHIP_AMULET
     );
   }
 

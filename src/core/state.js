@@ -25,6 +25,8 @@
     'firePyramid',
     'fireBoss',
     'fireKing',
+    'fireDungeon',
+    'friendlyFireKing',
     'fireWorldMeta',
     'zombieSpawnTick',
     'zombieCaveSpawnTick',
@@ -111,6 +113,8 @@
       firePyramid: null,
       fireBoss: null,
       fireKing: null,
+      fireDungeon: null,
+      friendlyFireKing: null,
       fireWorldMeta: null,
       dimensions: {
         overworld: null,
@@ -132,6 +136,7 @@
       spiderCaveSpawnTick: 0,
       attackFlash: 0,
       fluidTick: 0,
+      friendshipAmuletTick: 0,
       autosaveTick: 0,
       breaking: null,
       crafting: {
@@ -149,6 +154,7 @@
         open: false,
         confirmRestart: false,
         showControls: false,
+        showModePicker: false,
         statusText: '',
         fullscreenLabel: 'Полный экран',
       },
@@ -157,6 +163,8 @@
         fps: 0,
         fpsFrames: 0,
         fpsAccum: 0,
+        noticeText: '',
+        noticeTimer: 0,
       },
     };
   }

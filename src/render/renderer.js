@@ -4,10 +4,12 @@
   const { BLOCK } = Game.blocks;
   const { clamp } = Game.math;
   const { getBlock, getLocationInfo } = Game.world;
+  const { ITEM } = Game.items;
+  const { countItem } = Game.inventory;
   const { phaseInfo } = Game.dayCycle;
-  const { drawBlock, drawDoor } = Game.worldRenderer;
+  const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -211,6 +213,92 @@
     ctx.restore();
   }
 
+  function getHoveredDungeonSeal(state, camera, input, canvas) {
+    if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.ui && state.ui.controlMode === 'touch') return null;
+    const dungeon = state.fireDungeon;
+    if (state.activeDimension !== 'fire' || !dungeon || dungeon.released || !hasFireDungeonKey(state)) return null;
+    const tx = Math.floor((input.mouse.x / VIEW_ZOOM + camera.x) / TILE);
+    const ty = Math.floor((input.mouse.y / VIEW_ZOOM + camera.y) / TILE);
+    if (tx !== dungeon.sealX || ty !== dungeon.sealY) return null;
+    const dist = Math.hypot(
+      tx * TILE + TILE / 2 - (state.player.x + state.player.w / 2),
+      ty * TILE + TILE / 2 - (state.player.y + state.player.h / 2)
+    );
+    if (dist > 110) return null;
+    return { tx, ty, sx: tx * TILE - camera.x, sy: ty * TILE - camera.y };
+  }
+
+  function drawDungeonSealHint(ctx, seal) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 130, 100, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(seal.sx + 1, seal.sy + 1, TILE - 2, TILE - 2);
+    ctx.fillStyle = 'rgba(255, 96, 64, 0.16)';
+    ctx.fillRect(seal.sx + 1, seal.sy + 1, TILE - 2, TILE - 2);
+    const label = 'E: снять печать';
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = seal.sx + TILE / 2 - boxW / 2;
+    const boxY = seal.sy - 24;
+    ctx.fillStyle = 'rgba(20, 10, 8, 0.92)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(255, 160, 96, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#ffe2c8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, seal.sx + TILE / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
+  function hasFireDungeonKey(state) {
+    return countItem(state, ITEM.FIRE_DUNGEON_KEY) > 0;
+  }
+
+  function getVisibleBlockId(state, tx, ty, id) {
+    if (state.activeDimension !== 'fire' || !state.fireDungeon || hasFireDungeonKey(state)) return id;
+    const d = state.fireDungeon;
+    if (tx < d.x0 || tx > d.x1 || ty < d.y0 || ty > d.y1) return id;
+    return state.biomeAt[tx] === 'lava_lake' ? BLOCK.BASALT : BLOCK.RED_EARTH;
+  }
+
+  function drawFireDungeonGuide(ctx, canvas, state) {
+    if (state.activeDimension !== 'fire' || !state.fireDungeon || !hasFireDungeonKey(state)) return;
+    const d = state.fireDungeon;
+    const dx = d.centerX * TILE + TILE / 2 - (state.player.x + state.player.w / 2);
+    const dy = d.centerY * TILE + TILE / 2 - (state.player.y + state.player.h / 2);
+    const angle = Math.atan2(dy, dx);
+    const cx = canvas.width / 2;
+    const cy = 52;
+    const len = 26;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(25,12,8,0.88)';
+    ctx.fillRect(-52, -12, 104, 24);
+    ctx.strokeStyle = 'rgba(255,145,90,0.55)';
+    ctx.strokeRect(-51.5, -11.5, 103, 23);
+    ctx.fillStyle = '#ffb982';
+    ctx.beginPath();
+    ctx.moveTo(len, 0);
+    ctx.lineTo(-10, -7);
+    ctx.lineTo(-10, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(-34, -2, 22, 4);
+    ctx.restore();
+    ctx.fillStyle = '#ffe3ca';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Ключ указывает на огненную темницу', cx, cy + 22);
+    ctx.textAlign = 'left';
+  }
+
   function draw(ctx, canvas, state, camera, input) {
     const time = performance.now() / 1000;
     const view = { width: canvas.width / VIEW_ZOOM, height: canvas.height / VIEW_ZOOM };
@@ -257,11 +345,19 @@
 
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
-        const id = getBlock(state, x, y);
+        const id = getVisibleBlockId(state, x, y, getBlock(state, x, y));
         if (id === BLOCK.AIR) continue;
         const sx = x * TILE - camera.x;
         const sy = y * TILE - camera.y;
-        if (id === BLOCK.DOOR) {
+        if (
+          id === BLOCK.FIRE_SEAL &&
+          state.activeDimension === 'fire' &&
+          state.fireDungeon &&
+          x === state.fireDungeon.sealX &&
+          y === state.fireDungeon.sealY
+        ) {
+          drawDungeonSeal(ctx, sx, sy, time);
+        } else if (id === BLOCK.DOOR) {
           const door = getDoorAt(state, x, y);
           drawDoor(ctx, sx, sy, !!(door && door.open), !!(door && door.upper));
         } else {
@@ -273,9 +369,11 @@
     const hoveredChest = getHoveredChest(state, camera, input, canvas);
     const hoveredHuman = getHoveredHuman(state, camera, input, canvas);
     const hoveredPortal = getHoveredPortal(state, camera, input, canvas);
+    const hoveredDungeonSeal = getHoveredDungeonSeal(state, camera, input, canvas);
     if (hoveredChest) drawChestHint(ctx, hoveredChest);
     if (hoveredHuman) drawHumanHint(ctx, hoveredHuman, camera);
     if (hoveredPortal) drawPortalHint(ctx, hoveredPortal);
+    if (hoveredDungeonSeal) drawDungeonSealHint(ctx, hoveredDungeonSeal);
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - camera.x;
@@ -304,6 +402,7 @@
     for (const guard of state.fireGuards || []) drawFireGuard(ctx, guard, camera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, camera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, camera, time);
+    if (state.friendlyFireKing) drawFriendlyFireKing(ctx, state.friendlyFireKing, camera, time);
     if (state.fireBoss) drawFireBoss(ctx, state.fireBoss, camera, time);
     if (state.fireBoss) drawBossHealthBar(ctx, state.fireBoss, camera);
     if (state.fireKing) drawFireKing(ctx, state.fireKing, camera, time);
@@ -338,6 +437,7 @@
     }
 
     drawUI(ctx, canvas, state, phase);
+    drawFireDungeonGuide(ctx, canvas, state);
     drawCraftingOverlay(ctx, canvas, state, input);
     drawPauseOverlay(ctx, canvas, state);
 

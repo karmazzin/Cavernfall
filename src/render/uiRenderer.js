@@ -156,6 +156,26 @@
 
     if (!creative) drawBreath(ctx, canvas, state);
     drawHotbar(ctx, canvas, state);
+
+    if (state.ui && state.ui.noticeText) {
+      const text = state.ui.noticeText;
+      ctx.font = `${mobile ? 13 : 16}px Arial`;
+      const textW = ctx.measureText(text).width;
+      const boxW = textW + 22;
+      const boxH = mobile ? 28 : 32;
+      const boxX = Math.floor((canvas.width - boxW) / 2);
+      const boxY = mobile ? 76 : 88;
+      ctx.fillStyle = 'rgba(18,14,10,0.9)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = 'rgba(255,196,128,0.5)';
+      ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+      ctx.fillStyle = '#ffe8d0';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, canvas.width / 2, boxY + boxH / 2 + 1);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
   }
 
   Game.uiRenderer = { drawHotbar, drawBreath, drawUI, getHotbarLayout, isMobileUi };

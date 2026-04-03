@@ -5,7 +5,13 @@
     const mobile = !!(state.ui && state.ui.controlMode === 'touch') || canvas.width < 900;
     const compactHeight = mobile && canvas.height < 760;
     const panelWidth = mobile ? Math.min(canvas.width - 16, 340) : 360;
-    const panelHeight = state.pause.confirmRestart ? 240 : state.pause.showControls ? (mobile ? (compactHeight ? 286 : 320) : 300) : (mobile ? (compactHeight ? 362 : 432) : 432);
+    const panelHeight = state.pause.confirmRestart
+      ? 240
+      : state.pause.showControls
+        ? (mobile ? (compactHeight ? 286 : 320) : 300)
+        : state.pause.showModePicker
+          ? (mobile ? (compactHeight ? 346 : 388) : 390)
+          : (mobile ? (compactHeight ? 406 : 474) : 474);
     const panel = {
       w: panelWidth,
       h: panelHeight,
@@ -32,6 +38,22 @@
       };
     }
 
+    if (state.pause.showModePicker) {
+      const buttonH = compactHeight ? 36 : 42;
+      const startY = compactHeight ? 84 : 96;
+      const gap = compactHeight ? 8 : 10;
+      return {
+        panel,
+        buttons: [
+          { id: 'mode_survival', label: 'Выживание', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
+          { id: 'mode_creative', label: 'Творческий', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
+          { id: 'mode_infinite_inventory', label: 'Бесконечный инвентарь', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
+          { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
+          { id: 'mode_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: buttonH },
+        ],
+      };
+    }
+
     const buttonH = compactHeight ? 36 : 42;
     const startY = compactHeight ? 82 : 92;
     const gap = compactHeight ? 8 : 10;
@@ -40,10 +62,11 @@
       buttons: [
         { id: 'continue', label: 'Продолжить', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
         { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
-        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
-        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
-        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 4, w: panel.w - 40, h: buttonH },
-        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 5, w: panel.w - 40, h: buttonH },
+        { id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
+        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
+        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 4, w: panel.w - 40, h: buttonH },
+        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 5, w: panel.w - 40, h: buttonH },
+        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 6, w: panel.w - 40, h: buttonH },
       ],
     };
   }
@@ -113,6 +136,17 @@
         ctx.fillText('1..9 — выбор слота хотбара', x, y + step * 4);
         ctx.fillText('E — еда, Y — инвентарь, Esc — пауза', x, y + step * 5);
       }
+    } else if (state.pause.showModePicker) {
+      const labels = {
+        survival: 'Выживание',
+        creative: 'Творческий',
+        infinite_inventory: 'Бесконечный инвентарь',
+        spectator: 'Спектатор',
+      };
+      const currentMode = state.worldMeta && state.worldMeta.mode ? state.worldMeta.mode : 'survival';
+      ctx.font = `${compactHeight ? 13 : 15}px Arial`;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText(`Текущий режим: ${labels[currentMode] || 'Выживание'}`, layout.panel.x + 24, layout.panel.y + (compactHeight ? 66 : 76));
     } else {
       if (state.pause.statusText) {
         ctx.fillStyle = '#8cff8c';

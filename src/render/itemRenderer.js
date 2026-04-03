@@ -9,6 +9,7 @@
   }
 
   function toolColor(tier, sword = false) {
+    if (tier === 'friendship') return sword ? '#d6ffe0' : '#7be2af';
     if (tier === 'diamond') return sword ? '#9af2ff' : '#63d8ea';
     if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
     if (tier === 'stone') return sword ? '#c4ccd9' : '#9ca4b3';
@@ -269,6 +270,22 @@
       ctx.fillRect(x + size * 0.48, y + size * 0.46, size * 0.08, size * 0.10);
       ctx.fillStyle = '#ffd37c';
       ctx.fillRect(x + size * 0.26, y + size * 0.28, size * 0.08, size * 0.04);
+      return;
+    }
+
+    if (itemId === ITEM.FRIENDSHIP_INGOT) {
+      ctx.fillStyle = '#7fe1ae';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.20, y + size * 0.58);
+      ctx.lineTo(x + size * 0.30, y + size * 0.34);
+      ctx.lineTo(x + size * 0.70, y + size * 0.34);
+      ctx.lineTo(x + size * 0.80, y + size * 0.58);
+      ctx.lineTo(x + size * 0.68, y + size * 0.72);
+      ctx.lineTo(x + size * 0.32, y + size * 0.72);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(240,255,246,0.34)';
+      ctx.fillRect(x + size * 0.33, y + size * 0.40, size * 0.30, size * 0.08);
       return;
     }
 

@@ -10,6 +10,7 @@
     selectedItemId,
     consumeSelectedPlaceable,
     addToInventory,
+    countItem,
     selectedToolId,
     selectedToolSlot,
     damageSlotTool,
@@ -42,7 +43,49 @@
     if (blockId === BLOCK.GOLD_ORE) return { id: ITEM.RAW_GOLD, count: 1 };
     if (blockId === BLOCK.DIAMOND_ORE) return { id: ITEM.SMALL_DIAMOND, count: Math.floor(rand(1, 5)) };
     if (blockId === BLOCK.DEEP_ORE) return { id: ITEM.DEEP_CRYSTAL, count: 1 };
+    if (blockId === BLOCK.FRIENDSHIP_ORE) return { id: ITEM.FRIENDSHIP_INGOT, count: 1 };
     return { id: blockId, count: 1 };
+  }
+
+  function releaseFriendlyFireKing(state) {
+    if (!state.fireDungeon || !state.friendlyFireKing || state.friendlyFireKing.freed) return;
+    const dungeon = state.fireDungeon;
+    for (let ty = dungeon.cageY0; ty <= dungeon.cageY1; ty += 1) {
+      setBlock(state, dungeon.cageX0, ty, BLOCK.AIR);
+      setBlock(state, dungeon.cageX1, ty, BLOCK.AIR);
+    }
+    for (let tx = dungeon.cageX0; tx <= dungeon.cageX1; tx += 1) {
+      setBlock(state, tx, dungeon.cageY0, BLOCK.AIR);
+      setBlock(state, tx, dungeon.cageY1, BLOCK.AIR);
+    }
+    state.friendlyFireKing.freed = true;
+    state.friendlyFireKing.state = 'awakening';
+    state.friendlyFireKing.stateTimer = 1.1;
+    state.friendlyFireKing.targetX = dungeon.centerX * TILE + 18;
+    state.fireDungeon.released = true;
+  }
+
+  function findUsableDungeonSeal(state, input, camera) {
+    if (state.activeDimension !== 'fire' || !state.fireDungeon || state.fireDungeon.released) return null;
+    const dungeon = state.fireDungeon;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const distToSeal = Math.hypot(dungeon.sealX * TILE + TILE / 2 - playerCx, dungeon.sealY * TILE + TILE / 2 - playerCy);
+    if (distToSeal > 110) return null;
+
+    if (input && input.mouse && camera) {
+      const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
+      if (tx === dungeon.sealX && ty === dungeon.sealY) return { tx, ty };
+    }
+    return { tx: dungeon.sealX, ty: dungeon.sealY };
+  }
+
+  function useNearbyDungeonSeal(state, input, camera) {
+    const target = findUsableDungeonSeal(state, input, camera);
+    if (!target) return false;
+    if (countItem(state, ITEM.FIRE_DUNGEON_KEY) <= 0) return false;
+    releaseFriendlyFireKing(state);
+    return true;
   }
 
   function useSelectedTool(state, amount = 1) {
@@ -424,5 +467,5 @@
     input.mouse.justPressed = false;
   }
 
-  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, handleMouse };
+  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, useNearbyDungeonSeal, findUsableDungeonSeal, handleMouse };
 })();

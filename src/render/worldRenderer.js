@@ -45,6 +45,33 @@
     ctx.strokeRect(x + 2.5, y + 0.5, 11, TILE - 1);
   }
 
+  function drawDungeonSeal(ctx, x, y, time = 0) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 5 + x * 0.06);
+    ctx.fillStyle = '#3a1412';
+    ctx.fillRect(x, y, TILE, TILE);
+    ctx.fillStyle = '#68251f';
+    ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    ctx.strokeStyle = `rgba(255,120,72,${0.65 + pulse * 0.2})`;
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    ctx.strokeStyle = '#ffb36a';
+    ctx.beginPath();
+    ctx.moveTo(x + 8, y + 3);
+    ctx.lineTo(x + 12, y + 8);
+    ctx.lineTo(x + 8, y + 13);
+    ctx.lineTo(x + 4, y + 8);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 3, y + 8);
+    ctx.lineTo(x + 13, y + 8);
+    ctx.moveTo(x + 8, y + 3);
+    ctx.lineTo(x + 8, y + 13);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,220,120,${0.18 + pulse * 0.15})`;
+    ctx.fillRect(x + 4, y + 4, 8, 8);
+  }
+
   function drawBlock(ctx, id, x, y, time = 0) {
     if (id !== BLOCK.TORCH && id !== BLOCK.CACTUS && id !== BLOCK.DRY_BUSH) {
       ctx.fillStyle = BLOCK_COLORS[id] || '#000';
@@ -158,6 +185,27 @@
       ctx.fillRect(x + 9, y + 5, 4, 3);
       ctx.fillStyle = '#45101b';
       ctx.fillRect(x + 5, y + 10, 6, 3);
+    } else if (id === BLOCK.FRIENDSHIP_ORE) {
+      ctx.fillStyle = '#5e7144';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#9af0c3';
+      ctx.fillRect(x + 3, y + 3, 4, 4);
+      ctx.fillRect(x + 9, y + 5, 3, 3);
+      ctx.fillRect(x + 6, y + 10, 4, 3);
+      ctx.fillStyle = 'rgba(240,255,246,0.25)';
+      ctx.fillRect(x + 4, y + 4, 1, 2);
+    } else if (id === BLOCK.FRIENDSHIP_AMULET) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 4 + x * 0.08);
+      ctx.fillStyle = '#1d4137';
+      ctx.fillRect(x + 5, y + 5, 6, 9);
+      ctx.fillStyle = '#7be2af';
+      ctx.beginPath();
+      ctx.arc(x + 8, y + 8, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(218,255,232,${0.2 + pulse * 0.2})`;
+      ctx.fillRect(x + 4, y + 4, 8, 8);
+      ctx.fillStyle = '#ecfff5';
+      ctx.fillRect(x + 7, y + 7, 2, 2);
     } else if (id === BLOCK.TORCH) {
       const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);
       const flameW = 3 + Math.round(flicker * 2);
@@ -293,5 +341,5 @@
     }
   }
 
-  Game.worldRenderer = { drawBlock, drawDoor };
+  Game.worldRenderer = { drawBlock, drawDoor, drawDungeonSeal };
 })();

@@ -19,6 +19,23 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
   }
 
+  function hasLavaFriendshipAura(state) {
+    const centerTx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const centerTy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    for (let yy = centerTy - 7; yy <= centerTy + 7; yy += 1) {
+      for (let xx = centerTx - 7; xx <= centerTx + 7; xx += 1) {
+        if (getBlock(state, xx, yy) !== BLOCK.FRIENDSHIP_AMULET) continue;
+        if (Math.hypot(xx - centerTx, yy - centerTy) > 7) continue;
+        for (let ly = yy - 3; ly <= yy + 3; ly += 1) {
+          for (let lx = xx - 3; lx <= xx + 3; lx += 1) {
+            if (getBlock(state, lx, ly) === BLOCK.LAVA) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   function updatePlayer(state, input, dt) {
     const { player } = state;
     player.respawnInvuln = Math.max(0, (player.respawnInvuln || 0) - dt);
@@ -142,7 +159,7 @@
     const under = getBlock(state, footTx, footTy);
     const inBody = getBlock(state, footTx, Math.floor((player.y + player.h / 2) / TILE));
 
-    if (!creative && !spectator && (under === BLOCK.LAVA || inBody === BLOCK.LAVA)) {
+    if (!creative && !spectator && (under === BLOCK.LAVA || inBody === BLOCK.LAVA) && !hasLavaFriendshipAura(state)) {
       applyPlayerDamage(state, dt * 2, { flash: 0.2 });
       player.lavaSoundTimer -= dt;
       if (player.lavaSoundTimer <= 0) {

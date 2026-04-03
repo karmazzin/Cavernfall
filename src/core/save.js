@@ -96,6 +96,8 @@
       firePyramid: state.firePyramid,
       fireBoss: state.fireBoss,
       fireKing: state.fireKing,
+      fireDungeon: state.fireDungeon,
+      friendlyFireKing: state.friendlyFireKing,
       fireWorldMeta: state.fireWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
@@ -112,6 +114,7 @@
       spiderCaveSpawnTick: state.spiderCaveSpawnTick,
       attackFlash: state.attackFlash,
       fluidTick: state.fluidTick,
+      friendshipAmuletTick: state.friendshipAmuletTick,
     };
   }
 
@@ -248,6 +251,12 @@
       state.fireKing = data.fireKing && typeof data.fireKing === 'object'
         ? data.fireKing
         : state.fireKing;
+      state.fireDungeon = data.fireDungeon && typeof data.fireDungeon === 'object'
+        ? data.fireDungeon
+        : state.fireDungeon;
+      state.friendlyFireKing = data.friendlyFireKing && typeof data.friendlyFireKing === 'object'
+        ? data.friendlyFireKing
+        : state.friendlyFireKing;
       state.fireWorldMeta = data.fireWorldMeta && typeof data.fireWorldMeta === 'object'
         ? data.fireWorldMeta
         : state.fireWorldMeta;
@@ -274,6 +283,7 @@
       state.spiderCaveSpawnTick = Number.isFinite(data.spiderCaveSpawnTick) ? data.spiderCaveSpawnTick : 0;
       state.attackFlash = Number.isFinite(data.attackFlash) ? data.attackFlash : 0;
       state.fluidTick = Number.isFinite(data.fluidTick) ? data.fluidTick : 0;
+      state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
 
       if (data.player) {
         Object.assign(state.player, data.player);
@@ -291,6 +301,7 @@
       state.crafting.tradeHumanId = null;
       state.pause.open = false;
       state.pause.confirmRestart = false;
+      state.pause.showModePicker = false;
       state.pause.statusText = '';
       state.autosaveTick = 0;
       ensureDimensions(state);

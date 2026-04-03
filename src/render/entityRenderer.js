@@ -4,6 +4,7 @@
   const { selectedItemId, selectedToolId } = Game.inventory;
 
   function toolColor(tier, sword = false) {
+    if (tier === 'friendship') return sword ? '#c8ffd8' : '#7be2af';
     if (tier === 'diamond') return sword ? '#9af2ff' : '#63d8ea';
     if (tier === 'iron') return sword ? '#dfe5ec' : '#b9c2cc';
     if (tier === 'stone') return sword ? '#d5dde8' : '#b4bfce';
@@ -429,6 +430,34 @@
     }
   }
 
+  function drawFriendlyFireKing(ctx, king, camera, time) {
+    const x = king.x - camera.x;
+    const y = king.y - camera.y;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 4.5);
+    if (king.state === 'sealed' || king.state === 'awakening') {
+      ctx.fillStyle = `rgba(255,120,80,${0.16 + pulse * 0.16})`;
+      ctx.fillRect(x - 6, y - 6, king.w + 12, king.h + 12);
+    }
+    ctx.fillStyle = '#173028';
+    ctx.fillRect(x + 6, y + 18, 20, 30);
+    ctx.fillStyle = '#2d6854';
+    ctx.fillRect(x + 4, y + 10, 24, 16);
+    ctx.fillRect(x + 7, y + 2, 18, 12);
+    ctx.fillStyle = '#ffb987';
+    ctx.fillRect(x + 10, y + 6, 12, 8);
+    ctx.fillStyle = '#87ffd1';
+    ctx.fillRect(x + 12, y + 8, 2, 2);
+    ctx.fillRect(x + 18, y + 8, 2, 2);
+    ctx.fillStyle = `rgba(150,255,212,${0.22 + pulse * 0.25})`;
+    ctx.fillRect(x + 8, y + 4, 16, 10);
+    ctx.fillStyle = '#1d4237';
+    ctx.fillRect(x + 8, y + 47, 5, 9);
+    ctx.fillRect(x + 19, y + 47, 5, 9);
+    ctx.fillStyle = '#6af0bf';
+    ctx.fillRect(x + 9, y + 0, 3, 5);
+    ctx.fillRect(x + 20, y + 0, 3, 5);
+  }
+
   function drawBossHealthBar(ctx, boss, camera) {
     if (!boss || !boss.isBoss || !Number.isFinite(boss.maxHp) || boss.maxHp <= 0) return;
     const ratio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
@@ -456,5 +485,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawBossHealthBar };
 })();

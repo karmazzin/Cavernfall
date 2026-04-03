@@ -2341,6 +2341,73 @@
     };
   }
 
+  function buildFireDungeon(state, centerX, baseY) {
+    const width = 28;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const roofY = baseY - 14;
+    const cageX0 = centerX - 4;
+    const cageX1 = centerX + 4;
+    const cageY0 = baseY - 10;
+    const cageY1 = baseY - 3;
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = roofY; ty <= baseY; ty += 1) setBlock(state, tx, ty, BLOCK.BLACKSTONE);
+    }
+
+    carveRect(state, x0 + 2, roofY + 2, x1 - 2, baseY - 2, BLOCK.AIR);
+    for (let tx = x0; tx <= x1; tx += 2) setBlock(state, tx, roofY, BLOCK.BLACKSTONE);
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 5) setBlock(state, tx, baseY - 4, BLOCK.TORCH);
+    for (let tx = x0 + 3; tx <= x1 - 3; tx += 4) setBlock(state, tx, roofY + 4, BLOCK.BLACKSTONE);
+
+    for (let ty = cageY0; ty <= cageY1; ty += 1) {
+      setBlock(state, cageX0, ty, BLOCK.FIRE_SEAL);
+      setBlock(state, cageX1, ty, BLOCK.FIRE_SEAL);
+    }
+    for (let tx = cageX0; tx <= cageX1; tx += 1) {
+      setBlock(state, tx, cageY0, BLOCK.FIRE_SEAL);
+      setBlock(state, tx, cageY1, BLOCK.FIRE_SEAL);
+    }
+    carveRect(state, cageX0 + 1, cageY0 + 1, cageX1 - 1, cageY1 - 1, BLOCK.AIR);
+    setBlock(state, centerX, cageY1 - 1, BLOCK.FIRE_SEAL);
+
+    return {
+      x0,
+      x1,
+      y0: roofY,
+      y1: baseY,
+      centerX,
+      centerY: Math.floor((roofY + baseY) / 2),
+      cageX0,
+      cageX1,
+      cageY0,
+      cageY1,
+      sealX: centerX,
+      sealY: cageY1 - 1,
+    };
+  }
+
+  function carveFireDungeonAccess(state, dungeon, roadY) {
+    const shaftX = dungeon.x0 + 3;
+    const shaftTopY = roadY - 1;
+    const shaftBottomY = dungeon.y0 + 3;
+    for (let ty = shaftTopY; ty <= shaftBottomY; ty += 1) {
+      setBlock(state, shaftX, ty, BLOCK.AIR);
+      setBlock(state, shaftX + 1, ty, BLOCK.AIR);
+      setBlock(state, shaftX - 1, ty, BLOCK.BLACKSTONE);
+      setBlock(state, shaftX + 2, ty, BLOCK.BLACKSTONE);
+      setBlock(state, shaftX, ty, BLOCK.LADDER);
+    }
+    for (let tx = shaftX; tx <= dungeon.x0 + 4; tx += 1) {
+      setBlock(state, tx, shaftBottomY, BLOCK.AIR);
+      setBlock(state, tx, shaftBottomY + 1, BLOCK.AIR);
+      setBlock(state, tx, shaftBottomY + 2, BLOCK.BLACKSTONE);
+    }
+    setBlock(state, shaftX - 1, shaftTopY, BLOCK.TORCH);
+    setBlock(state, dungeon.x0 + 4, shaftBottomY, BLOCK.TORCH);
+    return { shaftX, shaftTopY, shaftBottomY };
+  }
+
   function generateFireDimension(state) {
     state.world = createGrid();
     state.biomeAt = Array(WORLD_W).fill('red_land');
@@ -2362,6 +2429,8 @@
     state.firePyramid = null;
     state.fireBoss = null;
     state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
     state.zombieSpawnTick = 0;
     state.zombieCaveSpawnTick = 0;
     state.spiderSpawnTick = 0;
@@ -2438,6 +2507,10 @@
     const roadY = Math.min(lavaLakeStart - 10, Math.max(portalY + 9, floor[Math.min(WORLD_W - 1, castleCenterX)] - 2));
     carveFireCastleRoad(state, portalX + 12, castleCenterX - 23, roadY);
     const castle = buildFireKingCastle(state, castleCenterX, roadY);
+    const dungeonCenterX = Math.max(52, portalX - 132);
+    const dungeonBaseY = Math.min(lavaLakeStart - 10, Math.max(roadY + 18, floor[dungeonCenterX] + 10));
+    const fireDungeon = buildFireDungeon(state, dungeonCenterX, dungeonBaseY);
+    const dungeonAccess = carveFireDungeonAccess(state, fireDungeon, roadY);
 
     for (const spot of castle.guardSpots) {
       spawnFireGuard(state, spot.tx, spot.ty, spot.tx < castleCenterX ? 1 : -1);
@@ -2466,8 +2539,25 @@
       portalY,
       lavaLakeStart,
       castle,
+      fireDungeon: { ...fireDungeon, access: dungeonAccess },
       road: { x0: portalX + 12, x1: castleCenterX - 23, y: roadY },
       name: 'Огненный мир',
+    };
+    state.fireDungeon = {
+      ...fireDungeon,
+      access: dungeonAccess,
+      released: false,
+      giftGiven: false,
+    };
+    state.friendlyFireKing = {
+      x: fireDungeon.centerX * TILE - 16,
+      y: (fireDungeon.sealY - 5) * TILE,
+      w: 32,
+      h: 56,
+      freed: false,
+      state: 'sealed',
+      stateTimer: 0,
+      name: 'Добрый огненный король',
     };
     state.fireKing = {
       x: castle.throneX * TILE - 40,
