@@ -5,6 +5,7 @@
   const { moveEntity } = Game.physics;
   const { BLOCK } = Game.blocks;
   const { getBlock } = Game.world;
+  const { phaseInfo } = Game.dayCycle;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
   const { setDoorOpen } = Game.doorSystem;
 
@@ -20,6 +21,7 @@
     FLEE: 'flee',
     GUARD: 'guard',
     FIGHT: 'fight',
+    SLEEP: 'sleep',
   };
 
   const MAX_HUMANS = 40;
@@ -130,6 +132,9 @@
       homeNodeId: house.nodeId,
       workNodeId: house.workNodeId || null,
       towerNodeId: house.towerNodeId || null,
+      sleepBlockX: Number.isFinite(house.bedX) ? house.bedX * TILE : null,
+      sleepBlockY: Number.isFinite(house.bedY) ? house.bedY * TILE : null,
+      sleeping: false,
     };
     ensureMobState(human);
     return human;
@@ -208,6 +213,10 @@
     if (!house) return;
     if (Number.isFinite(house.leftDoorX)) setDoorOpen(state, house.leftDoorX, house.doorY, open);
     if (Number.isFinite(house.rightDoorX)) setDoorOpen(state, house.rightDoorX, house.doorY, open);
+  }
+
+  function isNightTime(state) {
+    return phaseInfo(state).phase === 'night';
   }
 
   function moveAlongRoute(state, human, dt) {
@@ -320,16 +329,29 @@
       if (!Array.isArray(human.route)) human.route = [];
       const village = getVillage(state, human.villageId);
       const threat = nearestThreat(state, human);
+      const night = isNightTime(state);
       human.attackCd = Math.max(0, (human.attackCd || 0) - dt);
       human.stateTimer -= dt;
       updateMobMediumState(state, human);
 
       if (village && threat) setVillageAlert(state, village.id, 1);
 
+      if (human.sleeping && (!night || threat)) {
+        human.sleeping = false;
+        human.state = human.role === HUMAN_ROLE.GUARD ? HUMAN_STATE.GUARD : HUMAN_STATE.IDLE;
+        human.stateTimer = rand(1.2, 2.2);
+      }
+
       if (human.inWater) {
         human.dir = getWaterEscapeDir(state, human, human.dir);
         human.vx = human.dir * 72;
         human.vy = -220;
+      } else if (human.sleeping) {
+        human.vx = 0;
+        human.vy = 0;
+        human.onGround = true;
+        if (Number.isFinite(human.sleepBlockX)) human.x = human.sleepBlockX + 2;
+        if (Number.isFinite(human.sleepBlockY)) human.y = human.sleepBlockY - human.h + 10;
       } else if (threat && human.role === HUMAN_ROLE.GUARD) {
         human.state = HUMAN_STATE.FIGHT;
         const dx = threat.x - human.x;
@@ -341,17 +363,33 @@
           threat.hp -= 1;
         }
       } else {
+        const house = getHumanHouse(state, human);
+        const homeNode = getNodeById(state, human.homeNodeId);
+        if (night && !threat && house && Number.isFinite(house.bedX) && Number.isFinite(house.bedY)) {
+          const bedPx = house.bedX * TILE + 2;
+          const bedPy = house.bedY * TILE - human.h + 10;
+          if (Math.abs(human.x - bedPx) < 8 && Math.abs(human.y - bedPy) < 12) {
+            human.sleeping = true;
+            human.state = HUMAN_STATE.SLEEP;
+            human.route = [];
+            human.vx = 0;
+            human.vy = 0;
+            human.sleepBlockX = house.bedX * TILE;
+            human.sleepBlockY = house.bedY * TILE;
+            setHouseDoors(state, house, false);
+          } else if (homeNode && human.state !== HUMAN_STATE.FLEE && human.state !== HUMAN_STATE.SLEEP) {
+            assignRoute(state, human, homeNode, HUMAN_STATE.IDLE);
+          }
+        }
+
         if (threat && human.role !== HUMAN_ROLE.GUARD) {
-          const homeNode = getNodeById(state, human.homeNodeId);
           if (homeNode && human.state !== HUMAN_STATE.FLEE) assignRoute(state, human, homeNode, HUMAN_STATE.FLEE);
         } else if (human.stateTimer <= 0 || !human.route.length) {
-          chooseTask(state, human, village);
+          if (!night) chooseTask(state, human, village);
         }
 
         moveAlongRoute(state, human, dt);
 
-        const homeNode = getNodeById(state, human.homeNodeId);
-        const house = getHumanHouse(state, human);
         const shouldAutoOpenDoors = !(threat && human.role !== HUMAN_ROLE.GUARD && human.state !== HUMAN_STATE.FLEE);
         if (shouldAutoOpenDoors) {
           const tx = Math.floor((human.x + human.w / 2) / TILE);

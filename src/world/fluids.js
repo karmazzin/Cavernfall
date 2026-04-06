@@ -27,6 +27,7 @@
   function createFriendshipOre(state, x0, y0, x1, y1) {
     setBlock(state, x0, y0, BLOCK.FRIENDSHIP_ORE);
     setBlock(state, x1, y1, BLOCK.FRIENDSHIP_ORE);
+    if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'create_friendship_ore');
   }
 
   function reactFluidsAt(state, tx, ty) {

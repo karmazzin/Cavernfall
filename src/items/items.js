@@ -87,6 +87,7 @@
     [BLOCK.RED_EARTH]: 'Красная земля',
     [BLOCK.FRIENDSHIP_ORE]: 'Руда дружбы',
     [BLOCK.FRIENDSHIP_AMULET]: 'Амулет дружбы',
+    [BLOCK.PILLOW]: 'Подушка',
   };
 
   const ITEM_DEFS = {

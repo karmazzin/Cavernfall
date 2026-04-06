@@ -28,6 +28,7 @@
       open: false,
       tab: 'craft',
       creativePage: 0,
+      achievementsPage: 0,
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
@@ -174,8 +175,9 @@
         };
 
     const tabs = {
-      craft: { x: panel.x + 16, y: panel.y + 36, w: mobile ? 88 : 108, h: 28 },
-      creative: { x: panel.x + (mobile ? 110 : 132), y: panel.y + 36, w: mobile ? 118 : 142, h: 28 },
+      craft: { x: panel.x + 16, y: panel.y + 36, w: mobile ? 82 : 100, h: 28 },
+      creative: { x: panel.x + (mobile ? 102 : 124), y: panel.y + 36, w: mobile ? 108 : 132, h: 28 },
+      achievements: { x: panel.x + (mobile ? 216 : 262), y: panel.y + 36, w: mobile ? 122 : 146, h: 28 },
     };
 
     const grid = [];
@@ -269,6 +271,22 @@
           ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 126 }
           : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
       },
+      achievements: {
+        area: mobile
+          ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 126 }
+          : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
+      },
+      achievementsNav: mobile
+        ? {
+            prev: slotRect(panel.x + 14, panel.y + panel.h - 46, 34, 28),
+            next: slotRect(panel.x + panel.w - 48, panel.y + panel.h - 46, 34, 28),
+            label: { x: panel.x + 56, y: panel.y + panel.h - 42, w: panel.w - 112, h: 24 },
+          }
+        : {
+            prev: slotRect(panel.x + 560, panel.y + 34, 36, 28),
+            next: slotRect(panel.x + 1052, panel.y + 34, 36, 28),
+            label: { x: panel.x + 606, y: panel.y + 38, w: 436, h: 20 },
+          },
     };
   }
 
@@ -422,6 +440,7 @@
 
     normalizeSlot(crafting.cursor);
     consumeCraftIngredients(crafting);
+    if (Game.achievementsSystem) Game.achievementsSystem.recordCraft(state, resultStack.id);
     updateCraftingResult(state);
   }
 
@@ -474,6 +493,13 @@
     return { cols, cell, gap, rows, pageSize, pageCount };
   }
 
+  function getAchievementPagination(layout, totalEntries) {
+    const rowHeight = layout.mobile ? 54 : 62;
+    const pageSize = Math.max(1, Math.floor((layout.achievements.area.h - 54) / rowHeight));
+    const pageCount = Math.max(1, Math.ceil(totalEntries / pageSize));
+    return { rowHeight, pageSize, pageCount };
+  }
+
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
     const armor = ensureArmorSlots(state.player);
@@ -495,6 +521,13 @@
     if (creative && contains(layout.tabs.creative, x, y)) {
       crafting.tab = 'creative';
       crafting.creativePage = 0;
+      input.mouse.justPressed = false;
+      return true;
+    }
+
+    if (contains(layout.tabs.achievements, x, y)) {
+      crafting.tab = 'achievements';
+      crafting.achievementsPage = 0;
       input.mouse.justPressed = false;
       return true;
     }
@@ -525,6 +558,23 @@
         const rect = slotRect(startX + col * (cell + gap), startY + row * (cell + gap), cell);
         if (!contains(rect, x, y)) continue;
         giveCreativeEntry(state, entries[i], button);
+        input.mouse.justPressed = false;
+        return true;
+      }
+    }
+
+    if (crafting.tab === 'achievements') {
+      const groups = Game.achievementsSystem ? Game.achievementsSystem.getGroupedAchievements() : [];
+      const entries = groups.flatMap((group) => group.items.map((achievement) => ({ group: group.title, achievement })));
+      const pagination = getAchievementPagination(layout, entries.length);
+      crafting.achievementsPage = Math.max(0, Math.min(crafting.achievementsPage || 0, pagination.pageCount - 1));
+      if (contains(layout.achievementsNav.prev, x, y) && crafting.achievementsPage > 0) {
+        crafting.achievementsPage -= 1;
+        input.mouse.justPressed = false;
+        return true;
+      }
+      if (contains(layout.achievementsNav.next, x, y) && crafting.achievementsPage < pagination.pageCount - 1) {
+        crafting.achievementsPage += 1;
         input.mouse.justPressed = false;
         return true;
       }
@@ -655,5 +705,6 @@
     handleCraftingPointer,
     getArmorSlotRects,
     getCreativePagination,
+    getAchievementPagination,
   };
 })();

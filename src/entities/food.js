@@ -14,7 +14,10 @@
       }
 
       if (aabb(food.x, food.y, food.w, food.h, state.player.x, state.player.y, state.player.w, state.player.h)) {
-        if (addToInventory(state, food.itemId, food.amount)) state.foods.splice(i, 1);
+        if (addToInventory(state, food.itemId, food.amount)) {
+          if (Game.achievementsSystem) Game.achievementsSystem.updateAchievements(state, 999);
+          state.foods.splice(i, 1);
+        }
       } else if (food.t > 30) {
         state.foods.splice(i, 1);
       }

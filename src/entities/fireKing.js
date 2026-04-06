@@ -171,6 +171,7 @@
 
     if (king.phase !== 'dash' && king.attackCd > 0) applyKingContactDamage(state, king, 4);
     if (king.hp <= 0) {
+      if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'defeat_fire_king');
       state.foods.push({
         x: king.x + king.w / 2 - 5,
         y: king.y + king.h / 2 - 5,

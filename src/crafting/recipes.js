@@ -48,6 +48,14 @@
       result: { id: ITEM.COIN, count: 4 },
     },
     {
+      name: 'Подушка',
+      pattern: [
+        [BLOCK.LEAF, BLOCK.LEAF, BLOCK.LEAF],
+        [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],
+      ],
+      result: { id: BLOCK.PILLOW, count: 1 },
+    },
+    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],

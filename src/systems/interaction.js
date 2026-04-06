@@ -1,6 +1,6 @@
 (() => {
   const Game = window.MC2D;
-  const { TILE, VIEW_ZOOM } = Game.constants;
+  const { TILE, VIEW_ZOOM, CYCLE, DAY, SUNSET } = Game.constants;
   const { BLOCK, PLACEABLE } = Game.blocks;
   const { rand, aabb } = Game.math;
   const { ITEM } = Game.items;
@@ -23,6 +23,7 @@
   const { onColonyBlockBroken, hitDwarf, removeDwarf, getNearestTrader } = Game.dwarvesEntity;
   const { getNearestHumanTrader } = Game.humansEntity;
   const { removeFromSlot } = Game.inventory;
+  const { phaseInfo } = Game.dayCycle;
   const audio = Game.audio;
 
   function isCreative(state) {
@@ -63,6 +64,7 @@
     state.friendlyFireKing.stateTimer = 1.1;
     state.friendlyFireKing.targetX = dungeon.centerX * TILE + 18;
     state.fireDungeon.released = true;
+    if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'free_friendly_king');
   }
 
   function findUsableDungeonSeal(state, input, camera) {
@@ -152,6 +154,56 @@
     const target = findUsableDoor(state, input, camera);
     if (!target) return false;
     toggleDoor(state, target.tx, target.ty);
+    return true;
+  }
+
+  function findUsablePillow(state, input, camera) {
+    if (isSpectator(state) || state.player.sleeping) return null;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    if (input && input.mouse && camera) {
+      const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
+      if (getBlock(state, tx, ty) === BLOCK.PILLOW) {
+        const dist = Math.hypot(tx * TILE + TILE / 2 - playerCx, ty * TILE + TILE / 2 - playerCy);
+        if (dist <= 110) return { tx, ty };
+      }
+    }
+    const centerTx = Math.floor(playerCx / TILE);
+    const centerTy = Math.floor(playerCy / TILE);
+    let best = null;
+    let bestDist = Infinity;
+    for (let yy = centerTy - 3; yy <= centerTy + 3; yy += 1) {
+      for (let xx = centerTx - 3; xx <= centerTx + 3; xx += 1) {
+        if (getBlock(state, xx, yy) !== BLOCK.PILLOW) continue;
+        const dist = Math.hypot(xx * TILE + TILE / 2 - playerCx, yy * TILE + TILE / 2 - playerCy);
+        if (dist <= 110 && dist < bestDist) {
+          bestDist = dist;
+          best = { tx: xx, ty: yy };
+        }
+      }
+    }
+    return best;
+  }
+
+  function sleepSkipTime(state) {
+    const phase = phaseInfo(state).phase;
+    const t = state.cycleTime % CYCLE;
+    const base = state.cycleTime - t;
+    if (phase === 'night') state.cycleTime = base + CYCLE;
+    else if (t < DAY + SUNSET) state.cycleTime = base + DAY + SUNSET;
+    else state.cycleTime = base + CYCLE + DAY + SUNSET;
+  }
+
+  function useNearbyPillow(state, input, camera) {
+    const target = findUsablePillow(state, input, camera);
+    if (!target) return false;
+    state.player.sleeping = true;
+    state.player.sleepTimer = 0.8;
+    state.player.sleepBlockX = target.tx * TILE;
+    state.player.sleepBlockY = target.ty * TILE;
+    state.player.vx = 0;
+    state.player.vy = 0;
+    sleepSkipTime(state);
     return true;
   }
 
@@ -467,5 +519,5 @@
     input.mouse.justPressed = false;
   }
 
-  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, useNearbyDungeonSeal, findUsableDungeonSeal, handleMouse };
+  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, useNearbyPillow, findUsablePillow, useNearbyDungeonSeal, findUsableDungeonSeal, handleMouse };
 })();

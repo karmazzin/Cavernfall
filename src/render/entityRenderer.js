@@ -59,6 +59,23 @@
 
   function drawPlayer(ctx, state, camera, time) {
     const player = state.player;
+    if (player.sleeping && Number.isFinite(player.sleepBlockX) && Number.isFinite(player.sleepBlockY)) {
+      const x = player.sleepBlockX - camera.x - 6;
+      const y = player.sleepBlockY - camera.y - 6;
+      ctx.fillStyle = '#f0d9dc';
+      ctx.fillRect(x + 2, y + 13, 18, 4);
+      ctx.fillStyle = '#2e3e62';
+      ctx.fillRect(x + 7, y + 7, 12, 6);
+      ctx.fillStyle = '#d8b28d';
+      ctx.fillRect(x + 2, y + 6, 6, 5);
+      ctx.fillStyle = '#3c2a1f';
+      ctx.fillRect(x + 2, y + 5, 6, 2);
+      ctx.fillStyle = '#4c78c8';
+      ctx.fillRect(x + 10, y + 13, 7, 4);
+      ctx.fillStyle = '#d8b28d';
+      ctx.fillRect(x + 18, y + 8, 2, 5);
+      return;
+    }
     const x = player.x - camera.x;
     const y = player.y - camera.y;
     const dir = player.facing === -1 ? -1 : 1;
@@ -149,6 +166,21 @@
   }
 
   function drawHuman(ctx, human, camera, time) {
+    if (human.sleeping && Number.isFinite(human.sleepBlockX) && Number.isFinite(human.sleepBlockY)) {
+      const x = human.sleepBlockX - camera.x - 5;
+      const y = human.sleepBlockY - camera.y - 5;
+      const palette = human.palette || { body: '#5477a7', accent: '#d6c28a', hat: '#8f6a3f' };
+      const skin = '#d7b492';
+      ctx.fillStyle = '#f0d9dc';
+      ctx.fillRect(x + 2, y + 12, 16, 4);
+      ctx.fillStyle = palette.body;
+      ctx.fillRect(x + 7, y + 7, 10, 5);
+      ctx.fillStyle = skin;
+      ctx.fillRect(x + 2, y + 6, 5, 4);
+      ctx.fillStyle = '#2a2a2d';
+      ctx.fillRect(x + 4, y + 7, 1, 1);
+      return;
+    }
     const x = human.x - camera.x;
     const y = human.y - camera.y;
     const walkPhase = Math.sin(time * 8 + human.x * 0.04) * Math.min(2.2, Math.abs(human.vx) / 28);

@@ -206,6 +206,19 @@
       ctx.fillRect(x + 4, y + 4, 8, 8);
       ctx.fillStyle = '#ecfff5';
       ctx.fillRect(x + 7, y + 7, 2, 2);
+    } else if (id === BLOCK.PILLOW) {
+      ctx.fillStyle = '#7f5f42';
+      ctx.fillRect(x, y + 11, TILE, 5);
+      ctx.fillStyle = '#d5b292';
+      ctx.fillRect(x + 1, y + 10, TILE - 2, 2);
+      ctx.fillStyle = '#f0d9dc';
+      ctx.fillRect(x + 1, y + 5, TILE - 2, 6);
+      ctx.fillStyle = '#f7eaec';
+      ctx.fillRect(x + 2, y + 6, TILE - 5, 2);
+      ctx.fillStyle = '#d7b7bf';
+      ctx.fillRect(x + 10, y + 6, 2, 4);
+      ctx.strokeStyle = 'rgba(112,78,78,0.45)';
+      ctx.strokeRect(x + 1.5, y + 5.5, TILE - 3, 5);
     } else if (id === BLOCK.TORCH) {
       const flicker = 0.5 + 0.5 * Math.sin(time * 9 + x * 0.17 + y * 0.11);
       const flameW = 3 + Math.round(flicker * 2);

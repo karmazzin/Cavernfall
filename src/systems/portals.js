@@ -80,6 +80,7 @@
       ensureFireLink(state, touched);
       const link = state.portalLinks.fireGate;
       switchDimension(state, 'fire');
+      if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'enter_fire_dimension');
       setBlock(state, link.fire.x, link.fire.y, BLOCK.FIRE_PORTAL);
       placePlayerAtPortal(state, link.fire.x, link.fire.y);
       return true;

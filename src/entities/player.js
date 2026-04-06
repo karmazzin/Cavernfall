@@ -22,6 +22,20 @@
   function updatePlayer(state, input, dt) {
     const { player } = state;
     player.respawnInvuln = Math.max(0, (player.respawnInvuln || 0) - dt);
+    if (player.sleeping) {
+      player.vx = 0;
+      player.vy = 0;
+      player.onGround = true;
+      if (Number.isFinite(player.sleepBlockX)) player.x = player.sleepBlockX + 2;
+      if (Number.isFinite(player.sleepBlockY)) player.y = player.sleepBlockY - player.h + 12;
+      player.sleepTimer = Math.max(0, (player.sleepTimer || 0) - dt);
+      if (player.sleepTimer <= 0) {
+        player.sleeping = false;
+        player.sleepBlockX = null;
+        player.sleepBlockY = null;
+      }
+      return;
+    }
     if (player.facing !== -1 && player.facing !== 1) player.facing = 1;
     const controlsLocked = (state.crafting && state.crafting.open) || (state.pause && state.pause.open);
     const touchMode = !!(state.ui && state.ui.controlMode === 'touch');

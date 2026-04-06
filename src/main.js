@@ -23,12 +23,13 @@
   const { getMaxHealth, clampPlayerHealthToMax } = Game.combat;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
-  const { handleMouse, useNearbyDoor, useNearbyDungeonSeal } = Game.interaction;
+  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal } = Game.interaction;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
   const { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave } = Game.saveSystem;
   const { draw } = Game.renderer;
+  const { updateAchievements } = Game.achievementsSystem;
   const { drawMenuBackground } = Game.menuRenderer;
   const { createMenuUi } = Game.menuUi;
   const { getPauseLayout } = Game.pauseRenderer;
@@ -350,7 +351,7 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (!useNearbyPortal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
@@ -418,6 +419,7 @@
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
+    updateAchievements(state, dt);
 
     state.fluidTick += dt;
     if (state.fluidTick >= 0.18) {

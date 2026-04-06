@@ -16,6 +16,7 @@
   const { getLightSourcesInView } = Game.furnaceSystem;
   const { getDoorAt } = Game.doorSystem;
   const { findUsablePortal } = Game.portalSystem;
+  const { findUsablePillow } = Game.interaction;
 
   let darknessMaskCanvas = null;
   let darknessMaskCtx = null;
@@ -213,6 +214,41 @@
     ctx.restore();
   }
 
+  function getHoveredPillow(state, camera, input, canvas) {
+    if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver || state.player.sleeping) return null;
+    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.ui && state.ui.controlMode === 'touch') return null;
+    const target = findUsablePillow(state, input, camera);
+    if (!target) return null;
+    return { tx: target.tx, ty: target.ty, sx: target.tx * TILE - camera.x, sy: target.ty * TILE - camera.y };
+  }
+
+  function drawPillowHint(ctx, pillow) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 210, 220, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pillow.sx + 1, pillow.sy + 1, TILE - 2, TILE - 2);
+    ctx.fillStyle = 'rgba(255, 214, 224, 0.16)';
+    ctx.fillRect(pillow.sx + 1, pillow.sy + 1, TILE - 2, TILE - 2);
+    const label = 'E: спать';
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = pillow.sx + TILE / 2 - boxW / 2;
+    const boxY = pillow.sy - 24;
+    ctx.fillStyle = 'rgba(24, 16, 18, 0.92)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(255, 210, 220, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#fff1f4';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, pillow.sx + TILE / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
   function getHoveredDungeonSeal(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
     if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
@@ -369,10 +405,12 @@
     const hoveredChest = getHoveredChest(state, camera, input, canvas);
     const hoveredHuman = getHoveredHuman(state, camera, input, canvas);
     const hoveredPortal = getHoveredPortal(state, camera, input, canvas);
+    const hoveredPillow = getHoveredPillow(state, camera, input, canvas);
     const hoveredDungeonSeal = getHoveredDungeonSeal(state, camera, input, canvas);
     if (hoveredChest) drawChestHint(ctx, hoveredChest);
     if (hoveredHuman) drawHumanHint(ctx, hoveredHuman, camera);
     if (hoveredPortal) drawPortalHint(ctx, hoveredPortal);
+    if (hoveredPillow) drawPillowHint(ctx, hoveredPillow);
     if (hoveredDungeonSeal) drawDungeonSealHint(ctx, hoveredDungeonSeal);
 
     if (state.breaking) {

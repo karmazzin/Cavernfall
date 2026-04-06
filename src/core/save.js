@@ -115,6 +115,7 @@
       attackFlash: state.attackFlash,
       fluidTick: state.fluidTick,
       friendshipAmuletTick: state.friendshipAmuletTick,
+      achievements: state.achievements,
     };
   }
 
@@ -284,6 +285,13 @@
       state.attackFlash = Number.isFinite(data.attackFlash) ? data.attackFlash : 0;
       state.fluidTick = Number.isFinite(data.fluidTick) ? data.fluidTick : 0;
       state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
+      state.achievements = data.achievements && typeof data.achievements === 'object'
+        ? {
+            unlocked: data.achievements.unlocked && typeof data.achievements.unlocked === 'object' ? data.achievements.unlocked : {},
+            order: Array.isArray(data.achievements.order) ? data.achievements.order : [],
+            scanTick: Number.isFinite(data.achievements.scanTick) ? data.achievements.scanTick : 0,
+          }
+        : state.achievements;
 
       if (data.player) {
         Object.assign(state.player, data.player);

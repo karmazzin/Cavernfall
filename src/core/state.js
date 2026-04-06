@@ -64,6 +64,10 @@
       lavaSoundTimer: 0,
       fallDistance: 0,
       respawnInvuln: 0,
+      sleeping: false,
+      sleepTimer: 0,
+      sleepBlockX: null,
+      sleepBlockY: null,
     };
   }
 
@@ -165,6 +169,11 @@
         fpsAccum: 0,
         noticeText: '',
         noticeTimer: 0,
+      },
+      achievements: {
+        unlocked: {},
+        order: [],
+        scanTick: 0,
       },
     };
   }

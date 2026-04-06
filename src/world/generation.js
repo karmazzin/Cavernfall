@@ -1789,6 +1789,11 @@
     const x0 = house.x0;
     const x1 = house.x1;
     const mid = Math.floor((x0 + x1) / 2);
+    const bedX = x0 + 2;
+    const bedY = floorY - 1;
+    house.bedX = bedX;
+    house.bedY = bedY;
+    if (getBlock(state, bedX, bedY) === BLOCK.AIR) setBlock(state, bedX, bedY, BLOCK.PILLOW);
     setBlock(state, mid, floorY, village.type === 'mountain_village' ? BLOCK.STONE : village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
     if (house.profession === 'merchant') {
       placeVillageChest(state, mid - 1, floorY - 1, village.id);

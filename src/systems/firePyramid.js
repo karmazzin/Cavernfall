@@ -42,6 +42,7 @@
     ritual.timer = 0;
     ritual.clearedToY = pyramid.lavaY;
     ritual.noonTriggered = false;
+    if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'fire_ritual');
     return true;
   }
 
@@ -153,6 +154,7 @@
     }
 
     if (boss.hp <= 0) {
+      if (Game.achievementsSystem) Game.achievementsSystem.recordEvent(state, 'defeat_fire_guardian');
       createPortal(state, boss.x, boss.y);
       state.fireBoss = null;
     }

@@ -8,6 +8,7 @@
   const { ARMOR_SLOT_ORDER, ensureArmorSlots } = Game.combat;
   const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
   const { getTraderOffers, getTraderTitle, canAfford } = Game.tradeSystem;
+  const { getGroupedAchievements, isUnlocked: isAchievementUnlocked, isEnabled: areAchievementsEnabled } = Game.achievementsSystem;
   const tooltipEl = document.getElementById('itemTooltip');
 
   function drawSlot(ctx, rect, slot, highlighted = false) {
@@ -288,6 +289,99 @@
     }
   }
 
+  function drawAchievementIcon(ctx, achievement, x, y, size, unlocked) {
+    ctx.save();
+    ctx.globalAlpha = unlocked ? 1 : 0.35;
+    drawItem(ctx, achievement.iconId, x, y, size);
+    ctx.restore();
+  }
+
+  function drawAchievementsPanel(ctx, canvas, state, layout) {
+    const area = layout.achievements.area;
+    const groups = getGroupedAchievements();
+    const entries = groups.flatMap((group) => group.items.map((achievement) => ({ group: group.title, achievement })));
+    const pagination = Game.crafting.getAchievementPagination(layout, entries.length);
+    const pageCount = pagination.pageCount;
+    state.crafting.achievementsPage = Math.max(0, Math.min(state.crafting.achievementsPage || 0, pageCount - 1));
+
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(area.x, area.y, area.w, area.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.strokeRect(area.x, area.y, area.w, area.h);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${layout.mobile ? 16 : 18}px Arial`;
+    ctx.fillText('Достижения', area.x + 12, area.y + 26);
+    ctx.font = `${layout.mobile ? 10 : 12}px Arial`;
+    ctx.fillStyle = areAchievementsEnabled(state) ? 'rgba(255,255,255,0.8)' : '#ffb36e';
+    ctx.fillText(
+      areAchievementsEnabled(state) ? 'Работают только в режиме выживания.' : 'В этом режиме достижения не засчитываются.',
+      area.x + 12,
+      area.y + 42
+    );
+
+    const pageStart = state.crafting.achievementsPage * pagination.pageSize;
+    const pageEnd = Math.min(entries.length, pageStart + pagination.pageSize);
+    const rowX = area.x + 12;
+    const rowW = area.w - 24;
+    const iconSize = layout.mobile ? 26 : 32;
+    let previousGroup = null;
+
+    for (let i = pageStart; i < pageEnd; i += 1) {
+      const localIndex = i - pageStart;
+      const rowY = area.y + 52 + localIndex * pagination.rowHeight;
+      const entry = entries[i];
+      const unlocked = isAchievementUnlocked(state, entry.achievement.id);
+      if (entry.group !== previousGroup) {
+        ctx.fillStyle = '#ffd36e';
+        ctx.font = `bold ${layout.mobile ? 11 : 13}px Arial`;
+        ctx.fillText(entry.group, rowX, rowY + 11);
+        previousGroup = entry.group;
+      }
+
+      const cardY = rowY + 14;
+      const cardH = pagination.rowHeight - 12;
+      ctx.fillStyle = unlocked ? 'rgba(94,144,98,0.18)' : 'rgba(255,255,255,0.05)';
+      ctx.fillRect(rowX, cardY, rowW, cardH);
+      ctx.strokeStyle = unlocked ? 'rgba(170,230,176,0.5)' : 'rgba(255,255,255,0.14)';
+      ctx.strokeRect(rowX, cardY, rowW, cardH);
+
+      drawAchievementIcon(ctx, entry.achievement, rowX + 8, cardY + Math.floor((cardH - iconSize) / 2), iconSize, unlocked);
+
+      ctx.fillStyle = unlocked ? '#fff' : 'rgba(255,255,255,0.65)';
+      ctx.font = `bold ${layout.mobile ? 12 : 14}px Arial`;
+      ctx.fillText(entry.achievement.title, rowX + iconSize + 18, cardY + 17);
+      ctx.font = `${layout.mobile ? 10 : 12}px Arial`;
+      ctx.fillStyle = 'rgba(255,255,255,0.78)';
+      ctx.fillText(entry.achievement.desc, rowX + iconSize + 18, cardY + 33);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = unlocked ? '#9cff9c' : 'rgba(255,255,255,0.45)';
+      ctx.fillText(unlocked ? 'Открыто' : 'Не открыто', rowX + rowW - 10, cardY + 22);
+      ctx.textAlign = 'left';
+    }
+
+    const prev = layout.achievementsNav.prev;
+    const next = layout.achievementsNav.next;
+    ctx.fillStyle = state.crafting.achievementsPage > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
+    ctx.fillRect(prev.x, prev.y, prev.w, prev.h);
+    ctx.fillStyle = state.crafting.achievementsPage < pageCount - 1 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)';
+    ctx.fillRect(next.x, next.y, next.w, next.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeRect(prev.x, prev.y, prev.w, prev.h);
+    ctx.strokeRect(next.x, next.y, next.w, next.h);
+    ctx.fillStyle = '#fff';
+    ctx.font = `${layout.mobile ? 14 : 16}px Arial`;
+    ctx.fillText('<', prev.x + 12, prev.y + 19);
+    ctx.fillText('>', next.x + 12, next.y + 19);
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `Страница ${state.crafting.achievementsPage + 1} / ${pageCount}`,
+      layout.achievementsNav.label.x + layout.achievementsNav.label.w / 2,
+      layout.achievementsNav.label.y + 15
+    );
+    ctx.textAlign = 'left';
+  }
+
   function drawCraftingOverlay(ctx, canvas, state, input) {
     if (!state.crafting || !state.crafting.open) return;
 
@@ -319,7 +413,18 @@
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.fillStyle = '#fff';
       ctx.font = `${layout.mobile ? 12 : 14}px Arial`;
-      ctx.fillText(tabId === 'creative' ? 'Творческий' : 'Крафт', rect.x + 10, rect.y + 18);
+      const label = tabId === 'creative' ? 'Творческий' : tabId === 'achievements' ? 'Достижения' : 'Крафт';
+      ctx.fillText(label, rect.x + 10, rect.y + 18);
+    }
+
+    if (activeTab === 'achievements') {
+      drawAchievementsPanel(ctx, canvas, state, layout);
+      if (!tooltipVisible) hideTooltip();
+      if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
+        const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };
+        drawSlot(ctx, cursorRect, state.crafting.cursor, true);
+      }
+      return;
     }
 
     if (creative && activeTab === 'creative') {
