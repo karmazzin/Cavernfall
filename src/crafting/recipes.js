@@ -190,6 +190,40 @@
       result: { id: ITEM.IRON_BOOTS, count: 1 },
     },
     {
+      name: 'Шлем дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+      ],
+      result: { id: ITEM.FRIENDSHIP_HELMET, count: 1 },
+    },
+    {
+      name: 'Нагрудник дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT],
+      ],
+      result: { id: ITEM.FRIENDSHIP_CHESTPLATE, count: 1 },
+    },
+    {
+      name: 'Поножи дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+      ],
+      result: { id: ITEM.FRIENDSHIP_LEGGINGS, count: 1 },
+    },
+    {
+      name: 'Ботинки дружбы',
+      pattern: [
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+        [ITEM.FRIENDSHIP_INGOT, null, ITEM.FRIENDSHIP_INGOT],
+      ],
+      result: { id: ITEM.FRIENDSHIP_BOOTS, count: 1 },
+    },
+    {
       name: 'Большой алмаз',
       pattern: [
         [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],

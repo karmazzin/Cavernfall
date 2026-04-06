@@ -1,7 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { BREATH_CELL_SECONDS, BREATH_TOTAL } = Game.constants;
-  const { applyPlayerDamage, getMaxHealth } = Game.combat;
+  const { applyPlayerDamage, getMaxHealth, hasFullFriendshipArmor, hasFriendshipAmuletAura } = Game.combat;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -63,6 +63,11 @@
 
   function updateBreath(state, dt) {
     if (isNonSurvivalMode(state)) {
+      state.player.breath = BREATH_TOTAL;
+      return;
+    }
+
+    if (hasFullFriendshipArmor(state) || hasFriendshipAmuletAura(state, false)) {
       state.player.breath = BREATH_TOTAL;
       return;
     }

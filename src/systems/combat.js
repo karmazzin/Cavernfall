@@ -1,10 +1,18 @@
 (() => {
   const Game = window.MC2D;
-  const { BREATH_TOTAL } = Game.constants;
+  const { BREATH_TOTAL, TILE } = Game.constants;
+  const { BLOCK } = Game.blocks;
   const { createSlot, normalizeSlot } = Game.inventory;
-  const { getArmorDefense, getArmorBonusHealth } = Game.items;
+  const { getBlock } = Game.world;
+  const { ITEM, getArmorDefense, getArmorBonusHealth } = Game.items;
 
   const ARMOR_SLOT_ORDER = ['head', 'chest', 'legs', 'feet'];
+  const FRIENDSHIP_ARMOR_BY_SLOT = {
+    head: ITEM.FRIENDSHIP_HELMET,
+    chest: ITEM.FRIENDSHIP_CHESTPLATE,
+    legs: ITEM.FRIENDSHIP_LEGGINGS,
+    feet: ITEM.FRIENDSHIP_BOOTS,
+  };
 
   function createArmorSlots() {
     return {
@@ -53,6 +61,33 @@
     return maxHealth;
   }
 
+  function hasFullFriendshipArmor(state) {
+    const armor = ensureArmorSlots(state.player);
+    for (const slotId of ARMOR_SLOT_ORDER) {
+      const slot = armor[slotId];
+      if (!slot || slot.count <= 0 || slot.id !== FRIENDSHIP_ARMOR_BY_SLOT[slotId]) return false;
+    }
+    return true;
+  }
+
+  function hasFriendshipAmuletAura(state, requireNearbyLava = false) {
+    const centerTx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const centerTy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    for (let yy = centerTy - 7; yy <= centerTy + 7; yy += 1) {
+      for (let xx = centerTx - 7; xx <= centerTx + 7; xx += 1) {
+        if (getBlock(state, xx, yy) !== BLOCK.FRIENDSHIP_AMULET) continue;
+        if (Math.hypot(xx - centerTx, yy - centerTy) > 7) continue;
+        if (!requireNearbyLava) return true;
+        for (let ly = yy - 3; ly <= yy + 3; ly += 1) {
+          for (let lx = xx - 3; lx <= xx + 3; lx += 1) {
+            if (getBlock(state, lx, ly) === BLOCK.LAVA) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   function getDamageMultiplier(state) {
     return Math.max(0.32, 1 - getArmorValue(state) * 0.08);
   }
@@ -92,6 +127,8 @@
     getArmorHealthBonus,
     getMaxHealth,
     clampPlayerHealthToMax,
+    hasFullFriendshipArmor,
+    hasFriendshipAmuletAura,
     getDamageMultiplier,
     applyPlayerDamage,
   };

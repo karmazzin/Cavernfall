@@ -17,8 +17,9 @@
   }
 
   function drawArmorItem(ctx, def, x, y, size) {
-    ctx.fillStyle = '#b8c1ca';
-    ctx.strokeStyle = '#6f7b88';
+    const friendship = typeof def.id === 'string' && def.id.startsWith('friendship_');
+    ctx.fillStyle = friendship ? '#8ef0c1' : '#b8c1ca';
+    ctx.strokeStyle = friendship ? '#2f8f63' : '#6f7b88';
     ctx.lineWidth = Math.max(1, size * 0.04);
     if (def.armorSlot === 'head') {
       ctx.beginPath();
@@ -33,22 +34,39 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+      if (friendship) {
+        ctx.fillStyle = '#d9fff0';
+        ctx.fillRect(x + size * 0.43, y + size * 0.34, size * 0.14, size * 0.10);
+      }
     } else if (def.armorSlot === 'chest') {
       ctx.fillRect(x + size * 0.24, y + size * 0.22, size * 0.52, size * 0.50);
       ctx.fillRect(x + size * 0.14, y + size * 0.26, size * 0.12, size * 0.28);
       ctx.fillRect(x + size * 0.74, y + size * 0.26, size * 0.12, size * 0.28);
       ctx.strokeRect(x + size * 0.24, y + size * 0.22, size * 0.52, size * 0.50);
+      if (friendship) {
+        ctx.fillStyle = '#d9fff0';
+        ctx.fillRect(x + size * 0.45, y + size * 0.36, size * 0.10, size * 0.20);
+      }
     } else if (def.armorSlot === 'legs') {
       ctx.fillRect(x + size * 0.28, y + size * 0.20, size * 0.18, size * 0.54);
       ctx.fillRect(x + size * 0.54, y + size * 0.20, size * 0.18, size * 0.54);
       ctx.fillRect(x + size * 0.28, y + size * 0.20, size * 0.44, size * 0.16);
       ctx.strokeRect(x + size * 0.28, y + size * 0.20, size * 0.18, size * 0.54);
       ctx.strokeRect(x + size * 0.54, y + size * 0.20, size * 0.18, size * 0.54);
+      if (friendship) {
+        ctx.fillStyle = '#d9fff0';
+        ctx.fillRect(x + size * 0.44, y + size * 0.24, size * 0.12, size * 0.10);
+      }
     } else if (def.armorSlot === 'feet') {
       ctx.fillRect(x + size * 0.22, y + size * 0.48, size * 0.20, size * 0.18);
       ctx.fillRect(x + size * 0.56, y + size * 0.48, size * 0.20, size * 0.18);
       ctx.fillRect(x + size * 0.22, y + size * 0.62, size * 0.28, size * 0.08);
       ctx.fillRect(x + size * 0.56, y + size * 0.62, size * 0.28, size * 0.08);
+      if (friendship) {
+        ctx.fillStyle = '#d9fff0';
+        ctx.fillRect(x + size * 0.30, y + size * 0.52, size * 0.10, size * 0.06);
+        ctx.fillRect(x + size * 0.64, y + size * 0.52, size * 0.10, size * 0.06);
+      }
     }
   }
 
