@@ -167,6 +167,9 @@
     const meta = createWorldMeta({
       name: options.name && options.name.trim() ? options.name.trim() : 'Новый мир',
       mode: options.mode || 'survival',
+      worldType: options.worldType || 'normal',
+      singleBiome: options.singleBiome || 'forest',
+      cavernBiome: options.cavernBiome || 'mix',
       seed,
       preview: null,
     });
@@ -326,6 +329,19 @@
       app.newWorld.mode = mode;
       menu.render(app);
     },
+    onWorldTypeChange(worldType) {
+      app.newWorld.worldType = worldType;
+      if (worldType !== 'single_biome') app.newWorld.singleBiome = app.newWorld.singleBiome || 'forest';
+      menu.render(app);
+    },
+    onSingleBiomeChange(singleBiome) {
+      app.newWorld.singleBiome = singleBiome;
+      menu.render(app);
+    },
+    onCavernBiomeChange(cavernBiome) {
+      app.newWorld.cavernBiome = cavernBiome;
+      menu.render(app);
+    },
     onAction(action, worldId) {
       if (action === 'open-new') app.screen = 'new-world';
       if (action === 'open-load') {
@@ -444,6 +460,15 @@
     }
     for (const human of state.humans) {
       if (human.clickCd) human.clickCd = Math.max(0, human.clickCd - dt);
+    }
+
+    const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
+    if (worldType === 'floating_islands' && state.player.y > state.world.length * Game.constants.TILE + 32) {
+      const isSpectator = !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+      if (!isSpectator) {
+        state.player.health = 0;
+        state.gameOver = true;
+      }
     }
 
     if (!isCreativeMode() && !isSpectatorMode() && !isInfiniteInventoryMode() && state.player.health <= 0) state.gameOver = true;

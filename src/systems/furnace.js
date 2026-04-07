@@ -18,12 +18,15 @@
     [ITEM.COAL]: 16,
     [ITEM.CHARCOAL]: 14,
     [BLOCK.WOOD]: 8,
+    [BLOCK.SPRUCE_WOOD]: 8,
     [BLOCK.PLANK]: 5,
     [BLOCK.LEAF]: 1.4,
+    [BLOCK.SPRUCE_LEAF]: 1.4,
   };
 
   const SMELT_RECIPES = {
     [BLOCK.WOOD]: { id: ITEM.CHARCOAL, count: 1, time: 5 },
+    [BLOCK.SPRUCE_WOOD]: { id: ITEM.CHARCOAL, count: 1, time: 5 },
     [BLOCK.PLANK]: { id: ITEM.CHARCOAL, count: 1, time: 4.2 },
     [ITEM.RAW_IRON]: { id: ITEM.IRON_INGOT, count: 1, time: 6 },
     [ITEM.RAW_GOLD]: { id: ITEM.GOLD_INGOT, count: 1, time: 6.2 },

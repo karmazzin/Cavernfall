@@ -11,6 +11,9 @@
         name: '',
         seed: '',
         mode: 'survival',
+        worldType: 'normal',
+        singleBiome: 'forest',
+        cavernBiome: 'mix',
       },
     };
   }

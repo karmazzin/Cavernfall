@@ -88,6 +88,9 @@
     [BLOCK.FRIENDSHIP_ORE]: 'Руда дружбы',
     [BLOCK.FRIENDSHIP_AMULET]: 'Амулет дружбы',
     [BLOCK.PILLOW]: 'Подушка',
+    [BLOCK.SNOW]: 'Снег',
+    [BLOCK.SPRUCE_WOOD]: 'Еловый ствол',
+    [BLOCK.SPRUCE_LEAF]: 'Еловая хвоя',
   };
 
   const ITEM_DEFS = {

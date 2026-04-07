@@ -35,6 +35,7 @@
   const PLAINS_PROFESSIONS = ['farmer', 'farmer', 'shepherd', 'shepherd', 'lumber', 'lumber', 'merchant', 'mason'];
   const MOUNTAIN_PROFESSIONS = ['miner', 'miner', 'miner', 'mason', 'mason', 'merchant', 'lumber', 'farmer'];
   const DESERT_PROFESSIONS = ['merchant', 'merchant', 'mason', 'mason', 'miner', 'miner', 'farmer', 'shepherd'];
+  const WINTER_PROFESSIONS = ['lumber', 'lumber', 'shepherd', 'shepherd', 'merchant', 'mason', 'miner', 'farmer'];
 
   const CLIMATE = {
     ANY: 'any',
@@ -118,14 +119,18 @@
   }
 
   function climateForBiome(biome) {
-    if (biome === 'mountains') return CLIMATE.COLD;
+    if (biome === 'mountains' || biome === 'snow_plains') return CLIMATE.COLD;
     if (biome === 'desert' || biome === 'volcano') return CLIMATE.WARM;
     if (biome === 'plains' || biome === 'forest') return CLIMATE.TEMPERATE;
     return CLIMATE.ANY;
   }
 
   function chooseBiomeForClimate(climate, lastBiome) {
-    if (climate === CLIMATE.COLD) return 'mountains';
+    if (climate === CLIMATE.COLD) {
+      if (lastBiome === 'mountains') return Math.random() < 0.42 ? 'snow_plains' : 'mountains';
+      if (lastBiome === 'snow_plains') return Math.random() < 0.34 ? 'mountains' : 'snow_plains';
+      return Math.random() < 0.58 ? 'snow_plains' : 'mountains';
+    }
     if (climate === CLIMATE.WARM) return 'desert';
     if (lastBiome === 'forest') return Math.random() < 0.62 ? 'plains' : 'forest';
     if (lastBiome === 'plains') return Math.random() < 0.38 ? 'forest' : 'plains';
@@ -155,6 +160,9 @@
     }
     if (type === 'desert_village') {
       return { surface: BLOCK.SAND, subsoil: BLOCK.SANDSTONE, deepSubsoil: BLOCK.SANDSTONE, wall: BLOCK.SANDSTONE, support: BLOCK.SANDSTONE, roof: BLOCK.SANDSTONE, tower: BLOCK.SANDSTONE };
+    }
+    if (type === 'winter_village') {
+      return { surface: BLOCK.SNOW, subsoil: BLOCK.DIRT, deepSubsoil: BLOCK.STONE, wall: BLOCK.PLANK, support: BLOCK.SPRUCE_WOOD, roof: BLOCK.STONE, tower: BLOCK.STONE };
     }
     return { surface: BLOCK.GRASS, subsoil: BLOCK.DIRT, deepSubsoil: BLOCK.STONE, wall: BLOCK.PLANK, support: BLOCK.WOOD, roof: BLOCK.STONE, tower: BLOCK.STONE };
   }
@@ -223,13 +231,13 @@
   function flattenPlains(state) {
     let tx = 0;
     while (tx < WORLD_W) {
-      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert') {
+      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert' && state.biomeAt[tx] !== 'snow_plains') {
         tx += 1;
         continue;
       }
 
       const start = tx;
-      while (tx < WORLD_W && (state.biomeAt[tx] === 'plains' || state.biomeAt[tx] === 'desert')) tx += 1;
+      while (tx < WORLD_W && (state.biomeAt[tx] === 'plains' || state.biomeAt[tx] === 'desert' || state.biomeAt[tx] === 'snow_plains')) tx += 1;
       const end = tx - 1;
       if (end - start + 1 < 18) continue;
 
@@ -249,7 +257,7 @@
 
   function addPlainMicroRelief(state) {
     for (let tx = 3; tx < WORLD_W - 3; tx += 1) {
-      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert') continue;
+      if (state.biomeAt[tx] !== 'plains' && state.biomeAt[tx] !== 'desert' && state.biomeAt[tx] !== 'snow_plains') continue;
       if (Math.random() < 0.7) continue;
       const prev = state.surfaceAt[tx - 1];
       const next = state.surfaceAt[tx + 1];
@@ -296,6 +304,7 @@
 
       let segLen = Math.floor(rand(90, 170));
       if (biome === 'mountains') segLen = Math.floor(rand(104, 164));
+      if (biome === 'snow_plains') segLen = Math.floor(rand(96, 156));
       if (biome === 'forest') segLen = Math.floor(rand(72, 136));
       if (biome === 'desert') segLen = Math.floor(rand(112, 176));
 
@@ -303,8 +312,8 @@
       const segmentEnd = Math.min(WORLD_W - 1, x + segLen - 1);
       const center = (segmentStart + segmentEnd) / 2;
       const half = Math.max(1, (segmentEnd - segmentStart) / 2);
-      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : rand(0, 1.2);
-      const segmentBase = biome === 'plains' || biome === 'desert' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
+      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : biome === 'snow_plains' ? rand(0.4, 1.8) : rand(0, 1.2);
+      const segmentBase = biome === 'plains' || biome === 'desert' || biome === 'snow_plains' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
 
       for (; x <= segmentEnd; x += 1) {
         const prev = x > 0 ? state.surfaceAt[x - 1] : SURFACE_BASE;
@@ -313,6 +322,8 @@
           const t = Math.abs((x - center) / half);
           const ridge = Math.pow(Math.max(0, 1 - t), 0.55);
           target = SURFACE_BASE - peakLift * ridge + rand(-0.6, 0.6);
+        } else if (biome === 'snow_plains') {
+          target += Math.sin((x - segmentStart) / 12) * 0.7 + rand(-0.2, 0.2);
         } else if (biome === 'forest') {
           target += Math.sin((x - segmentStart) / 9) * 1.2 + rand(-0.4, 0.4);
         } else if (biome === 'desert') {
@@ -321,7 +332,7 @@
           target += rand(-0.4, 0.4);
         }
 
-        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : 0.4;
+        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : 0.4;
         state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
         state.biomeAt[x] = biome;
         state.climateAt[x] = climate;
@@ -1449,6 +1460,7 @@
       const surfaceBlock = getBlock(state, tx, s);
       if (surfaceBlock === BLOCK.WATER || surfaceBlock === BLOCK.LAVA) continue;
       if (biome === 'mountains') setBlock(state, tx, s, BLOCK.STONE);
+      else if (biome === 'snow_plains') setBlock(state, tx, s, BLOCK.SNOW);
       else if (biome === 'desert') setBlock(state, tx, s, BLOCK.SAND);
       else if (biome === 'volcano') setBlock(state, tx, s, BLOCK.BLACKSTONE);
       else setBlock(state, tx, s, BLOCK.GRASS);
@@ -1504,15 +1516,35 @@
     }
   }
 
+  function plantSpruceTree(state, tx, s) {
+    const height = Math.floor(rand(5, 8));
+    for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.SPRUCE_WOOD);
+    const topY = s - height;
+    for (let yy = -4; yy <= 0; yy += 1) {
+      const width = yy <= -3 ? 1 : yy === -2 ? 2 : 3;
+      for (let xx = -width; xx <= width; xx += 1) {
+        if (Math.abs(xx) === width && width > 1 && Math.random() < 0.2) continue;
+        if (getBlock(state, tx + xx, topY + yy) === BLOCK.AIR) setBlock(state, tx + xx, topY + yy, BLOCK.SPRUCE_LEAF);
+      }
+    }
+    if (getBlock(state, tx, topY - 1) === BLOCK.AIR) setBlock(state, tx, topY - 1, BLOCK.SPRUCE_LEAF);
+  }
+
   function plantTrees(state, surfaceFluidColumns) {
     for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
       const biome = state.biomeAt[tx];
       if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || biome === 'desert' || surfaceFluidColumns.has(tx)) continue;
-      const treeChance = biome === 'forest' ? 0.09 : 0.01;
+      const treeChance = biome === 'forest' ? 0.09 : biome === 'snow_plains' ? 0.045 : 0.01;
       if (Math.random() >= treeChance) continue;
       const s = state.surfaceAt[tx];
-      if (getBlock(state, tx, s) !== BLOCK.GRASS || getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
-      if (Math.abs(state.surfaceAt[tx - 1] - s) > 1 || Math.abs(state.surfaceAt[tx + 1] - s) > 1) continue;
+      const surfaceBlock = getBlock(state, tx, s);
+      const validSurface = biome === 'snow_plains' ? surfaceBlock === BLOCK.SNOW : surfaceBlock === BLOCK.GRASS;
+      if (!validSurface || getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
+      if (Math.abs(state.surfaceAt[tx - 1] - s) > (biome === 'snow_plains' ? 1 : 1) || Math.abs(state.surfaceAt[tx + 1] - s) > (biome === 'snow_plains' ? 1 : 1)) continue;
+      if (biome === 'snow_plains') {
+        plantSpruceTree(state, tx, s);
+        continue;
+      }
       const height = Math.floor(rand(3, 6));
       for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
       const topY = s - height;
@@ -1571,7 +1603,13 @@
   }
 
   function chooseVillageProfession(type) {
-    const pool = type === 'mountain_village' ? MOUNTAIN_PROFESSIONS : type === 'desert_village' ? DESERT_PROFESSIONS : PLAINS_PROFESSIONS;
+    const pool = type === 'mountain_village'
+      ? MOUNTAIN_PROFESSIONS
+      : type === 'desert_village'
+        ? DESERT_PROFESSIONS
+        : type === 'winter_village'
+          ? WINTER_PROFESSIONS
+          : PLAINS_PROFESSIONS;
     return pool[Math.floor(rand(0, pool.length))];
   }
 
@@ -1580,7 +1618,7 @@
     for (let tx = x0; tx <= x1; tx += 1) {
       if (tx < 3 || tx >= WORLD_W - 3) continue;
       state.surfaceAt[tx] = baseY;
-      state.biomeAt[tx] = type === 'desert_village' ? 'desert' : state.biomeAt[tx];
+      state.biomeAt[tx] = type === 'desert_village' ? 'desert' : type === 'winter_village' ? 'snow_plains' : state.biomeAt[tx];
       state.climateAt[tx] = climateForBiome(state.biomeAt[tx]);
       setBlock(state, tx, baseY, style.surface);
       setBlock(state, tx, baseY + 1, style.subsoil);
@@ -1794,7 +1832,7 @@
     house.bedX = bedX;
     house.bedY = bedY;
     if (getBlock(state, bedX, bedY) === BLOCK.AIR) setBlock(state, bedX, bedY, BLOCK.PILLOW);
-    setBlock(state, mid, floorY, village.type === 'mountain_village' ? BLOCK.STONE : village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
+      setBlock(state, mid, floorY, village.type === 'mountain_village' ? BLOCK.STONE : village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK);
     if (house.profession === 'merchant') {
       placeVillageChest(state, mid - 1, floorY - 1, village.id);
       placeVillageChest(state, mid + 1, floorY - 1, village.id);
@@ -1848,8 +1886,8 @@
       if (Math.random() < 0.7) spawnVillageSheep(state, workX - 1, baseY, 1);
       if (Math.random() < 0.7) spawnVillageSheep(state, workX + 1, baseY, -1);
     } else if (house.profession === 'lumber') {
-      setBlock(state, workX - 1, baseY - 1, BLOCK.WOOD);
-      setBlock(state, workX, baseY - 1, BLOCK.WOOD);
+      setBlock(state, workX - 1, baseY - 1, village.type === 'winter_village' ? BLOCK.SPRUCE_WOOD : BLOCK.WOOD);
+      setBlock(state, workX, baseY - 1, village.type === 'winter_village' ? BLOCK.SPRUCE_WOOD : BLOCK.WOOD);
       setBlock(state, workX + 1, baseY - 1, BLOCK.PLANK);
       setBlock(state, workX + 2, baseY - 1, BLOCK.PILLAR);
     } else if (house.profession === 'mason') {
@@ -1871,6 +1909,10 @@
       setBlock(state, workX - 1, baseY - 1, BLOCK.SANDSTONE);
       setBlock(state, workX, baseY - 1, BLOCK.CACTUS);
       if (getBlock(state, workX + 1, baseY - 1) === BLOCK.AIR) setBlock(state, workX + 1, baseY - 1, BLOCK.DRY_BUSH);
+    } else if (village.type === 'winter_village') {
+      setBlock(state, workX - 1, baseY - 1, BLOCK.SPRUCE_WOOD);
+      setBlock(state, workX, baseY - 1, BLOCK.PLANK);
+      setBlock(state, workX + 1, baseY - 1, BLOCK.SPRUCE_LEAF);
     }
   }
 
@@ -1916,7 +1958,7 @@
     const wallBlock = style.wall;
     const supportBlock = style.support;
     const roofBlock = style.roof;
-    const halfW = options.halfW || (role === 'guard' ? 3 : village.type === 'mountain_village' ? Math.floor(rand(4, 6)) : Math.floor(rand(4, 6)));
+    const halfW = options.halfW || (role === 'guard' ? 3 : village.type === 'mountain_village' ? Math.floor(rand(4, 6)) : village.type === 'winter_village' ? Math.floor(rand(4, 6)) : Math.floor(rand(4, 6)));
     const height = options.height || (role === 'guard' ? 4 : Math.floor(rand(5, 7)));
     const x0 = cx - halfW;
     const x1 = cx + halfW;
@@ -2016,9 +2058,9 @@
       bounds: { x0: segment.center, x1: segment.center, y0: 0, y1: 0 },
     };
     const segmentWidth = segment.end - segment.start + 1;
-    const desiredCount = type === 'mountain_village' ? Math.floor(rand(6, 9)) : type === 'desert_village' ? Math.floor(rand(7, 10)) : Math.floor(rand(8, 11));
-    const spacing = type === 'mountain_village' ? 16 : type === 'desert_village' ? 16 : 15;
-    const minCount = type === 'mountain_village' ? 4 : type === 'desert_village' ? 5 : 6;
+    const desiredCount = type === 'mountain_village' ? Math.floor(rand(6, 9)) : type === 'desert_village' ? Math.floor(rand(7, 10)) : type === 'winter_village' ? Math.floor(rand(7, 10)) : Math.floor(rand(8, 11));
+    const spacing = type === 'mountain_village' ? 16 : type === 'desert_village' ? 16 : type === 'winter_village' ? 16 : 15;
+    const minCount = type === 'mountain_village' ? 4 : type === 'desert_village' ? 5 : type === 'winter_village' ? 5 : 6;
     const maxCount = Math.max(minCount, Math.floor((segmentWidth - 32) / spacing) + 1);
     const houseCount = Math.max(minCount, Math.min(desiredCount, maxCount));
     const totalWidth = (houseCount - 1) * spacing;
@@ -2065,11 +2107,14 @@
   function generateVillages(state) {
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
     const plains = findBiomeSegments(state, 'plains').filter((segment) => segment.end - segment.start >= 120);
+    const snowPlains = findBiomeSegments(state, 'snow_plains').filter((segment) => segment.end - segment.start >= 96);
     const mountains = findBiomeSegments(state, 'mountains').filter((segment) => segment.end - segment.start >= 72);
     const deserts = findBiomeSegments(state, 'desert').filter((segment) => segment.end - segment.start >= 72);
     let index = 0;
     plains.sort((a, b) => (b.end - b.start) - (a.end - a.start));
     if (plains[0]) generateHumanVillage(state, plains[0], 'plains_village', index++);
+    snowPlains.sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (snowPlains[0]) generateHumanVillage(state, snowPlains[0], 'winter_village', index++);
     mountains.sort((a, b) => (b.end - b.start) - (a.end - a.start));
     if (mountains[0]) generateHumanVillage(state, mountains[0], 'mountain_village', index++);
     deserts.sort((a, b) => (b.end - b.start) - (a.end - a.start));
@@ -2077,14 +2122,305 @@
     if (plains[1]) generateHumanVillage(state, plains[1], 'plains_village', index++);
   }
 
+  function applySingleBiomeSurface(state, biome) {
+    let prev = SURFACE_BASE;
+    const center = (WORLD_W - 1) / 2;
+    const half = Math.max(1, center);
+    const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : biome === 'snow_plains' ? rand(0.4, 1.8) : biome === 'volcano' ? rand(1, 3) : rand(0, 1.2);
+    const segmentBase = biome === 'plains' || biome === 'desert' || biome === 'snow_plains' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
+    const climate = climateForBiome(biome);
+    for (let x = 0; x < WORLD_W; x += 1) {
+      let target = segmentBase;
+      if (biome === 'mountains') {
+        const t = Math.abs((x - center) / half);
+        const ridge = Math.pow(Math.max(0, 1 - t), 0.55);
+        target = SURFACE_BASE - peakLift * ridge + rand(-0.6, 0.6);
+      } else if (biome === 'forest') {
+        target += Math.sin(x / 9) * 1.2 + rand(-0.4, 0.4);
+      } else if (biome === 'desert') {
+        target += Math.sin(x / 14) * 0.9 + rand(-0.25, 0.25);
+      } else if (biome === 'snow_plains') {
+        target += Math.sin(x / 12) * 0.7 + rand(-0.2, 0.2);
+      } else if (biome === 'volcano') {
+        target += Math.sin(x / 18) * 0.5 + rand(-0.2, 0.2);
+      } else if (x % Math.floor(rand(12, 22)) === 0) {
+        target += rand(-0.4, 0.4);
+      }
+      const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : 0.4;
+      state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
+      state.biomeAt[x] = biome;
+      state.climateAt[x] = climate;
+      prev = state.surfaceAt[x];
+    }
+  }
+
+  function generateFlatWorld(state) {
+    state.biomeAt = Array(WORLD_W).fill('plains');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.TEMPERATE);
+    state.surfaceAt = Array(WORLD_W).fill(Math.round(SURFACE_BASE + 4));
+    fillTerrain(state);
+    reinforceSurfaceLayer(state, new Set());
+    plantTrees(state, new Set());
+    reinforceSurfaceLayer(state, new Set());
+    generateVillages(state);
+    state.firePyramid = null;
+    for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
+    const spawnX = chooseSpawnColumn(state, new Set());
+    state.player.x = spawnX * TILE;
+    state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
+  }
+
+  function generateSingleBiomeWorld(state, biome) {
+    const basins = [];
+    const surfaceFluidColumns = new Set();
+    applySingleBiomeSurface(state, biome);
+    smoothSurface(state, 1);
+    if (biome === 'plains' || biome === 'desert' || biome === 'snow_plains') flattenPlains(state);
+    if (biome === 'plains' || biome === 'desert' || biome === 'snow_plains') addPlainMicroRelief(state);
+
+    const volcanoSegments = biome === 'volcano' ? [{ start: 0, end: WORLD_W - 1, center: Math.floor((WORLD_W - 1) / 2) }] : [];
+    if (biome === 'volcano') shapeVolcanoes(state, volcanoSegments);
+
+    if (biome === 'plains' || biome === 'forest') {
+      const waterBasinCount = Math.floor(rand(10, 16));
+      const lavaBasinCount = Math.floor(rand(3, 6));
+      for (let i = 0; i < waterBasinCount; i += 1) {
+        const basin = carveSurfaceBasin(state, { type: 'water', minX: 16, maxX: WORLD_W - 17, minRadius: 6, maxRadius: 11, minDepth: 3, maxDepth: 6 });
+        if (basin && basin.stable) basins.push(basin);
+      }
+      for (let i = 0; i < lavaBasinCount; i += 1) {
+        const basin = carveSurfaceBasin(state, { type: 'lava', minX: 22, maxX: WORLD_W - 23, minRadius: 4, maxRadius: 7, minDepth: 2, maxDepth: 4 });
+        if (basin && basin.stable) basins.push(basin);
+      }
+      if (basins.filter((b) => b.type === 'water').length < 2) {
+        const fallback = carveFallbackBasin(state, 'water');
+        if (fallback) basins.push(fallback);
+      }
+      if (basins.filter((b) => b.type === 'lava').length < 1) {
+        const fallback = carveFallbackBasin(state, 'lava');
+        if (fallback) basins.push(fallback);
+      }
+      for (const basin of basins) {
+        for (const tx of basin.filledColumns) surfaceFluidColumns.add(tx);
+      }
+    }
+
+    fillTerrain(state);
+    carveUpperCaves(state);
+    generateMineshafts(state);
+    generateMineEntranceShafts(state, surfaceFluidColumns);
+    const dwarfSettlements = generateDwarfCaverns(state);
+    generateDwarfEntrances(state, dwarfSettlements);
+    generateFalseDwarfSeals(state, Math.floor(rand(2, 5)));
+    generateDeepZones(state, volcanoSegments);
+    generateFireCaves(state);
+    for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
+    generateCoalOre(state);
+    generateIronOre(state);
+    generateGoldOre(state);
+    generateDeepOre(state);
+    for (const basin of basins) fillSurfaceBasin(state, basin);
+    reinforceSurfaceLayer(state, surfaceFluidColumns);
+    plantTrees(state, surfaceFluidColumns);
+    removeFloatingDebris(state);
+    reinforceSurfaceLayer(state, surfaceFluidColumns);
+    carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
+    generateVillages(state);
+    if (biome === 'desert') generateFirePyramid(state);
+    else state.firePyramid = null;
+    if (biome === 'desert') plantDesertFlora(state, surfaceFluidColumns);
+
+    for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
+
+    const spawnX = chooseSpawnColumn(state, surfaceFluidColumns);
+    state.player.x = spawnX * TILE;
+    state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
+  }
+
+  function floatingSurfaceBlock(topBiome) {
+    if (topBiome === 'snow_plains') return BLOCK.SNOW;
+    if (topBiome === 'desert') return BLOCK.SAND;
+    return BLOCK.GRASS;
+  }
+
+  function stampFloatingIsland(state, cx, cy, rx, ry, topBiome = 'plains') {
+    const topBlock = floatingSurfaceBlock(topBiome);
+    for (let tx = Math.floor(cx - rx - 1); tx <= Math.ceil(cx + rx + 1); tx += 1) {
+      if (tx < 2 || tx >= WORLD_W - 2) continue;
+      const nx = Math.abs(tx - cx) / Math.max(1, rx);
+      if (nx > 1.05) continue;
+      const arch = Math.pow(Math.max(0, 1 - nx * nx), 0.55);
+      const topY = Math.round(cy - 1.2 - arch * (ry * 0.42) + Math.sin((tx - cx) / 3.2) * 0.35);
+      const thickness = Math.max(3, Math.round(ry * (0.9 + arch * 1.35)));
+      const bottomY = topY + thickness;
+      for (let ty = topY; ty <= bottomY; ty += 1) {
+        if (ty < 2 || ty >= WORLD_H - 2) continue;
+        const depth = ty - topY;
+        let block = BLOCK.STONE;
+        if (depth === 0) block = topBlock;
+        else if (depth <= 2) block = topBiome === 'desert' ? BLOCK.SANDSTONE : BLOCK.DIRT;
+        if (depth > thickness - 2 && Math.random() < 0.18) continue;
+        setBlock(state, tx, ty, block);
+      }
+      state.surfaceAt[tx] = Math.min(state.surfaceAt[tx], topY);
+      state.biomeAt[tx] = topBiome;
+      state.climateAt[tx] = climateForBiome(topBiome);
+    }
+  }
+
+  function generateFloatingIslandsWorld(state) {
+    state.biomeAt = Array(WORLD_W).fill('void');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.ANY);
+    state.surfaceAt = Array(WORLD_W).fill(WORLD_H - 4);
+    const starter = { cx: Math.floor(WORLD_W * 0.18), cy: 22, rx: 18, ry: 7, biome: 'plains' };
+    stampFloatingIsland(state, starter.cx, starter.cy, starter.rx, starter.ry, starter.biome);
+    const biomes = ['plains', 'forest', 'snow_plains'];
+    let cx = starter.cx + Math.floor(rand(16, 22));
+    while (cx < WORLD_W - 12) {
+      const rx = Math.floor(rand(9, 16));
+      const ry = Math.floor(rand(4, 7));
+      const cy = Math.floor(rand(18, 30));
+      const biome = biomes[Math.floor(rand(0, biomes.length))];
+      stampFloatingIsland(state, cx, cy, rx, ry, biome);
+      if (Math.random() < 0.6) {
+        const sideCx = cx + Math.floor(rand(-6, 7));
+        const sideCy = cy + Math.floor(rand(8, 16));
+        stampFloatingIsland(state, sideCx, sideCy, Math.floor(rand(4, 8)), Math.floor(rand(2, 4)), biome);
+      }
+      if (Math.random() < 0.72) {
+        const lowerCx = cx + Math.floor(rand(-5, 6));
+        const lowerCy = cy + Math.floor(rand(18, 28));
+        stampFloatingIsland(state, lowerCx, lowerCy, Math.floor(rand(7, 12)), Math.floor(rand(3, 5)), biomes[Math.floor(rand(0, biomes.length))]);
+        if (Math.random() < 0.4) {
+          const lowerSideCx = lowerCx + Math.floor(rand(-7, 8));
+          const lowerSideCy = lowerCy + Math.floor(rand(7, 13));
+          stampFloatingIsland(state, lowerSideCx, lowerSideCy, Math.floor(rand(4, 7)), Math.floor(rand(2, 4)), biome);
+        }
+      }
+      cx += rx + Math.floor(rand(12, 20));
+    }
+    generateCoalOre(state);
+    generateIronOre(state);
+    generateGoldOre(state);
+    plantTrees(state, new Set());
+    reinforceSurfaceLayer(state, new Set());
+    state.player.x = starter.cx * TILE;
+    state.player.y = (state.surfaceAt[starter.cx] - 3) * TILE;
+  }
+
+  function applyCavernBiomeBands(state, cavernBiome) {
+    if (cavernBiome && cavernBiome !== 'mix') {
+      state.biomeAt = Array(WORLD_W).fill(cavernBiome);
+      state.climateAt = Array(WORLD_W).fill(cavernBiome === 'fire_caves' ? CLIMATE.WARM : CLIMATE.ANY);
+      return;
+    }
+    const caveBiomes = ['cave', 'dwarf_caves', 'deep', 'fire_caves'];
+    let x = 0;
+    while (x < WORLD_W) {
+      const biome = caveBiomes[Math.floor(rand(0, caveBiomes.length))];
+      const segLen = Math.floor(rand(48, 112));
+      const end = Math.min(WORLD_W, x + segLen);
+      for (let tx = x; tx < end; tx += 1) {
+        state.biomeAt[tx] = biome;
+        state.climateAt[tx] = biome === 'fire_caves' ? CLIMATE.WARM : CLIMATE.ANY;
+      }
+      x = end;
+    }
+  }
+
+  function cavernHostBlockForBiome(biome, ty) {
+    if (biome === 'fire_caves') return ty > WORLD_H - 20 ? BLOCK.BASALT : Math.random() < 0.22 ? BLOCK.BLACKSTONE : BLOCK.BASALT;
+    if (biome === 'deep') return BLOCK.DEEPSTONE;
+    if (biome === 'dwarf_caves') return Math.random() < 0.25 ? BLOCK.BLACKSTONE : BLOCK.STONE;
+    return BLOCK.STONE;
+  }
+
+  function generateCavernWorld(state, cavernBiome) {
+    state.surfaceAt = Array(WORLD_W).fill(5);
+    applyCavernBiomeBands(state, cavernBiome);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      for (let ty = 0; ty < WORLD_H - 1; ty += 1) {
+        setBlock(state, tx, ty, cavernHostBlockForBiome(state.biomeAt[tx], ty));
+      }
+    }
+    for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
+
+    for (let i = 0; i < 36; i += 1) {
+      const sx = rand(8, WORLD_W - 9);
+      const sy = rand(10, WORLD_H - 16);
+      carveTunnel(state, sx, sy, Math.floor(rand(36, 92)), Math.floor(rand(3, 5)), 8, WORLD_H - 12);
+    }
+    for (let i = 0; i < 16; i += 1) {
+      carveCircle(state, rand(8, WORLD_W - 9), rand(12, WORLD_H - 16), Math.floor(rand(4, 8)));
+    }
+
+    const spawnX = Math.floor(WORLD_W * 0.2);
+    const spawnY = 18;
+    carveRect(state, spawnX - 6, spawnY - 3, spawnX + 6, spawnY + 4, BLOCK.AIR);
+    setBlock(state, spawnX - 3, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX - 2, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX - 1, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX + 1, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX + 2, spawnY + 4, BLOCK.STONE);
+    setBlock(state, spawnX + 3, spawnY + 4, BLOCK.STONE);
+
+    for (let tx = 2; tx < WORLD_W - 2; tx += 1) {
+      if (state.biomeAt[tx] !== 'fire_caves') continue;
+      for (let ty = WORLD_H - 24; ty < WORLD_H - 2; ty += 1) {
+        if (Math.random() < 0.18 && getBlock(state, tx, ty) === BLOCK.AIR) setBlock(state, tx, ty, BLOCK.LAVA);
+      }
+    }
+
+    const allowMix = cavernBiome === 'mix';
+    if (allowMix || cavernBiome === 'cave') {
+      carveUpperCaves(state);
+      generateMineshafts(state);
+    }
+
+    if (allowMix || cavernBiome === 'dwarf_caves') {
+      generateDwarfCaverns(state);
+      generateFalseDwarfSeals(state, Math.floor(rand(2, 5)));
+    }
+
+    if (allowMix || cavernBiome === 'deep' || cavernBiome === 'fire_caves') {
+      generateDeepZones(state, []);
+    }
+
+    if (allowMix || cavernBiome === 'fire_caves') {
+      generateFireCaves(state);
+    }
+
+    generateCoalOre(state);
+    generateIronOre(state);
+    generateGoldOre(state);
+    generateDeepOre(state);
+    state.player.x = spawnX * TILE;
+    state.player.y = spawnY * TILE;
+  }
+
   function chooseSpawnColumn(state, blockedColumns) {
+    const singleBiome = state.worldMeta && state.worldMeta.worldType === 'single_biome' ? state.worldMeta.singleBiome : null;
+    const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
+    if (worldType === 'floating_islands') {
+      for (let tx = 8; tx < WORLD_W - 8; tx += 1) {
+        const s = state.surfaceAt[tx];
+        if (!Number.isFinite(s) || s >= WORLD_H - 6) continue;
+        const surfaceBlock = getBlock(state, tx, s);
+        if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.SAND) continue;
+        if (getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
+        return tx;
+      }
+    }
     for (let tx = 20; tx < WORLD_W - 5; tx += 1) {
       const biome = state.biomeAt[tx];
-      if (blockedColumns.has(tx) || biome === 'mountains' || biome === 'volcano') continue;
+      if (blockedColumns.has(tx)) continue;
+      if (biome === 'mountains' && singleBiome !== 'mountains') continue;
+      if (biome === 'volcano' && singleBiome !== 'volcano') continue;
       if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
       if (state.firePyramid && state.firePyramid.bounds && tx >= state.firePyramid.bounds.x0 && tx <= state.firePyramid.bounds.x1) continue;
       const surfaceBlock = getBlock(state, tx, state.surfaceAt[tx]);
-      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND) continue;
+      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.BLACKSTONE && surfaceBlock !== BLOCK.STONE) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx - 1]) > 1) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx + 1]) > 1) continue;
       return tx;
@@ -2093,6 +2429,9 @@
   }
 
   function generateWorld(state) {
+    const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
+    const singleBiome = state.worldMeta && state.worldMeta.singleBiome ? state.worldMeta.singleBiome : 'forest';
+    const cavernBiome = state.worldMeta && state.worldMeta.cavernBiome ? state.worldMeta.cavernBiome : 'mix';
     const basins = [];
     const surfaceFluidColumns = new Set();
     state.spiders.length = 0;
@@ -2114,6 +2453,26 @@
       edges: [],
       settlements: [],
     };
+
+    if (worldType === 'flat') {
+      generateFlatWorld(state);
+      return;
+    }
+
+    if (worldType === 'single_biome') {
+      generateSingleBiomeWorld(state, singleBiome);
+      return;
+    }
+
+    if (worldType === 'floating_islands') {
+      generateFloatingIslandsWorld(state);
+      return;
+    }
+
+    if (worldType === 'cavern') {
+      generateCavernWorld(state, cavernBiome);
+      return;
+    }
 
     generateBiomeBands(state);
     ensureDesertSegment(state);
@@ -2173,8 +2532,8 @@
     generateGoldOre(state);
     generateDeepOre(state);
     for (const basin of basins) fillSurfaceBasin(state, basin);
-    plantTrees(state, surfaceFluidColumns);
     reinforceSurfaceLayer(state, surfaceFluidColumns);
+    plantTrees(state, surfaceFluidColumns);
     removeFloatingDebris(state);
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));

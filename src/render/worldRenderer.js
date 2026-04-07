@@ -81,9 +81,24 @@
     if (id === BLOCK.GRASS) {
       ctx.fillStyle = '#6bd36b';
       ctx.fillRect(x, y, TILE, 4);
+    } else if (id === BLOCK.SNOW) {
+      ctx.fillStyle = '#f7fbff';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#dce8f7';
+      ctx.fillRect(x, y + 11, TILE, 5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 1, y + 2, TILE - 3, 3);
+      ctx.fillStyle = '#c6d6ea';
+      ctx.fillRect(x + 3, y + 8, 7, 1);
     } else if (id === BLOCK.WOOD) {
       ctx.fillStyle = '#5e3717';
       ctx.fillRect(x + 6, y, 4, TILE);
+    } else if (id === BLOCK.SPRUCE_WOOD) {
+      ctx.fillStyle = '#533a2c';
+      ctx.fillRect(x + 5, y, 6, TILE);
+      ctx.fillStyle = '#775844';
+      ctx.fillRect(x + 6, y, 1, TILE);
+      ctx.fillRect(x + 9, y, 1, TILE);
     } else if (id === BLOCK.STONE) {
       ctx.fillStyle = '#999';
       ctx.fillRect(x + 3, y + 3, 3, 3);
@@ -289,6 +304,14 @@
     } else if (id === BLOCK.LEAF) {
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.fillRect(x + 3, y + 3, 3, 3);
+    } else if (id === BLOCK.SPRUCE_LEAF) {
+      ctx.fillStyle = '#28463a';
+      ctx.fillRect(x + 1, y + 1, 14, 14);
+      ctx.fillStyle = '#3e6656';
+      ctx.fillRect(x + 3, y + 3, 4, 3);
+      ctx.fillRect(x + 8, y + 5, 4, 4);
+      ctx.fillStyle = 'rgba(220,255,240,0.08)';
+      ctx.fillRect(x + 5, y + 2, 3, 2);
     } else if (id === BLOCK.PATH) {
       ctx.fillStyle = '#8b7048';
       ctx.fillRect(x, y + 4, TILE, TILE - 4);

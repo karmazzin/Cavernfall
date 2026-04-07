@@ -10,6 +10,11 @@
       result: { id: BLOCK.PLANK, count: 4 },
     },
     {
+      name: 'Доски',
+      pattern: [[BLOCK.SPRUCE_WOOD]],
+      result: { id: BLOCK.PLANK, count: 4 },
+    },
+    {
       name: 'Палки',
       pattern: [
         [BLOCK.PLANK],

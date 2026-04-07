@@ -15,7 +15,9 @@
       id !== BLOCK.LAVA &&
       id !== BLOCK.COBWEB &&
       id !== BLOCK.WOOD &&
+      id !== BLOCK.SPRUCE_WOOD &&
       id !== BLOCK.LEAF &&
+      id !== BLOCK.SPRUCE_LEAF &&
       id !== BLOCK.TORCH &&
       id !== BLOCK.PILLAR &&
       id !== BLOCK.LADDER &&
@@ -61,6 +63,26 @@
 
   function getLocationInfo(state, tx, ty) {
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
+    if (state.worldMeta && state.worldMeta.worldType === 'cavern') {
+      const biome = state.worldMeta.cavernBiome && state.worldMeta.cavernBiome !== 'mix'
+        ? state.worldMeta.cavernBiome
+        : (state.biomeAt[safeTx] || 'cave');
+      return {
+        biome,
+        climate: biome === 'fire_caves' ? 'warm' : 'any',
+        inCave: true,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (state.worldMeta && state.worldMeta.worldType === 'floating_islands') {
+      const surfaceBiome = state.biomeAt[safeTx] || 'void';
+      return {
+        biome: surfaceBiome,
+        climate: surfaceBiome === 'void' ? 'any' : (state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate'),
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
     if (state.activeDimension === 'fire') {
       const fireMeta = state.fireWorldMeta || {};
       const lavaLakeStart = Number.isFinite(fireMeta.lavaLakeStart) ? fireMeta.lavaLakeStart : WORLD_H - 18;
