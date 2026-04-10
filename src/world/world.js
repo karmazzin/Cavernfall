@@ -24,7 +24,8 @@
       id !== BLOCK.CHEST &&
       id !== BLOCK.DRY_BUSH &&
       id !== BLOCK.FIRE_PORTAL &&
-      id !== BLOCK.FRIENDSHIP_AMULET
+      id !== BLOCK.FRIENDSHIP_AMULET &&
+      id !== BLOCK.WATER_CRYSTAL
     );
   }
 
@@ -104,14 +105,16 @@
     const caveBiome = ty >= deepStart ? 'deep' : ty > upperEnd && ty <= dwarfEnd ? 'dwarf_caves' : 'cave';
     const fireRegion = state.fireCaves && state.fireCaves.region;
     const inFireCaves = !!(fireRegion && tx >= fireRegion.x0 && tx <= fireRegion.x1 && ty >= fireRegion.y0 && ty <= fireRegion.y1);
+    const waterRegion = state.waterCaves && state.waterCaves.region;
+    const inWaterCaves = !!(waterRegion && tx >= waterRegion.x0 && tx <= waterRegion.x1 && ty >= waterRegion.y0 && ty <= waterRegion.y1);
     const surfaceBiome = state.biomeAt[safeTx];
     const surfaceClimate = state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate';
-    const biome = inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
-    const climate = inFireCaves ? 'warm' : inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
+    const biome = inWaterCaves ? 'water_caves' : inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
+    const climate = inFireCaves ? 'warm' : inWaterCaves || inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
     return {
       biome,
       climate,
-      inCave,
+      inCave: inCave || inWaterCaves,
       surfaceY,
     };
   }

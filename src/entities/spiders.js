@@ -110,10 +110,10 @@
   }
 
   function updateSpiders(state, dt) {
-    if (state.activeDimension === 'fire') return;
     const creative = ignoresPlayer(state);
     const phase = phaseInfo(state).phase;
-    if (phase === 'night') {
+    const allowSpawns = state.activeDimension !== 'fire';
+    if (allowSpawns && phase === 'night') {
       state.spiderSpawnTick += dt;
       if (state.spiderSpawnTick >= 5) {
         state.spiderSpawnTick = 0;
@@ -123,12 +123,16 @@
       state.spiderSpawnTick = 0;
     }
 
-    state.spiderCaveSpawnTick += dt;
-    if (state.spiderCaveSpawnTick >= 5.2) {
+    if (allowSpawns) {
+      state.spiderCaveSpawnTick += dt;
+      if (state.spiderCaveSpawnTick >= 5.2) {
+        state.spiderCaveSpawnTick = 0;
+        spawnSpiderInCave(state);
+        if (Math.random() < 0.34) spawnSpiderRaidNearDwarves(state);
+        if (Math.random() < 0.24) spawnSpiderRaidNearHumans(state);
+      }
+    } else {
       state.spiderCaveSpawnTick = 0;
-      spawnSpiderInCave(state);
-      if (Math.random() < 0.34) spawnSpiderRaidNearDwarves(state);
-      if (Math.random() < 0.24) spawnSpiderRaidNearHumans(state);
     }
 
     for (let i = state.spiders.length - 1; i >= 0; i -= 1) {

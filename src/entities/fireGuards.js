@@ -13,7 +13,6 @@
   }
 
   function updateFireGuards(state, dt) {
-    if (state.activeDimension !== 'fire') return;
     for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
       const guard = state.fireGuards[i];
       ensureMobState(guard);

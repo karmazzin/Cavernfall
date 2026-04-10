@@ -3,7 +3,7 @@
   const { TILE, WORLD_W, GRAVITY, PLAYER_SPEED, JUMP_SPEED, SWIM_SPEED } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { clamp } = Game.math;
-  const { getBlock } = Game.world;
+  const { getBlock, getLocationInfo } = Game.world;
   const { moveEntity } = Game.physics;
   const { applyPlayerDamage, hasFullFriendshipArmor, hasFriendshipAmuletAura } = Game.combat;
   const audio = Game.audio;
@@ -169,6 +169,31 @@
     }
 
     if (player.inWater) player.vx *= 0.7;
+
+    const location = getLocationInfo(
+      state,
+      Math.floor((player.x + player.w / 2) / TILE),
+      Math.floor((player.y + player.h / 2) / TILE)
+    );
+    if (location.biome !== 'water_caves' || hasFullFriendshipArmor(state) || creative || spectator) {
+      player.waterCaveSafeX = player.x;
+      player.waterCaveSafeY = player.y;
+    } else if (location.biome === 'water_caves') {
+      if (Number.isFinite(player.waterCaveSafeX) && Number.isFinite(player.waterCaveSafeY)) {
+        player.x = player.waterCaveSafeX;
+        player.y = player.waterCaveSafeY;
+      }
+      player.vx = 0;
+      player.vy = 0;
+      if (state.waterCaves) {
+        state.waterCaves.warningTimer = Math.max(0, (state.waterCaves.warningTimer || 0) - dt);
+        if ((state.waterCaves.warningTimer || 0) <= 0) {
+          state.ui.noticeText = 'Без полного сета брони дружбы Водные пещеры не пропускают.';
+          state.ui.noticeTimer = 3.5;
+          state.waterCaves.warningTimer = 2.6;
+        }
+      }
+    }
 
     const movingHorizontally = left || right;
     player.stepSoundTimer -= dt;

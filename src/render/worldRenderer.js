@@ -99,6 +99,50 @@
       ctx.fillStyle = '#775844';
       ctx.fillRect(x + 6, y, 1, TILE);
       ctx.fillRect(x + 9, y, 1, TILE);
+    } else if (id === BLOCK.WATER_FRAME) {
+      ctx.fillStyle = '#3a5f71';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#6fa7c2';
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.fillStyle = '#95dfff';
+      ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+      ctx.fillStyle = '#2c4d5a';
+      ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+    } else if (id === BLOCK.WATER_CRYSTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5 + x * 0.04);
+      ctx.fillStyle = '#123d4a';
+      ctx.fillRect(x + 5, y + 6, 6, 7);
+      ctx.fillStyle = '#6ce2ff';
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + 2);
+      ctx.lineTo(x + 12, y + 7);
+      ctx.lineTo(x + 8, y + 14);
+      ctx.lineTo(x + 4, y + 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = `rgba(220,255,255,${0.25 + pulse * 0.25})`;
+      ctx.fillRect(x + 4, y + 4, 8, 7);
+    } else if (id === BLOCK.WATER_WELL_FRAME) {
+      ctx.fillStyle = '#7ba9bb';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#c5f0ff';
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.strokeRect(x + 4.5, y + 4.5, TILE - 9, TILE - 9);
+      ctx.fillStyle = '#487384';
+      ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+      ctx.fillStyle = '#dff9ff';
+      ctx.fillRect(x + 7, y + 7, TILE - 14, TILE - 14);
+    } else if (id === BLOCK.WATER_DIMENSION_PORTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6 + x * 0.08);
+      ctx.fillStyle = '#153a5a';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#2d78b8';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(210,245,255,${0.24 + pulse * 0.28})`;
+      ctx.fillRect(x + 5, y + 4, TILE - 10, TILE - 8);
+      ctx.strokeStyle = '#91dfff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
     } else if (id === BLOCK.STONE) {
       ctx.fillStyle = '#999';
       ctx.fillRect(x + 3, y + 3, 3, 3);

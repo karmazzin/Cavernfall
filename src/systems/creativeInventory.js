@@ -19,7 +19,7 @@
 
     for (const itemId of Object.values(ITEM)) {
       const def = getItemDefinition(itemId);
-      if (!def) continue;
+      if (!def || def.kind === 'spawn_egg') continue;
       const durability = getMaxDurability(itemId) || null;
       entries.push(createItemStack(itemId, def.stackLimit > 1 ? def.stackLimit : 1, durability));
     }
@@ -27,5 +27,11 @@
     return entries;
   }
 
-  Game.creativeInventory = { isCreativeMode, getCreativeEntries };
+  function getSpawnEggCreativeEntries() {
+    return Game.spawnEggSystem && Game.spawnEggSystem.getSpawnEggEntries
+      ? Game.spawnEggSystem.getSpawnEggEntries()
+      : [];
+  }
+
+  Game.creativeInventory = { isCreativeMode, getCreativeEntries, getSpawnEggCreativeEntries };
 })();

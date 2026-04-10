@@ -98,6 +98,10 @@
       fireKing: state.fireKing,
       fireDungeon: state.fireDungeon,
       friendlyFireKing: state.friendlyFireKing,
+      waterCaves: state.waterCaves,
+      waterWell: state.waterWell,
+      kraken: state.kraken,
+      quake: state.quake,
       fireWorldMeta: state.fireWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
@@ -114,6 +118,7 @@
       spiderCaveSpawnTick: state.spiderCaveSpawnTick,
       attackFlash: state.attackFlash,
       fluidTick: state.fluidTick,
+      weather: state.weather,
       friendshipAmuletTick: state.friendshipAmuletTick,
       achievements: state.achievements,
     };
@@ -264,6 +269,18 @@
       state.friendlyFireKing = data.friendlyFireKing && typeof data.friendlyFireKing === 'object'
         ? data.friendlyFireKing
         : state.friendlyFireKing;
+      state.waterCaves = data.waterCaves && typeof data.waterCaves === 'object'
+        ? data.waterCaves
+        : state.waterCaves;
+      state.waterWell = data.waterWell && typeof data.waterWell === 'object'
+        ? data.waterWell
+        : state.waterWell;
+      state.kraken = data.kraken && typeof data.kraken === 'object'
+        ? data.kraken
+        : state.kraken;
+      state.quake = data.quake && typeof data.quake === 'object'
+        ? data.quake
+        : state.quake;
       state.fireWorldMeta = data.fireWorldMeta && typeof data.fireWorldMeta === 'object'
         ? data.fireWorldMeta
         : state.fireWorldMeta;
@@ -290,6 +307,16 @@
       state.spiderCaveSpawnTick = Number.isFinite(data.spiderCaveSpawnTick) ? data.spiderCaveSpawnTick : 0;
       state.attackFlash = Number.isFinite(data.attackFlash) ? data.attackFlash : 0;
       state.fluidTick = Number.isFinite(data.fluidTick) ? data.fluidTick : 0;
+      state.weather = data.weather && typeof data.weather === 'object'
+        ? {
+            type: data.weather.type || 'clear',
+            targetType: data.weather.targetType || data.weather.type || 'clear',
+            intensity: Number.isFinite(data.weather.intensity) ? data.weather.intensity : 0,
+            targetIntensity: Number.isFinite(data.weather.targetIntensity) ? data.weather.targetIntensity : 0,
+            timer: Number.isFinite(data.weather.timer) ? data.weather.timer : 24,
+            contextKey: typeof data.weather.contextKey === 'string' ? data.weather.contextKey : '',
+          }
+        : state.weather;
       state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
       state.achievements = data.achievements && typeof data.achievements === 'object'
         ? {

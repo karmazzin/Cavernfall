@@ -6,7 +6,7 @@
   const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { ARMOR_SLOT_ORDER, ensureArmorSlots } = Game.combat;
-  const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
+  const { isCreativeMode, getCreativeEntries, getSpawnEggCreativeEntries } = Game.creativeInventory;
   const { getTraderOffers, getTraderTitle, canAfford } = Game.tradeSystem;
   const { getGroupedAchievements, isUnlocked: isAchievementUnlocked, isEnabled: areAchievementsEnabled } = Game.achievementsSystem;
   const tooltipEl = document.getElementById('itemTooltip');
@@ -406,14 +406,14 @@
 
     const activeTab = state.crafting.tab || 'craft';
     for (const [tabId, rect] of Object.entries(layout.tabs)) {
-      if (tabId === 'creative' && !creative) continue;
+      if ((tabId === 'creative' || tabId === 'spawn_eggs') && !creative) continue;
       ctx.fillStyle = activeTab === tabId ? 'rgba(227,155,86,0.25)' : 'rgba(255,255,255,0.05)';
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
       ctx.strokeStyle = activeTab === tabId ? 'rgba(227,155,86,0.8)' : 'rgba(255,255,255,0.18)';
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.fillStyle = '#fff';
       ctx.font = `${layout.mobile ? 12 : 14}px Arial`;
-      const label = tabId === 'creative' ? 'Творческий' : tabId === 'achievements' ? 'Достижения' : 'Крафт';
+      const label = tabId === 'creative' ? 'Творческий' : tabId === 'spawn_eggs' ? 'Яйца призыва' : tabId === 'achievements' ? 'Достижения' : 'Крафт';
       ctx.fillText(label, rect.x + 10, rect.y + 18);
     }
 
@@ -474,6 +474,62 @@
       ctx.fillText('>', next.x + 12, next.y + 19);
       ctx.textAlign = 'center';
       ctx.fillText(`Страница ${state.crafting.creativePage + 1} / ${pageCount}`, layout.creativeNav.label.x + layout.creativeNav.label.w / 2, layout.creativeNav.label.y + 15);
+      ctx.textAlign = 'left';
+
+      if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
+        const cursorRect = { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 };
+        drawSlot(ctx, cursorRect, state.crafting.cursor, true);
+      }
+      return;
+    }
+
+    if (creative && activeTab === 'spawn_eggs') {
+      const area = layout.spawnEggs.area;
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(area.x, area.y, area.w, area.h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.strokeRect(area.x, area.y, area.w, area.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${layout.mobile ? 16 : 18}px Arial`;
+      ctx.fillText('Яйца призыва', area.x + 12, area.y + 26);
+
+      const entries = getSpawnEggCreativeEntries();
+      const pagination = Game.crafting.getSpawnEggPagination(layout, entries.length);
+      const { cols, cell, gap, pageSize, pageCount } = pagination;
+      state.crafting.spawnEggPage = Math.max(0, Math.min(state.crafting.spawnEggPage || 0, pageCount - 1));
+      const startX = area.x + 12;
+      const startY = area.y + 48;
+      const pageStart = state.crafting.spawnEggPage * pageSize;
+      const pageEnd = Math.min(entries.length, pageStart + pageSize);
+      for (let i = pageStart; i < pageEnd; i += 1) {
+        const localIndex = i - pageStart;
+        const col = localIndex % cols;
+        const row = Math.floor(localIndex / cols);
+        const rect = { x: startX + col * (cell + gap), y: startY + row * (cell + gap), w: cell, h: cell };
+        drawSlot(ctx, rect, entries[i]);
+        if (input.mouse && input.mouse.x >= rect.x && input.mouse.x <= rect.x + rect.w && input.mouse.y >= rect.y && input.mouse.y <= rect.y + rect.h) {
+          const tip = slotTooltipText(entries[i]);
+          if (tip) {
+            showTooltip(canvas, rect, tip.title, tip.subtitle);
+            tooltipVisible = true;
+          }
+        }
+      }
+
+      const prev = layout.creativeNav.prev;
+      const next = layout.creativeNav.next;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(prev.x, prev.y, prev.w, prev.h);
+      ctx.fillRect(next.x, next.y, next.w, next.h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeRect(prev.x, prev.y, prev.w, prev.h);
+      ctx.strokeRect(next.x, next.y, next.w, next.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${layout.mobile ? 14 : 16}px Arial`;
+      ctx.fillText('<', prev.x + 12, prev.y + 19);
+      ctx.fillText('>', next.x + 12, next.y + 19);
+      ctx.textAlign = 'center';
+      ctx.fillText(`Страница ${state.crafting.spawnEggPage + 1} / ${pageCount}`, layout.creativeNav.label.x + layout.creativeNav.label.w / 2, layout.creativeNav.label.y + 15);
       ctx.textAlign = 'left';
 
       if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {

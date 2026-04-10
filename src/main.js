@@ -13,17 +13,21 @@
   const { updateFireGuards } = Game.fireGuardsEntity;
   const { updateFireKing } = Game.fireKingEntity;
   const { updateFriendlyFireKing } = Game.friendlyFireKingEntity;
+  const { updateKraken } = Game.krakenEntity || {};
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFirePyramid } = Game.firePyramidSystem;
+  const { updateWaterWell } = Game.waterWellSystem;
   const { updatePortals, useNearbyPortal } = Game.portalSystem;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
+  const { updateWeather } = Game.weatherSystem;
   const { getMaxHealth, clampPlayerHealthToMax } = Game.combat;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
-  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal } = Game.interaction;
+  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal } = Game.interaction;
+  const { getLocationInfo } = Game.world;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
@@ -222,6 +226,7 @@
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
     state.pause.showModePicker = false;
+    state.pause.showCompass = false;
     state.pause.statusText = '';
     syncBodyUiState();
   }
@@ -235,6 +240,7 @@
     state.pause.confirmRestart = false;
     state.pause.showControls = false;
     state.pause.showModePicker = false;
+    state.pause.showCompass = false;
     state.pause.statusText = '';
     syncBodyUiState();
   }
@@ -292,6 +298,26 @@
       if (button.id === 'controls_back') state.pause.showControls = false;
       if (button.id === 'choose_mode') state.pause.showModePicker = true;
       if (button.id === 'mode_back') state.pause.showModePicker = false;
+      if (button.id === 'compass') state.pause.showCompass = true;
+      if (button.id === 'compass_back') state.pause.showCompass = false;
+      if (button.id === 'compass_track_fire_caves') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_caves' ? null : 'fire_caves';
+      }
+      if (button.id === 'compass_track_water_caves') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'water_caves' ? null : 'water_caves';
+      }
+      if (button.id === 'compass_track_fire_pyramid') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_pyramid' ? null : 'fire_pyramid';
+      }
+      if (button.id === 'compass_track_fire_castle') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_castle' ? null : 'fire_castle';
+      }
+      if (button.id === 'compass_track_fire_dungeon') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_dungeon' ? null : 'fire_dungeon';
+      }
+      if (button.id === 'compass_track_water_well') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'water_well' ? null : 'water_well';
+      }
       if (button.id === 'mode_survival') applyWorldMode('survival');
       if (button.id === 'mode_creative') applyWorldMode('creative');
       if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
@@ -367,7 +393,7 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (!useNearbyPortal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
@@ -427,15 +453,56 @@
     updateFireGuards(state, dt);
     updateFireKing(state, dt);
     updateFriendlyFireKing(state, dt);
+    if (updateKraken) updateKraken(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
     updateFirePyramid(state, dt);
+    if (updateWaterWell) updateWaterWell(state, dt);
     updatePortals(state, dt);
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
+    updateWeather(state, dt);
     updateAchievements(state, dt);
+    if (state.quake) {
+      state.quake.timer = Math.max(0, (state.quake.timer || 0) - dt);
+      if (state.quake.timer <= 0) state.quake = null;
+    }
+
+    if (state.pause.activeCompassTarget) {
+      const tx = Math.floor((state.player.x + state.player.w / 2) / Game.constants.TILE);
+      const ty = Math.floor((state.player.y + state.player.h / 2) / Game.constants.TILE);
+      const currentBiome = getLocationInfo(state, tx, ty).biome;
+      const px = state.player.x + state.player.w / 2;
+      const py = state.player.y + state.player.h / 2;
+      let reached = false;
+      if (state.pause.activeCompassTarget === 'fire_caves') reached = currentBiome === 'fire_caves';
+      else if (state.pause.activeCompassTarget === 'water_caves') reached = currentBiome === 'water_caves';
+      else if (state.pause.activeCompassTarget === 'fire_pyramid' && state.firePyramid) {
+        const dx = state.firePyramid.centerX * Game.constants.TILE - px;
+        const dy = state.firePyramid.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'fire_castle' && state.fireWorldMeta && state.fireWorldMeta.castle) {
+        const castle = state.fireWorldMeta.castle;
+        const dx = castle.throneX * Game.constants.TILE - px;
+        const dy = castle.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 10;
+      } else if (state.pause.activeCompassTarget === 'fire_dungeon' && state.fireDungeon) {
+        const dx = state.fireDungeon.centerX * Game.constants.TILE - px;
+        const dy = state.fireDungeon.centerY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'water_well' && state.waterWell) {
+        const dx = state.waterWell.centerX * Game.constants.TILE - px;
+        const dy = state.waterWell.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      }
+      if (reached) {
+        state.pause.activeCompassTarget = null;
+        state.ui.noticeText = 'Цель компаса достигнута.';
+        state.ui.noticeTimer = 3;
+      }
+    }
 
     state.fluidTick += dt;
     if (state.fluidTick >= 0.18) {

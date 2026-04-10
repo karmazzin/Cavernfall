@@ -16,7 +16,7 @@
   const { findMatchingRecipe } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { getNearestChest, getChestAt } = Game.chestSystem;
-  const { isCreativeMode, getCreativeEntries } = Game.creativeInventory;
+  const { isCreativeMode, getCreativeEntries, getSpawnEggCreativeEntries } = Game.creativeInventory;
   const { getTraderOffers, performTrade } = Game.tradeSystem;
   const { onChestLootTaken, getNearestTrader } = Game.dwarvesEntity;
   const { getNearestHumanTrader } = Game.humansEntity;
@@ -28,6 +28,7 @@
       open: false,
       tab: 'craft',
       creativePage: 0,
+      spawnEggPage: 0,
       achievementsPage: 0,
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
@@ -176,8 +177,9 @@
 
     const tabs = {
       craft: { x: panel.x + 16, y: panel.y + 36, w: mobile ? 82 : 100, h: 28 },
-      creative: { x: panel.x + (mobile ? 102 : 124), y: panel.y + 36, w: mobile ? 108 : 132, h: 28 },
-      achievements: { x: panel.x + (mobile ? 216 : 262), y: panel.y + 36, w: mobile ? 122 : 146, h: 28 },
+      creative: { x: panel.x + (mobile ? 102 : 124), y: panel.y + 36, w: mobile ? 96 : 118, h: 28 },
+      spawn_eggs: { x: panel.x + (mobile ? 204 : 248), y: panel.y + 36, w: mobile ? 108 : 128, h: 28 },
+      achievements: { x: panel.x + (mobile ? 318 : 384), y: panel.y + 36, w: mobile ? 122 : 146, h: 28 },
     };
 
     const grid = [];
@@ -267,6 +269,11 @@
           : slotRect(panel.x + 828, panel.y + 324, 260, 204),
       },
       creative: {
+        area: mobile
+          ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 126 }
+          : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
+      },
+      spawnEggs: {
         area: mobile
           ? { x: panel.x + 14, y: panel.y + 70, w: panel.w - 28, h: panel.h - 126 }
           : { x: panel.x + 560, y: panel.y + 76, w: 528, h: 452 },
@@ -493,6 +500,16 @@
     return { cols, cell, gap, rows, pageSize, pageCount };
   }
 
+  function getSpawnEggPagination(layout, totalEntries) {
+    const cols = layout.mobile ? 6 : 8;
+    const cell = layout.mobile ? 34 : 44;
+    const gap = layout.mobile ? 6 : 8;
+    const rows = Math.max(1, Math.floor((layout.spawnEggs.area.h - 56) / (cell + gap)));
+    const pageSize = cols * rows;
+    const pageCount = Math.max(1, Math.ceil(totalEntries / pageSize));
+    return { cols, cell, gap, rows, pageSize, pageCount };
+  }
+
   function getAchievementPagination(layout, totalEntries) {
     const rowHeight = layout.mobile ? 54 : 62;
     const pageSize = Math.max(1, Math.floor((layout.achievements.area.h - 54) / rowHeight));
@@ -525,6 +542,13 @@
       return true;
     }
 
+    if (creative && contains(layout.tabs.spawn_eggs, x, y)) {
+      crafting.tab = 'spawn_eggs';
+      crafting.spawnEggPage = 0;
+      input.mouse.justPressed = false;
+      return true;
+    }
+
     if (contains(layout.tabs.achievements, x, y)) {
       crafting.tab = 'achievements';
       crafting.achievementsPage = 0;
@@ -550,6 +574,37 @@
       const startX = layout.creative.area.x + 12;
       const startY = layout.creative.area.y + 48;
       const pageStart = crafting.creativePage * pageSize;
+      const pageEnd = Math.min(entries.length, pageStart + pageSize);
+      for (let i = pageStart; i < pageEnd; i += 1) {
+        const localIndex = i - pageStart;
+        const col = localIndex % cols;
+        const row = Math.floor(localIndex / cols);
+        const rect = slotRect(startX + col * (cell + gap), startY + row * (cell + gap), cell);
+        if (!contains(rect, x, y)) continue;
+        giveCreativeEntry(state, entries[i], button);
+        input.mouse.justPressed = false;
+        return true;
+      }
+    }
+
+    if (creative && crafting.tab === 'spawn_eggs') {
+      const entries = getSpawnEggCreativeEntries();
+      const pagination = getSpawnEggPagination(layout, entries.length);
+      const { cols, cell, gap, pageSize, pageCount } = pagination;
+      crafting.spawnEggPage = Math.max(0, Math.min(crafting.spawnEggPage || 0, pageCount - 1));
+      if (contains(layout.creativeNav.prev, x, y)) {
+        crafting.spawnEggPage = (crafting.spawnEggPage - 1 + pageCount) % pageCount;
+        input.mouse.justPressed = false;
+        return true;
+      }
+      if (contains(layout.creativeNav.next, x, y)) {
+        crafting.spawnEggPage = (crafting.spawnEggPage + 1) % pageCount;
+        input.mouse.justPressed = false;
+        return true;
+      }
+      const startX = layout.spawnEggs.area.x + 12;
+      const startY = layout.spawnEggs.area.y + 48;
+      const pageStart = crafting.spawnEggPage * pageSize;
       const pageEnd = Math.min(entries.length, pageStart + pageSize);
       for (let i = pageStart; i < pageEnd; i += 1) {
         const localIndex = i - pageStart;
@@ -705,6 +760,7 @@
     handleCraftingPointer,
     getArmorSlotRects,
     getCreativePagination,
+    getSpawnEggPagination,
     getAchievementPagination,
   };
 })();

@@ -384,6 +384,37 @@
       dwarf.jumpCd = Math.max(0, (dwarf.jumpCd || 0) - dt);
       dwarf.obstacleTimer = dwarf.obstacleTimer || 0;
       const settlement = findSettlement(state, dwarf.settlementId);
+      if (!settlement) {
+        const threat = nearestThreat(state, dwarf);
+        dwarf.attackCd = Math.max(0, (dwarf.attackCd || 0) - dt);
+        if (dwarf.inWater) {
+          dwarf.dir = getWaterEscapeDir(state, dwarf, dwarf.dir);
+          dwarf.vx = dwarf.dir * 76;
+          dwarf.vy = -220;
+        } else if (threat) {
+          moveDirectToward(dwarf, threat, dt);
+          if (aabb(dwarf.x, dwarf.y, dwarf.w, dwarf.h, threat.x, threat.y, threat.w, threat.h) && dwarf.attackCd <= 0) {
+            dwarf.attackCd = 0.8;
+            hitHostile(threat, 1);
+          }
+        } else {
+          dwarf.stateTimer -= dt;
+          if (dwarf.stateTimer <= 0) {
+            dwarf.stateTimer = rand(1.2, 2.8);
+            dwarf.dir = Math.random() < 0.5 ? -1 : 1;
+          }
+          dwarf.vx = dwarf.dir * 34;
+          dwarf.vy += GRAVITY * dt;
+          dwarf.stepUpHeight = TILE;
+        }
+        const wasOnGround = dwarf.onGround;
+        const preMoveVy = dwarf.vy;
+        moveEntity(state, dwarf, dt);
+        dwarf.stepUpHeight = 0;
+        applyMobEnvironmentDamage(state, dwarf, dt, wasOnGround, preMoveVy);
+        if (dwarf.hp <= 0) state.dwarves.splice(i, 1);
+        continue;
+      }
       const threat = nearestThreat(state, dwarf);
       dwarf.attackCd = Math.max(0, (dwarf.attackCd || 0) - dt);
       dwarf.stateTimer -= dt;

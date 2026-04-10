@@ -490,6 +490,40 @@
     ctx.fillRect(x + 20, y + 0, 3, 5);
   }
 
+  function drawKraken(ctx, kraken, camera, time) {
+    const x = kraken.x - camera.x;
+    const y = kraken.y - camera.y;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 6.5);
+    const sway = Math.sin(time * 4.8) * 5;
+
+    ctx.fillStyle = '#102b38';
+    ctx.beginPath();
+    ctx.ellipse(x + 32, y + 22, 24, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1b4a5e';
+    ctx.beginPath();
+    ctx.ellipse(x + 32, y + 18, 20, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#6ee7ff';
+    ctx.fillRect(x + 22, y + 14, 4, 4);
+    ctx.fillRect(x + 38, y + 14, 4, 4);
+    ctx.fillStyle = `rgba(210,255,255,${0.25 + pulse * 0.25})`;
+    ctx.fillRect(x + 20, y + 12, 8, 8);
+    ctx.fillRect(x + 36, y + 12, 8, 8);
+
+    ctx.fillStyle = '#14394a';
+    for (let i = 0; i < 6; i += 1) {
+      const ox = 10 + i * 8;
+      const len = 18 + (i % 2) * 6;
+      const wave = Math.sin(time * 8 + i * 0.9) * 4;
+      ctx.fillRect(x + ox, y + 28, 4, len);
+      ctx.fillRect(x + ox + wave, y + 28 + len - 2, 4, 10 + sway * 0.2);
+    }
+
+    ctx.fillStyle = '#1f6077';
+    ctx.fillRect(x + 26, y + 24, 12, 6);
+  }
+
   function drawBossHealthBar(ctx, boss, camera) {
     if (!boss || !boss.isBoss || !Number.isFinite(boss.maxHp) || boss.maxHp <= 0) return;
     const ratio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
@@ -517,5 +551,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawBossHealthBar };
 })();

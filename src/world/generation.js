@@ -1222,6 +1222,101 @@
     return true;
   }
 
+  function generateWaterCaves(state) {
+    const fireRegion = state.fireCaves && state.fireCaves.region;
+    let region = null;
+    const minCenterY = Math.max(DWARF_START + 14, UPPER_CAVE_END + 12);
+    const maxCenterY = Math.min(DEEP_START - 4, WORLD_H - 32);
+    for (let attempt = 0; attempt < 48 && !region; attempt += 1) {
+      const centerX = Math.floor(rand(88, WORLD_W - 88));
+      const centerY = Math.floor(rand(minCenterY, maxCenterY));
+      const radiusX = Math.floor(rand(24, 34));
+      const radiusY = Math.floor(rand(9, 14));
+      const candidate = {
+        x0: centerX - radiusX - 4,
+        x1: centerX + radiusX + 4,
+        y0: centerY - radiusY - 4,
+        y1: centerY + radiusY + 4,
+        centerX,
+        centerY,
+        radiusX,
+        radiusY,
+      };
+      if (candidate.x0 < 10 || candidate.x1 > WORLD_W - 11 || candidate.y0 < 18 || candidate.y1 > WORLD_H - 14) continue;
+      if (fireRegion && !(candidate.x1 < fireRegion.x0 - 18 || candidate.x0 > fireRegion.x1 + 18 || candidate.y1 < fireRegion.y0 - 12 || candidate.y0 > fireRegion.y1 + 12)) continue;
+      const blocked = state.biomeAt.slice(candidate.x0, candidate.x1 + 1).some((biome) => biome === 'volcano' || biome === 'desert');
+      if (blocked) continue;
+      region = candidate;
+    }
+
+    if (!region) {
+      state.waterCaves = null;
+      return;
+    }
+
+    for (let ty = region.y0; ty <= region.y1; ty += 1) {
+      for (let tx = region.x0; tx <= region.x1; tx += 1) {
+        const nx = (tx - region.centerX) / region.radiusX;
+        const ny = (ty - region.centerY) / region.radiusY;
+        const oval = nx * nx + ny * ny;
+        if (oval > 1.18) continue;
+        if (oval > 0.92) setBlock(state, tx, ty, Math.random() < 0.42 ? BLOCK.DEEPSTONE : BLOCK.STONE);
+        else setBlock(state, tx, ty, BLOCK.WATER);
+      }
+    }
+
+    for (let i = 0; i < 4; i += 1) {
+      const lx = Math.floor(rand(region.centerX - region.radiusX + 4, region.centerX + region.radiusX - 4));
+      const ly = Math.floor(rand(region.centerY - 2, region.centerY + region.radiusY - 1));
+      carveCircle(state, lx, ly, Math.floor(rand(3, 6)), BLOCK.WATER);
+    }
+
+    const entranceDir = Math.random() < 0.5 ? -1 : 1;
+    const entranceX = region.centerX + entranceDir * (region.radiusX + 1);
+    const corridorEndX = clamp(entranceX + entranceDir * Math.floor(rand(16, 26)), 6, WORLD_W - 7);
+    const corridorY = region.centerY - Math.floor(region.radiusY * 0.45);
+    for (let tx = Math.min(entranceX, corridorEndX); tx <= Math.max(entranceX, corridorEndX); tx += 1) {
+      carveRect(state, tx - 1, corridorY - 2, tx + 1, corridorY + 2, BLOCK.AIR);
+      setBlock(state, tx, corridorY + 3, BLOCK.STONE);
+    }
+    for (let tx = entranceX - 2; tx <= entranceX + 2; tx += 1) {
+      for (let ty = corridorY - 2; ty <= corridorY + 2; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.AIR) setBlock(state, tx, ty, BLOCK.WATER);
+      }
+    }
+
+    const frameX0 = region.centerX - 5;
+    const frameX1 = region.centerX + 5;
+    const frameY0 = region.centerY - 4;
+    const frameY1 = region.centerY + 4;
+    for (let tx = frameX0; tx <= frameX1; tx += 1) {
+      setBlock(state, tx, frameY0, BLOCK.WATER_FRAME);
+      setBlock(state, tx, frameY1, BLOCK.WATER_FRAME);
+    }
+    for (let ty = frameY0; ty <= frameY1; ty += 1) {
+      setBlock(state, frameX0, ty, BLOCK.WATER_FRAME);
+      setBlock(state, frameX1, ty, BLOCK.WATER_FRAME);
+    }
+    for (let ty = frameY0 + 1; ty < frameY1; ty += 1) {
+      for (let tx = frameX0 + 1; tx < frameX1; tx += 1) setBlock(state, tx, ty, BLOCK.WATER);
+    }
+    setBlock(state, region.centerX, region.centerY, BLOCK.WATER_CRYSTAL);
+
+    state.waterCaves = {
+      region,
+      frameX0,
+      frameX1,
+      frameY0,
+      frameY1,
+      crystalX: region.centerX,
+      crystalY: region.centerY,
+      crystalTaken: false,
+      krakenSpawned: false,
+      krakenDefeated: false,
+      warningTimer: 0,
+    };
+  }
+
   function oreHostMatches(blockId) {
     return blockId === BLOCK.STONE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE;
   }
@@ -1779,6 +1874,112 @@
     stampFirePyramid(state, clamp(desertSegments[0].center, 10, WORLD_W - 11));
   }
 
+  function canHostWaterWell(state, centerX) {
+    if (centerX < 12 || centerX > WORLD_W - 13) return false;
+    if (state.biomeAt[centerX] !== 'snow_plains') return false;
+    const baseY = state.surfaceAt[centerX];
+    for (let tx = centerX - 8; tx <= centerX + 8; tx += 1) {
+      if (state.biomeAt[tx] !== 'snow_plains') return false;
+      if (Math.abs(state.surfaceAt[tx] - baseY) > 2) return false;
+      if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 - 8 && tx <= village.bounds.x1 + 8)) return false;
+    }
+    return true;
+  }
+
+  function stampWaterWell(state, centerX) {
+    const baseY = state.surfaceAt[centerX];
+    const x0 = centerX - 8;
+    const x1 = centerX + 8;
+    const y0 = baseY - 10;
+    const y1 = baseY;
+    for (let tx = x0 - 1; tx <= x1 + 1; tx += 1) {
+      state.surfaceAt[tx] = baseY;
+      setBlock(state, tx, baseY, BLOCK.SNOW);
+      setBlock(state, tx, baseY + 1, BLOCK.DIRT);
+      setBlock(state, tx, baseY + 2, BLOCK.STONE);
+      for (let ty = y0; ty < baseY; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.BEDROCK) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+      state.biomeAt[tx] = 'snow_plains';
+      state.climateAt[tx] = CLIMATE.COLD;
+    }
+
+    const set = (dx, dy, block) => setBlock(state, centerX + dx, baseY + dy, block);
+    const frame = BLOCK.WATER_WELL_FRAME;
+
+    for (let dx = -5; dx <= 5; dx += 1) set(dx, -7, frame);
+    for (let dy = -7; dy <= -5; dy += 1) {
+      set(-5, dy, frame);
+      set(5, dy, frame);
+    }
+
+    for (let dx = -7; dx <= -3; dx += 1) set(dx, -2, frame);
+    for (let dx = 3; dx <= 7; dx += 1) set(dx, -2, frame);
+    for (let dx = -4; dx <= 4; dx += 1) set(dx, 0, frame);
+    for (let dy = -2; dy <= -1; dy += 1) {
+      set(-4, dy, frame);
+      set(4, dy, frame);
+    }
+    for (let dx = -3; dx <= 3; dx += 1) {
+      for (let dy = -2; dy <= -1; dy += 1) set(dx, dy, BLOCK.WATER);
+    }
+
+    state.waterWell = {
+      centerX,
+      baseY,
+      bounds: { x0, x1, y0, y1 },
+      waterX0: centerX - 3,
+      waterX1: centerX + 3,
+      waterY0: baseY - 2,
+      waterY1: baseY - 1,
+      ritual: {
+        active: false,
+        phase: 'idle',
+        timer: 0,
+        completed: false,
+        portalCreated: false,
+      },
+      portalX: centerX,
+      portalY: baseY - 1,
+      name: 'Водный колодец',
+    };
+  }
+
+  function generateWaterWell(state) {
+    state.waterWell = null;
+    const candidates = [];
+    for (let tx = 12; tx < WORLD_W - 12; tx += 1) {
+      if (!canHostWaterWell(state, tx)) continue;
+      let score = 0;
+      const baseY = state.surfaceAt[tx];
+      for (let xx = tx - 8; xx <= tx + 8; xx += 1) score += Math.abs(state.surfaceAt[xx] - baseY);
+      candidates.push({ tx, score });
+    }
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.score - b.score);
+      const topPool = candidates.slice(0, Math.min(5, candidates.length));
+      const chosen = topPool[Math.floor(rand(0, topPool.length))];
+      stampWaterWell(state, chosen.tx);
+      return;
+    }
+
+    const snowSegments = findBiomeSegments(state, 'snow_plains')
+      .filter((segment) => segment.end - segment.start >= 18)
+      .sort((a, b) => (b.end - b.start) - (a.end - a.start));
+    if (snowSegments.length === 0) return;
+
+    for (const segment of snowSegments) {
+      const minX = Math.max(12, segment.start + 8);
+      const maxX = Math.min(WORLD_W - 13, segment.end - 8);
+      if (minX > maxX) continue;
+      const fallbackX = Math.floor((minX + maxX) / 2);
+      const baseY = state.surfaceAt[fallbackX];
+      for (let tx = fallbackX - 8; tx <= fallbackX + 8; tx += 1) state.surfaceAt[tx] = baseY;
+      stampWaterWell(state, fallbackX);
+      return;
+    }
+  }
+
   function spawnVillageSheep(state, tx, groundY, dir = 1) {
     const animal = {
       x: tx * TILE + 2,
@@ -2163,6 +2364,7 @@
     plantTrees(state, new Set());
     reinforceSurfaceLayer(state, new Set());
     generateVillages(state);
+    generateWaterWell(state);
     state.firePyramid = null;
     for (let tx = 0; tx < WORLD_W; tx += 1) setBlock(state, tx, WORLD_H - 1, BLOCK.BEDROCK);
     const spawnX = chooseSpawnColumn(state, new Set());
@@ -2214,6 +2416,7 @@
     generateFalseDwarfSeals(state, Math.floor(rand(2, 5)));
     generateDeepZones(state, volcanoSegments);
     generateFireCaves(state);
+    generateWaterCaves(state);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
     generateIronOre(state);
@@ -2226,6 +2429,8 @@
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
     generateVillages(state);
+    if (biome === 'snow_plains') generateWaterWell(state);
+    else state.waterWell = null;
     if (biome === 'desert') generateFirePyramid(state);
     else state.firePyramid = null;
     if (biome === 'desert') plantDesertFlora(state, surfaceFluidColumns);
@@ -2314,7 +2519,7 @@
       state.climateAt = Array(WORLD_W).fill(cavernBiome === 'fire_caves' ? CLIMATE.WARM : CLIMATE.ANY);
       return;
     }
-    const caveBiomes = ['cave', 'dwarf_caves', 'deep', 'fire_caves'];
+    const caveBiomes = ['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves'];
     let x = 0;
     while (x < WORLD_W) {
       const biome = caveBiomes[Math.floor(rand(0, caveBiomes.length))];
@@ -2330,6 +2535,7 @@
 
   function cavernHostBlockForBiome(biome, ty) {
     if (biome === 'fire_caves') return ty > WORLD_H - 20 ? BLOCK.BASALT : Math.random() < 0.22 ? BLOCK.BLACKSTONE : BLOCK.BASALT;
+    if (biome === 'water_caves') return ty > WORLD_H - 18 ? BLOCK.DEEPSTONE : Math.random() < 0.22 ? BLOCK.STONE : BLOCK.DEEPSTONE;
     if (biome === 'deep') return BLOCK.DEEPSTONE;
     if (biome === 'dwarf_caves') return Math.random() < 0.25 ? BLOCK.BLACKSTONE : BLOCK.STONE;
     return BLOCK.STONE;
@@ -2391,6 +2597,10 @@
       generateFireCaves(state);
     }
 
+    if (allowMix || cavernBiome === 'water_caves') {
+      generateWaterCaves(state);
+    }
+
     generateCoalOre(state);
     generateIronOre(state);
     generateGoldOre(state);
@@ -2441,6 +2651,10 @@
     state.fireCaves = { region: null, shrine: null };
     state.firePyramid = null;
     state.fireBoss = null;
+    state.waterWell = null;
+    state.waterCaves = null;
+    state.kraken = null;
+    state.quake = null;
     ensureClimateAt(state);
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
     state.dwarfColony = {
@@ -2526,6 +2740,7 @@
     generateFalseDwarfSeals(state, Math.floor(rand(2, 5)));
     generateDeepZones(state, volcanoSegments);
     generateFireCaves(state);
+    generateWaterCaves(state);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
     generateIronOre(state);
@@ -2538,6 +2753,7 @@
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
     generateVillages(state);
+    generateWaterWell(state);
     generateFirePyramid(state);
     plantDesertFlora(state, surfaceFluidColumns);
 
@@ -2795,6 +3011,10 @@
     state.fireKing = null;
     state.fireDungeon = null;
     state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.waterWell = null;
+    state.kraken = null;
+    state.quake = null;
     state.zombieSpawnTick = 0;
     state.zombieCaveSpawnTick = 0;
     state.spiderSpawnTick = 0;

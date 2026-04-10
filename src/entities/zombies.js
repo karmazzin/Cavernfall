@@ -131,12 +131,12 @@
   }
 
   function updateZombies(state, dt) {
-    if (state.activeDimension === 'fire') return;
     const creative = ignoresPlayer(state);
     const phase = phaseInfo(state).phase;
     const sunlight = phase === 'day' || phase === 'sunrise';
+    const allowSpawns = state.activeDimension !== 'fire';
 
-    if (phase === 'night') {
+    if (allowSpawns && phase === 'night') {
       state.zombieSpawnTick += dt;
       if (state.zombieSpawnTick >= 4) {
         state.zombieSpawnTick = 0;
@@ -146,12 +146,16 @@
       state.zombieSpawnTick = 0;
     }
 
-    state.zombieCaveSpawnTick += dt;
-    if (state.zombieCaveSpawnTick >= 4.5) {
+    if (allowSpawns) {
+      state.zombieCaveSpawnTick += dt;
+      if (state.zombieCaveSpawnTick >= 4.5) {
+        state.zombieCaveSpawnTick = 0;
+        spawnZombieInCave(state);
+        if (Math.random() < 0.38) spawnZombieRaidNearDwarves(state);
+        if (Math.random() < 0.28) spawnZombieRaidNearHumans(state);
+      }
+    } else {
       state.zombieCaveSpawnTick = 0;
-      spawnZombieInCave(state);
-      if (Math.random() < 0.38) spawnZombieRaidNearDwarves(state);
-      if (Math.random() < 0.28) spawnZombieRaidNearHumans(state);
     }
 
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {

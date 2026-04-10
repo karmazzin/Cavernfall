@@ -336,6 +336,41 @@
 
       if (village && threat) setVillageAlert(state, village.id, 1);
 
+      if (!village) {
+        human.attackCd = Math.max(0, (human.attackCd || 0) - dt);
+        if (human.inWater) {
+          human.dir = getWaterEscapeDir(state, human, human.dir);
+          human.vx = human.dir * 72;
+          human.vy = -220;
+        } else if (threat && human.role === HUMAN_ROLE.GUARD) {
+          human.state = HUMAN_STATE.FIGHT;
+          const dx = threat.x - human.x;
+          human.vx = Math.abs(dx) > 4 ? Math.sign(dx) * 74 : 0;
+          if (human.vx !== 0) human.dir = human.vx < 0 ? -1 : 1;
+          human.vy += GRAVITY * dt;
+          if (aabb(human.x, human.y, human.w, human.h, threat.x, threat.y, threat.w, threat.h) && human.attackCd <= 0) {
+            human.attackCd = 0.8;
+            threat.hp -= 1;
+          }
+        } else {
+          human.stateTimer -= dt;
+          if (human.stateTimer <= 0) {
+            human.stateTimer = rand(1.2, 2.8);
+            human.dir = Math.random() < 0.5 ? -1 : 1;
+          }
+          human.vx = human.dir * (human.role === HUMAN_ROLE.GUARD ? 42 : 34);
+          human.vy += GRAVITY * dt;
+        }
+        const wasOnGround = human.onGround;
+        const preMoveVy = human.vy;
+        human.stepUpHeight = TILE;
+        moveEntity(state, human, dt);
+        human.stepUpHeight = 0;
+        applyMobEnvironmentDamage(state, human, dt, wasOnGround, preMoveVy);
+        if (human.hp <= 0) state.humans.splice(i, 1);
+        continue;
+      }
+
       if (human.sleeping && (!night || threat)) {
         human.sleeping = false;
         human.state = human.role === HUMAN_ROLE.GUARD ? HUMAN_STATE.GUARD : HUMAN_STATE.IDLE;

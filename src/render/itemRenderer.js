@@ -81,6 +81,24 @@
     const def = getItemDefinition(itemId);
     if (!def) return;
 
+    if (def.kind === 'spawn_egg') {
+      const colors = def.spawnEggColors || ['#d9d9d9', '#8c8c8c'];
+      ctx.fillStyle = colors[0];
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.5, y + size * 0.5, size * 0.28, size * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = colors[1];
+      ctx.beginPath();
+      ctx.arc(x + size * 0.42, y + size * 0.42, size * 0.07, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.58, y + size * 0.34, size * 0.06, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.60, y + size * 0.56, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = Math.max(1, size * 0.04);
+      ctx.stroke();
+      return;
+    }
+
     if (itemId === ITEM.STICK) {
       ctx.fillStyle = '#8d623b';
       ctx.fillRect(x + size * 0.46, y + size * 0.18, size * 0.12, size * 0.62);

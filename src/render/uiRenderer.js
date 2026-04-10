@@ -79,6 +79,7 @@
     if (biomeKey === 'dwarf_caves') return 'Пещеры гномов';
     if (biomeKey === 'deep') return 'Глубины';
     if (biomeKey === 'fire_caves') return 'Огненные пещеры';
+    if (biomeKey === 'water_caves') return 'Водные пещеры';
     if (biomeKey === 'void') return 'Пустота';
     if (biomeKey === 'red_land') return 'Красная земля';
     if (biomeKey === 'lava_lake') return 'Лавовое озеро';
@@ -87,6 +88,115 @@
     if (biomeKey === 'desert') return 'Пустыня';
     if (biomeKey === 'volcano') return 'Вулкан';
     return 'Равнина';
+  }
+
+  function getTrackedCompassTarget(state, key) {
+    if (key === 'fire_pyramid') {
+      const pyramid = state.firePyramid;
+      if (!pyramid) return null;
+      return {
+        label: 'Пирамида огня',
+        x: pyramid.centerX * TILE,
+        y: pyramid.baseY * TILE,
+      };
+    }
+    if (key === 'fire_caves') {
+      const region = state.fireCaves && state.fireCaves.region;
+      if (!region) return null;
+      return {
+        label: 'Огненные пещеры',
+        x: ((region.x0 + region.x1) / 2) * TILE,
+        y: ((region.y0 + region.y1) / 2) * TILE,
+      };
+    }
+    if (key === 'water_caves') {
+      const region = state.waterCaves && state.waterCaves.region;
+      if (!region) return null;
+      return {
+        label: 'Водные пещеры',
+        x: ((region.x0 + region.x1) / 2) * TILE,
+        y: ((region.y0 + region.y1) / 2) * TILE,
+      };
+    }
+    if (key === 'fire_castle') {
+      const castle = state.fireWorldMeta && state.fireWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок огненного короля',
+        x: castle.throneX * TILE,
+        y: castle.baseY * TILE,
+      };
+    }
+    if (key === 'fire_dungeon') {
+      const dungeon = state.fireDungeon || (state.fireWorldMeta && state.fireWorldMeta.fireDungeon);
+      if (!dungeon) return null;
+      return {
+        label: 'Огненная темница',
+        x: dungeon.centerX * TILE,
+        y: dungeon.centerY * TILE,
+      };
+    }
+    if (key === 'water_well') {
+      const well = state.waterWell;
+      if (!well) return null;
+      return {
+        label: 'Водный колодец',
+        x: well.centerX * TILE,
+        y: well.baseY * TILE,
+      };
+    }
+    return null;
+  }
+
+  function drawCompassArrow(ctx, x, y, dx, dy, scale = 1) {
+    const len = 24 * scale;
+    const angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.strokeStyle = 'rgba(255,210,150,0.96)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.5, 0);
+    ctx.lineTo(len * 0.28, 0);
+    ctx.stroke();
+    ctx.fillStyle = '#ffd48a';
+    ctx.beginPath();
+    ctx.moveTo(len * 0.5, 0);
+    ctx.lineTo(len * 0.16, -7 * scale);
+    ctx.lineTo(len * 0.16, 7 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTrackedCompass(ctx, canvas, state) {
+    const targetKey = state.pause && state.pause.activeCompassTarget;
+    if (!targetKey) return;
+    const target = getTrackedCompassTarget(state, targetKey);
+    if (!target) return;
+    const mobile = isMobileUi(canvas, state);
+    const layout = getHotbarLayout(canvas, state);
+    const px = state.player.x + state.player.w / 2;
+    const py = state.player.y + state.player.h / 2;
+    const dx = target.x - px;
+    const dy = target.y - py;
+    const dist = Math.round(Math.hypot(dx, dy) / TILE);
+    const boxW = mobile ? 208 : 250;
+    const boxH = mobile ? 34 : 40;
+    const boxX = Math.floor((canvas.width - boxW) / 2);
+    const boxY = layout.y - (mobile ? 40 : 48);
+    ctx.fillStyle = 'rgba(18,14,10,0.9)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(255,196,128,0.45)';
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    drawCompassArrow(ctx, boxX + 24, boxY + boxH / 2, dx, dy, mobile ? 0.85 : 1);
+    ctx.fillStyle = '#ffe8d0';
+    ctx.font = `${mobile ? 11 : 13}px Arial`;
+    ctx.fillText(target.label, boxX + 44, boxY + (mobile ? 14 : 16));
+    ctx.fillStyle = 'rgba(255,210,150,0.95)';
+    ctx.fillText(`${dist} блоков`, boxX + 44, boxY + (mobile ? 28 : 32));
   }
 
   function phaseLabel(phase) {
@@ -159,6 +269,7 @@
 
     if (!creative) drawBreath(ctx, canvas, state);
     drawHotbar(ctx, canvas, state);
+    drawTrackedCompass(ctx, canvas, state);
 
     if (state.ui && state.ui.noticeText) {
       const text = state.ui.noticeText;

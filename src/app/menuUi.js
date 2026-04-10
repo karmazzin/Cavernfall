@@ -40,6 +40,7 @@
     if (biome === 'dwarf_caves') return 'Пещеры гномов';
     if (biome === 'deep') return 'Глубины';
     if (biome === 'fire_caves') return 'Огненные пещеры';
+    if (biome === 'water_caves') return 'Водные пещеры';
     return 'Микс';
   }
 
@@ -113,6 +114,7 @@
               <button class="menu-mode-btn ${model.cavernBiome === 'dwarf_caves' ? 'is-active' : ''}" data-menu-cavern-biome="dwarf_caves">Пещеры гномов</button>
               <button class="menu-mode-btn ${model.cavernBiome === 'deep' ? 'is-active' : ''}" data-menu-cavern-biome="deep">Глубины</button>
               <button class="menu-mode-btn ${model.cavernBiome === 'fire_caves' ? 'is-active' : ''}" data-menu-cavern-biome="fire_caves">Огненные пещеры</button>
+              <button class="menu-mode-btn ${model.cavernBiome === 'water_caves' ? 'is-active' : ''}" data-menu-cavern-biome="water_caves">Водные пещеры</button>
             </div>
           </div>
         ` : ''}
@@ -130,7 +132,7 @@
                   ? 'Мир из разрозненных островов в воздухе. Основное пространство между ними — пустота.'
                   : model.worldType === 'cavern'
                     ? model.cavernBiome === 'mix'
-                      ? 'Сплошной пещерный мир со всеми пещерными биомами: пещеры, пещеры гномов, глубины и огненные пещеры.'
+                      ? 'Сплошной пещерный мир со всеми пещерными биомами: пещеры, пещеры гномов, глубины, огненные и водные пещеры.'
                       : `Сплошной пещерный мир в биоме: ${cavernBiomeLabel(model.cavernBiome)}.`
                 : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>
         <div class="menu-actions menu-actions-inline">

@@ -11,6 +11,7 @@
     consumeSelectedPlaceable,
     addToInventory,
     countItem,
+    removeItem,
     selectedToolId,
     selectedToolSlot,
     damageSlotTool,
@@ -207,6 +208,70 @@
     return true;
   }
 
+  function hasAllFriendshipTools(state) {
+    return countItem(state, ITEM.FRIENDSHIP_PICKAXE) > 0 &&
+      countItem(state, ITEM.FRIENDSHIP_AXE) > 0 &&
+      countItem(state, ITEM.FRIENDSHIP_SHOVEL) > 0 &&
+      countItem(state, ITEM.FRIENDSHIP_SWORD) > 0;
+  }
+
+  function findUsableWaterCrystal(state, input, camera) {
+    if (isSpectator(state) || state.activeDimension === 'fire' || !state.waterCaves || state.waterCaves.crystalTaken) return null;
+    const wc = state.waterCaves;
+    if (getBlock(state, wc.crystalX, wc.crystalY) !== BLOCK.WATER_CRYSTAL) return null;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const dist = Math.hypot(wc.crystalX * TILE + TILE / 2 - playerCx, wc.crystalY * TILE + TILE / 2 - playerCy);
+    if (dist > 110) return null;
+    if (input && input.mouse && camera) {
+      const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
+      if (tx === wc.crystalX && ty === wc.crystalY) return { tx, ty };
+    }
+    return { tx: wc.crystalX, ty: wc.crystalY };
+  }
+
+  function useNearbyWaterCrystal(state, input, camera) {
+    const target = findUsableWaterCrystal(state, input, camera);
+    if (!target) return false;
+    if (!hasAllFriendshipTools(state)) {
+      state.ui.noticeText = 'Нужны все инструменты дружбы.';
+      state.ui.noticeTimer = 3;
+      return true;
+    }
+    const wc = state.waterCaves;
+    wc.crystalTaken = true;
+    wc.krakenSpawned = true;
+    setBlock(state, wc.crystalX, wc.crystalY, BLOCK.WATER);
+    removeItem(state, BLOCK.WATER_CRYSTAL, 99);
+    state.quake = { timer: 1.1, strength: 6 };
+    state.attackFlash = Math.max(state.attackFlash || 0, 0.18);
+    state.kraken = {
+      x: (wc.region.centerX - 2) * TILE,
+      y: (wc.region.centerY - 2) * TILE,
+      w: 64,
+      h: 48,
+      hp: 200,
+      maxHp: 200,
+      phase: 'idle',
+      phaseTimer: 0,
+      attackCd: 0.6,
+      dir: 1,
+      vx: 0,
+      vy: 0,
+      isBoss: true,
+      name: 'Кракен',
+      arena: {
+        x0: wc.region.x0 * TILE,
+        x1: (wc.region.x1 + 1) * TILE,
+        y0: wc.region.y0 * TILE,
+        y1: (wc.region.y1 + 1) * TILE,
+      },
+    };
+    state.ui.noticeText = 'Кракен вырывает Кристалл воды и пробуждается!';
+    state.ui.noticeTimer = 4.5;
+    return true;
+  }
+
   function handleMouse(state, input, camera, dt) {
     if (isSpectator(state)) {
       state.breaking = null;
@@ -252,6 +317,15 @@
 
     if (state.fireKing && wx >= state.fireKing.x && wx <= state.fireKing.x + state.fireKing.w && wy >= state.fireKing.y && wy <= state.fireKing.y + state.fireKing.h) {
       if (!rightClick && input.mouse.justPressed && Game.fireKingEntity && Game.fireKingEntity.hitFireKing(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (state.kraken && wx >= state.kraken.x && wx <= state.kraken.x + state.kraken.w && wy >= state.kraken.y && wy <= state.kraken.y + state.kraken.h) {
+      if (!rightClick && input.mouse.justPressed && Game.krakenEntity && Game.krakenEntity.hitKraken(state)) {
         audio.playHit();
         useSelectedTool(state);
       }
@@ -436,6 +510,10 @@
 
     if (block === BLOCK.AIR || block === BLOCK.WATER) {
       if (input.mouse.justPressed) {
+        if (Game.spawnEggSystem && Game.spawnEggSystem.tryUseSelectedSpawnEgg(state, tx, ty)) {
+          input.mouse.justPressed = false;
+          return;
+        }
         const id = hasCreativePlacement(state) ? selectedItemId(state) : selectedPlaceableId(state);
         if (id && canPlaceBlock(state, tx, ty, id)) {
           const used = hasCreativePlacement(state) ? id : consumeSelectedPlaceable(state);
@@ -519,5 +597,17 @@
     input.mouse.justPressed = false;
   }
 
-  Game.interaction = { screenToTile, canPlaceBlock, useNearbyDoor, useNearbyPillow, findUsablePillow, useNearbyDungeonSeal, findUsableDungeonSeal, handleMouse };
+  Game.interaction = {
+    screenToTile,
+    canPlaceBlock,
+    useNearbyDoor,
+    useNearbyPillow,
+    findUsablePillow,
+    hasAllFriendshipTools,
+    useNearbyWaterCrystal,
+    findUsableWaterCrystal,
+    useNearbyDungeonSeal,
+    findUsableDungeonSeal,
+    handleMouse,
+  };
 })();

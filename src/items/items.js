@@ -50,6 +50,23 @@
     FRIENDSHIP_AXE: 'friendship_axe',
     FRIENDSHIP_SHOVEL: 'friendship_shovel',
     FRIENDSHIP_SWORD: 'friendship_sword',
+    SPAWN_EGG_SHEEP: 'spawn_egg_sheep',
+    SPAWN_EGG_ZOMBIE: 'spawn_egg_zombie',
+    SPAWN_EGG_SPIDER: 'spawn_egg_spider',
+    SPAWN_EGG_DWARF_GUARD: 'spawn_egg_dwarf_guard',
+    SPAWN_EGG_DWARF_MINER: 'spawn_egg_dwarf_miner',
+    SPAWN_EGG_HUMAN_FARMER: 'spawn_egg_human_farmer',
+    SPAWN_EGG_HUMAN_SHEPHERD: 'spawn_egg_human_shepherd',
+    SPAWN_EGG_HUMAN_MASON: 'spawn_egg_human_mason',
+    SPAWN_EGG_HUMAN_LUMBER: 'spawn_egg_human_lumber',
+    SPAWN_EGG_HUMAN_MINER: 'spawn_egg_human_miner',
+    SPAWN_EGG_HUMAN_MERCHANT: 'spawn_egg_human_merchant',
+    SPAWN_EGG_HUMAN_GUARD: 'spawn_egg_human_guard',
+    SPAWN_EGG_FIRE_GUARD: 'spawn_egg_fire_guard',
+    SPAWN_EGG_FIRE_GUARDIAN: 'spawn_egg_fire_guardian',
+    SPAWN_EGG_FIRE_KING: 'spawn_egg_fire_king',
+    SPAWN_EGG_FRIENDLY_FIRE_KING: 'spawn_egg_friendly_fire_king',
+    SPAWN_EGG_KRAKEN: 'spawn_egg_kraken',
   };
 
   const BLOCK_LABELS = {
@@ -91,6 +108,10 @@
     [BLOCK.SNOW]: 'Снег',
     [BLOCK.SPRUCE_WOOD]: 'Еловый ствол',
     [BLOCK.SPRUCE_LEAF]: 'Еловая хвоя',
+    [BLOCK.WATER_FRAME]: 'Водная рамка',
+    [BLOCK.WATER_CRYSTAL]: 'Кристалл воды',
+    [BLOCK.WATER_WELL_FRAME]: 'Рамка водного колодца',
+    [BLOCK.WATER_DIMENSION_PORTAL]: 'Портал в водное измерение',
   };
 
   const ITEM_DEFS = {
@@ -384,6 +405,23 @@
       attackDamage: 9,
       durability: 2200,
     },
+    [ITEM.SPAWN_EGG_SHEEP]: { id: ITEM.SPAWN_EGG_SHEEP, label: 'Яйцо призыва овцы', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#f3f3f3', '#d8d8d8'] },
+    [ITEM.SPAWN_EGG_ZOMBIE]: { id: ITEM.SPAWN_EGG_ZOMBIE, label: 'Яйцо призыва зомби', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#4f8f53', '#365e38'] },
+    [ITEM.SPAWN_EGG_SPIDER]: { id: ITEM.SPAWN_EGG_SPIDER, label: 'Яйцо призыва паука', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#4a403d', '#241c1a'] },
+    [ITEM.SPAWN_EGG_DWARF_GUARD]: { id: ITEM.SPAWN_EGG_DWARF_GUARD, label: 'Яйцо призыва гнома-стража', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#8a5c34', '#6c727f'] },
+    [ITEM.SPAWN_EGG_DWARF_MINER]: { id: ITEM.SPAWN_EGG_DWARF_MINER, label: 'Яйцо призыва гнома-шахтёра', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#5a6f8f', '#867b67'] },
+    [ITEM.SPAWN_EGG_HUMAN_FARMER]: { id: ITEM.SPAWN_EGG_HUMAN_FARMER, label: 'Яйцо призыва фермера', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#84b35d'] },
+    [ITEM.SPAWN_EGG_HUMAN_SHEPHERD]: { id: ITEM.SPAWN_EGG_HUMAN_SHEPHERD, label: 'Яйцо призыва пастуха', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#d8e1ea'] },
+    [ITEM.SPAWN_EGG_HUMAN_MASON]: { id: ITEM.SPAWN_EGG_HUMAN_MASON, label: 'Яйцо призыва каменщика', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#9da5b0'] },
+    [ITEM.SPAWN_EGG_HUMAN_LUMBER]: { id: ITEM.SPAWN_EGG_HUMAN_LUMBER, label: 'Яйцо призыва плотника', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#8f6a3f'] },
+    [ITEM.SPAWN_EGG_HUMAN_MINER]: { id: ITEM.SPAWN_EGG_HUMAN_MINER, label: 'Яйцо призыва шахтёра', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#6c727f'] },
+    [ITEM.SPAWN_EGG_HUMAN_MERCHANT]: { id: ITEM.SPAWN_EGG_HUMAN_MERCHANT, label: 'Яйцо призыва торговца', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#75624f', '#d0ad58'] },
+    [ITEM.SPAWN_EGG_HUMAN_GUARD]: { id: ITEM.SPAWN_EGG_HUMAN_GUARD, label: 'Яйцо призыва стража', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#5477a7', '#3a4f6c'] },
+    [ITEM.SPAWN_EGG_FIRE_GUARD]: { id: ITEM.SPAWN_EGG_FIRE_GUARD, label: 'Яйцо призыва огненного стража короля', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#b0532f', '#3d1d16'] },
+    [ITEM.SPAWN_EGG_FIRE_GUARDIAN]: { id: ITEM.SPAWN_EGG_FIRE_GUARDIAN, label: 'Яйцо призыва огненного стража', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#ff7a2a', '#4a1c12'] },
+    [ITEM.SPAWN_EGG_FIRE_KING]: { id: ITEM.SPAWN_EGG_FIRE_KING, label: 'Яйцо призыва огненного короля', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#ff5d2e', '#2a0906'] },
+    [ITEM.SPAWN_EGG_FRIENDLY_FIRE_KING]: { id: ITEM.SPAWN_EGG_FRIENDLY_FIRE_KING, label: 'Яйцо призыва доброго огненного короля', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#f4c26c', '#7d4c28'] },
+    [ITEM.SPAWN_EGG_KRAKEN]: { id: ITEM.SPAWN_EGG_KRAKEN, label: 'Яйцо призыва кракена', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#5cb8cf', '#153a5a'] },
   };
 
   function isBlockItem(itemId) {

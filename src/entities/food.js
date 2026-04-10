@@ -13,6 +13,11 @@
         continue;
       }
 
+      if (Game.waterWellSystem && Game.waterWellSystem.tryActivateWaterWell(state, food)) {
+        state.foods.splice(i, 1);
+        continue;
+      }
+
       if (aabb(food.x, food.y, food.w, food.h, state.player.x, state.player.y, state.player.w, state.player.h)) {
         if (addToInventory(state, food.itemId, food.amount)) {
           if (Game.achievementsSystem) Game.achievementsSystem.updateAchievements(state, 999);
