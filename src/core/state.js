@@ -180,6 +180,7 @@
         showControls: false,
         showModePicker: false,
         showCompass: false,
+        showAssistant: false,
         activeCompassTarget: null,
         statusText: '',
         fullscreenLabel: 'Полный экран',

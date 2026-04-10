@@ -200,6 +200,124 @@ body {
   display: none;
 }
 
+.assistant-root {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.assistant-root.is-hidden {
+  display: none;
+}
+
+.assistant-panel {
+  width: min(100%, 720px);
+  max-height: min(78vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: rgba(18, 14, 11, 0.96);
+  border: 1px solid rgba(255, 210, 150, 0.24);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  color: #fff8ec;
+}
+
+.assistant-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assistant-title {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.assistant-subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: rgba(255, 248, 236, 0.76);
+}
+
+.assistant-close,
+.assistant-send,
+.assistant-quick-btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff8ec;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assistant-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assistant-quick-btn {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.assistant-messages {
+  min-height: 240px;
+  max-height: 420px;
+  overflow: auto;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.assistant-message {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.assistant-message-user {
+  justify-content: flex-end;
+}
+
+.assistant-message-assistant {
+  justify-content: flex-start;
+}
+
+.assistant-bubble {
+  max-width: min(92%, 520px);
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.assistant-message-user .assistant-bubble {
+  background: rgba(227, 155, 86, 0.2);
+}
+
+.assistant-form {
+  display: flex;
+  gap: 10px;
+}
+
+.assistant-input {
+  flex: 1 1 auto;
+  min-height: 42px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 16px;
+}
+
 .item-tooltip-title {
   font-size: 15px;
   font-weight: 800;
@@ -404,6 +522,29 @@ body.menu-open .touch-controls {
   .menu-actions-inline,
   .menu-mode-row {
     flex-direction: column;
+  }
+
+  .assistant-panel {
+    padding: 14px;
+    max-height: min(82vh, 760px);
+  }
+
+  .assistant-title {
+    font-size: 22px;
+  }
+
+  .assistant-header,
+  .assistant-form {
+    flex-direction: column;
+  }
+
+  .assistant-close,
+  .assistant-send {
+    width: 100%;
+  }
+
+  .assistant-messages {
+    min-height: 210px;
   }
 
   .world-card {

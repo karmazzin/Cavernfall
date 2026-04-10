@@ -4,6 +4,7 @@
   function createAppState() {
     return {
       screen: 'menu',
+      showAssistant: false,
       currentWorldId: null,
       worlds: [],
       pendingInitialSave: false,

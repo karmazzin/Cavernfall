@@ -335,6 +335,50 @@
       return;
     }
 
+    if (itemId === ITEM.FLOUR) {
+      ctx.fillStyle = '#efe6cc';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.20, y + size * 0.64);
+      ctx.lineTo(x + size * 0.28, y + size * 0.28);
+      ctx.lineTo(x + size * 0.72, y + size * 0.28);
+      ctx.lineTo(x + size * 0.80, y + size * 0.64);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.42)';
+      ctx.fillRect(x + size * 0.34, y + size * 0.38, size * 0.24, size * 0.08);
+      return;
+    }
+
+    if (itemId === ITEM.DOUGH) {
+      ctx.fillStyle = '#dec59a';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.50, y + size * 0.50, size * 0.28, size * 0.20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,245,220,0.24)';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.44, y + size * 0.44, size * 0.10, size * 0.06, 0, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    if (itemId === ITEM.BREAD) {
+      ctx.fillStyle = '#c98d3d';
+      ctx.beginPath();
+      ctx.ellipse(x + size * 0.50, y + size * 0.50, size * 0.30, size * 0.18, -0.12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(126,78,28,0.75)';
+      ctx.lineWidth = Math.max(1, size * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.38, y + size * 0.40);
+      ctx.lineTo(x + size * 0.34, y + size * 0.58);
+      ctx.moveTo(x + size * 0.50, y + size * 0.36);
+      ctx.lineTo(x + size * 0.46, y + size * 0.60);
+      ctx.moveTo(x + size * 0.62, y + size * 0.40);
+      ctx.lineTo(x + size * 0.58, y + size * 0.58);
+      ctx.stroke();
+      return;
+    }
+
     if (itemId === ITEM.CARROT) {
       ctx.fillStyle = '#d96d20';
       ctx.beginPath();

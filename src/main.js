@@ -41,8 +41,16 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const menuRoot = document.getElementById('menuRoot');
+  const assistantRoot = document.getElementById('assistantRoot');
   const state = createGameState();
   const app = createAppState();
+  const assistantUi = Game.gameAssistant.createAssistantUi(assistantRoot, {
+    onClose: () => {
+      if (app.screen === 'playing') state.pause.showAssistant = false;
+      else app.showAssistant = false;
+      syncBodyUiState();
+    },
+  });
 
   function isCreativeMode() {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -111,6 +119,7 @@
     const overlayHidden = !!(playing && (state.pause.open || (state.crafting && state.crafting.open)));
     document.body.classList.toggle('ui-overlay-hidden', overlayHidden);
     document.body.classList.toggle('menu-open', !playing);
+    assistantUi.setVisible(!!((playing && state.pause.open && state.pause.showAssistant) || (!playing && app.showAssistant)));
   }
 
   function refreshWorldList() {
@@ -227,6 +236,7 @@
     state.pause.showControls = false;
     state.pause.showModePicker = false;
     state.pause.showCompass = false;
+    state.pause.showAssistant = false;
     state.pause.statusText = '';
     syncBodyUiState();
   }
@@ -241,6 +251,7 @@
     state.pause.showControls = false;
     state.pause.showModePicker = false;
     state.pause.showCompass = false;
+    state.pause.showAssistant = false;
     state.pause.statusText = '';
     syncBodyUiState();
   }
@@ -300,6 +311,7 @@
       if (button.id === 'mode_back') state.pause.showModePicker = false;
       if (button.id === 'compass') state.pause.showCompass = true;
       if (button.id === 'compass_back') state.pause.showCompass = false;
+      if (button.id === 'assistant') state.pause.showAssistant = true;
       if (button.id === 'compass_track_fire_caves') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_caves' ? null : 'fire_caves';
       }
@@ -374,6 +386,10 @@
         refreshWorldList();
         app.screen = 'load-worlds';
       }
+      if (action === 'open-assistant') {
+        app.showAssistant = true;
+        assistantUi.reset();
+      }
       if (action === 'back-main') app.screen = 'menu';
       if (action === 'create-world') startNewWorld(app.newWorld);
       if (action === 'load-world' && worldId) loadExistingWorld(worldId);
@@ -382,6 +398,7 @@
         refreshWorldList();
         app.screen = 'load-worlds';
       }
+      if (action !== 'open-assistant') app.showAssistant = false;
       menu.render(app);
       syncBodyUiState();
     },

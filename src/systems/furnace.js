@@ -30,6 +30,7 @@
     [BLOCK.PLANK]: { id: ITEM.CHARCOAL, count: 1, time: 4.2 },
     [ITEM.RAW_IRON]: { id: ITEM.IRON_INGOT, count: 1, time: 6 },
     [ITEM.RAW_GOLD]: { id: ITEM.GOLD_INGOT, count: 1, time: 6.2 },
+    [ITEM.DOUGH]: { id: ITEM.BREAD, count: 1, time: 4.8 },
   };
 
   function furnaceKey(tx, ty) {

@@ -121,15 +121,18 @@
     const compactHeight = mobile && canvas.height < 760;
     const panelWidth = mobile ? Math.min(canvas.width - 16, 340) : 360;
     const creativeExtra = isCreativeMode(state) ? 1 : 0;
+    const assistantExtra = 1;
     const panelHeight = state.pause.confirmRestart
       ? 240
       : state.pause.showControls
         ? (mobile ? (compactHeight ? 286 : 320) : 300)
         : state.pause.showModePicker
           ? (mobile ? (compactHeight ? 346 : 388) : 390)
+          : state.pause.showAssistant
+            ? (mobile ? (compactHeight ? 146 : 168) : 176)
           : state.pause.showCompass
             ? (mobile ? (compactHeight ? 604 : 676) : 712)
-          : (mobile ? (compactHeight ? 406 + creativeExtra * 44 : 474 + creativeExtra * 50) : 474 + creativeExtra * 52);
+          : (mobile ? (compactHeight ? 406 + creativeExtra * 44 + assistantExtra * 44 : 474 + creativeExtra * 50 + assistantExtra * 50) : 474 + creativeExtra * 52 + assistantExtra * 52);
     const panel = {
       w: panelWidth,
       h: panelHeight,
@@ -193,6 +196,13 @@
       };
     }
 
+    if (state.pause.showAssistant) {
+      return {
+        panel,
+        buttons: [],
+      };
+    }
+
     const buttonH = compactHeight ? 36 : 42;
     const startY = compactHeight ? 82 : 92;
     const gap = compactHeight ? 8 : 10;
@@ -203,10 +213,11 @@
         { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
         { id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
         ...(isCreativeMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH }] : []),
-        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (3 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (4 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (5 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (6 + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (3 + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (4 + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (5 + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (6 + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (7 + creativeExtra), w: panel.w - 40, h: buttonH },
       ],
     };
   }
@@ -320,6 +331,11 @@
           ctx.fillText('Не найдены в мире', baseX, rowY + (compactHeight ? 18 : 22));
         }
       }
+    } else if (state.pause.showAssistant) {
+      ctx.font = `${compactHeight ? 13 : 15}px Arial`;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText('Игровой помощник отвечает только по механикам этой игры.', layout.panel.x + 24, layout.panel.y + (compactHeight ? 76 : 88));
+      ctx.fillText('Если вопрос не про игру, он ответит: «Извините, я не знаю информацию.»', layout.panel.x + 24, layout.panel.y + (compactHeight ? 98 : 112));
     } else {
       if (state.pause.statusText) {
         ctx.fillStyle = '#8cff8c';

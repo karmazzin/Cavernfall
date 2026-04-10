@@ -55,6 +55,7 @@
         <div class="menu-actions">
           <button class="menu-btn menu-btn-primary" data-menu-action="open-new">Создать Новый Мир</button>
           <button class="menu-btn" data-menu-action="open-load">Загрузить Сохраненные Миры</button>
+          <button class="menu-btn" data-menu-action="open-assistant">Спросить у чат-бота</button>
         </div>
       </div>
     `;

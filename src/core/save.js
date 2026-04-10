@@ -343,6 +343,7 @@
       state.pause.open = false;
       state.pause.confirmRestart = false;
       state.pause.showModePicker = false;
+      state.pause.showAssistant = false;
       state.pause.statusText = '';
       state.autosaveTick = 0;
       ensureDimensions(state);

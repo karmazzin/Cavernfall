@@ -61,6 +61,11 @@
       result: { id: BLOCK.PILLOW, count: 1 },
     },
     {
+      name: 'Мука',
+      pattern: [[ITEM.WHEAT]],
+      result: { id: ITEM.FLOUR, count: 3 },
+    },
+    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],
