@@ -13,6 +13,7 @@
     'zombies',
     'spiders',
     'fireGuards',
+    'waterfolk',
     'humans',
     'dwarves',
     'humanSettlements',
@@ -29,9 +30,11 @@
     'friendlyFireKing',
     'waterCaves',
     'waterWell',
+    'goldenFlowerGuardian',
     'kraken',
     'quake',
     'fireWorldMeta',
+    'waterWorldMeta',
     'zombieSpawnTick',
     'zombieCaveSpawnTick',
     'spiderSpawnTick',
@@ -73,6 +76,8 @@
       sleepTimer: 0,
       sleepBlockX: null,
       sleepBlockY: null,
+      steamCloudCooldown: 0,
+      steamForm: false,
     };
   }
 
@@ -97,6 +102,7 @@
       zombies: [],
       spiders: [],
       fireGuards: [],
+      waterfolk: [],
       humans: [],
       dwarves: [],
       humanSettlements: {
@@ -129,16 +135,20 @@
       friendlyFireKing: null,
       waterCaves: null,
       waterWell: null,
+      goldenFlowerGuardian: null,
       kraken: null,
       quake: null,
       fireWorldMeta: null,
+      waterWorldMeta: null,
       dimensions: {
         overworld: null,
         fire: null,
+        water: null,
       },
       activeDimension: 'overworld',
       portalLinks: {
         fireGate: null,
+        waterGate: null,
       },
       player: createPlayer(),
       gameOver: false,
@@ -161,6 +171,7 @@
         contextKey: '',
       },
       friendshipAmuletTick: 0,
+      steamEffects: [],
       autosaveTick: 0,
       breaking: null,
       crafting: {
@@ -214,12 +225,13 @@
 
   function ensureDimensions(state) {
     if (!state.dimensions || typeof state.dimensions !== 'object') {
-      state.dimensions = { overworld: null, fire: null };
+      state.dimensions = { overworld: null, fire: null, water: null };
     }
     if (!state.dimensions.overworld) state.dimensions.overworld = captureDimensionState(state);
     if (!state.activeDimension) state.activeDimension = 'overworld';
-    if (!state.portalLinks || typeof state.portalLinks !== 'object') state.portalLinks = { fireGate: null };
+    if (!state.portalLinks || typeof state.portalLinks !== 'object') state.portalLinks = { fireGate: null, waterGate: null };
     if (!('fireGate' in state.portalLinks)) state.portalLinks.fireGate = null;
+    if (!('waterGate' in state.portalLinks)) state.portalLinks.waterGate = null;
   }
 
   function syncActiveDimension(state) {

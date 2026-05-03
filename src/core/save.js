@@ -3,6 +3,8 @@
   const INDEX_KEY = 'cavernfall-world-index-v2';
   const WORLD_PREFIX = 'cavernfall-world-';
   const LEGACY_SAVE_KEY = 'mc2d-save-v1';
+  const MOD_INDEX_KEY = 'cavernfall-mod-index-v1';
+  const MOD_PREFIX = 'cavernfall-mod-';
   const { HOTBAR_SIZE } = Game.constants;
   const { createGameState, ensureDimensions, syncActiveDimension } = Game.state;
   const { createSlot, normalizeSlot } = Game.inventory;
@@ -84,6 +86,7 @@
       zombies: state.zombies,
       spiders: state.spiders,
       fireGuards: state.fireGuards,
+      waterfolk: state.waterfolk,
       humans: state.humans,
       humanSettlements: state.humanSettlements,
       dwarves: state.dwarves,
@@ -100,9 +103,11 @@
       friendlyFireKing: state.friendlyFireKing,
       waterCaves: state.waterCaves,
       waterWell: state.waterWell,
+      goldenFlowerGuardian: state.goldenFlowerGuardian,
       kraken: state.kraken,
       quake: state.quake,
       fireWorldMeta: state.fireWorldMeta,
+      waterWorldMeta: state.waterWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
       portalLinks: state.portalLinks,
@@ -120,6 +125,7 @@
       fluidTick: state.fluidTick,
       weather: state.weather,
       friendshipAmuletTick: state.friendshipAmuletTick,
+      steamEffects: state.steamEffects,
       achievements: state.achievements,
     };
   }
@@ -215,6 +221,9 @@
         ...(data.worldMeta || {}),
         id: worldId,
       };
+      delete state.worldMeta.modId;
+      delete state.worldMeta.modName;
+      delete state.worldMeta.modSummary;
       state.world = Array.isArray(data.world) ? data.world : state.world;
       state.biomeAt = Array.isArray(data.biomeAt) ? data.biomeAt : state.biomeAt;
       state.climateAt = Array.isArray(data.climateAt) ? data.climateAt : state.climateAt;
@@ -223,6 +232,7 @@
       state.zombies = Array.isArray(data.zombies) ? data.zombies : state.zombies;
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
       state.fireGuards = Array.isArray(data.fireGuards) ? data.fireGuards : state.fireGuards;
+      state.waterfolk = Array.isArray(data.waterfolk) ? data.waterfolk : state.waterfolk;
       state.humans = Array.isArray(data.humans) ? data.humans : state.humans;
       state.humanSettlements = data.humanSettlements && typeof data.humanSettlements === 'object'
         ? {
@@ -275,6 +285,9 @@
       state.waterWell = data.waterWell && typeof data.waterWell === 'object'
         ? data.waterWell
         : state.waterWell;
+      state.goldenFlowerGuardian = data.goldenFlowerGuardian && typeof data.goldenFlowerGuardian === 'object'
+        ? data.goldenFlowerGuardian
+        : state.goldenFlowerGuardian;
       state.kraken = data.kraken && typeof data.kraken === 'object'
         ? data.kraken
         : state.kraken;
@@ -284,18 +297,23 @@
       state.fireWorldMeta = data.fireWorldMeta && typeof data.fireWorldMeta === 'object'
         ? data.fireWorldMeta
         : state.fireWorldMeta;
+      state.waterWorldMeta = data.waterWorldMeta && typeof data.waterWorldMeta === 'object'
+        ? data.waterWorldMeta
+        : state.waterWorldMeta;
       state.dimensions = data.dimensions && typeof data.dimensions === 'object'
         ? {
             overworld: data.dimensions.overworld || null,
             fire: data.dimensions.fire || null,
+            water: data.dimensions.water || null,
           }
         : state.dimensions;
       state.activeDimension = typeof data.activeDimension === 'string' ? data.activeDimension : 'overworld';
       state.portalLinks = data.portalLinks && typeof data.portalLinks === 'object'
         ? {
             fireGate: data.portalLinks.fireGate || null,
+            waterGate: data.portalLinks.waterGate || null,
           }
-        : { fireGate: null };
+        : { fireGate: null, waterGate: null };
       state.gameOver = !!data.gameOver;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;
@@ -318,6 +336,7 @@
           }
         : state.weather;
       state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
+      state.steamEffects = Array.isArray(data.steamEffects) ? data.steamEffects : [];
       state.achievements = data.achievements && typeof data.achievements === 'object'
         ? {
             unlocked: data.achievements.unlocked && typeof data.achievements.unlocked === 'object' ? data.achievements.unlocked : {},
@@ -383,5 +402,43 @@
     }
   }
 
-  Game.saveSystem = { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave };
+  function purgeMods() {
+    try {
+      const index = readIndex();
+      for (const entry of index) {
+        if (!entry || !entry.id) continue;
+        delete entry.modId;
+        delete entry.modName;
+        delete entry.modSummary;
+        const raw = localStorage.getItem(worldStorageKey(entry.id));
+        if (!raw) continue;
+        try {
+          const snapshot = JSON.parse(raw);
+          if (snapshot && snapshot.worldMeta && typeof snapshot.worldMeta === 'object') {
+            delete snapshot.worldMeta.modId;
+            delete snapshot.worldMeta.modName;
+            delete snapshot.worldMeta.modSummary;
+          }
+          localStorage.setItem(worldStorageKey(entry.id), JSON.stringify(snapshot));
+        } catch (error) {
+          // ignore single world cleanup failures
+        }
+      }
+      writeIndex(index);
+      const modIndexRaw = localStorage.getItem(MOD_INDEX_KEY);
+      if (modIndexRaw) {
+        const modIndex = JSON.parse(modIndexRaw);
+        if (Array.isArray(modIndex)) {
+          for (const entry of modIndex) {
+            if (entry && entry.id) localStorage.removeItem(`${MOD_PREFIX}${entry.id}`);
+          }
+        }
+      }
+      localStorage.removeItem(MOD_INDEX_KEY);
+    } catch (error) {
+      // ignore purge failures
+    }
+  }
+
+  Game.saveSystem = { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave, purgeMods };
 })();

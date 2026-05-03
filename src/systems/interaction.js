@@ -46,7 +46,16 @@
     if (blockId === BLOCK.DIAMOND_ORE) return { id: ITEM.SMALL_DIAMOND, count: Math.floor(rand(1, 5)) };
     if (blockId === BLOCK.DEEP_ORE) return { id: ITEM.DEEP_CRYSTAL, count: 1 };
     if (blockId === BLOCK.FRIENDSHIP_ORE) return { id: ITEM.FRIENDSHIP_INGOT, count: 1 };
+    if (blockId === BLOCK.STEAM_ORE) return { id: ITEM.STEAM_INGOT, count: 1 };
     return { id: blockId, count: 1 };
+  }
+
+  function notifyMedicineRecipe(state) {
+    const garden = state.waterWorldMeta && state.waterWorldMeta.goldenGarden;
+    if (!garden || garden.recipeShown) return;
+    garden.recipeShown = true;
+    state.ui.noticeText = 'Рецепт лекарства: сверху и снизу золотой цветок, по бокам хлеб, в центре морковь.';
+    state.ui.noticeTimer = 7;
   }
 
   function releaseFriendlyFireKing(state) {
@@ -107,6 +116,10 @@
     if (!PLACEABLE.has(id) && !(hasCreativePlacement(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
     const targetBlock = getBlock(state, tx, ty);
     if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER) return false;
+    if (id === BLOCK.GOLDEN_FLOWER) {
+      const below = getBlock(state, tx, ty + 1);
+      if (below !== BLOCK.GRASS && below !== BLOCK.DIRT) return false;
+    }
 
     const blockPx = tx * TILE;
     const blockPy = ty * TILE;
@@ -333,6 +346,15 @@
       return;
     }
 
+    if (state.goldenFlowerGuardian && wx >= state.goldenFlowerGuardian.x && wx <= state.goldenFlowerGuardian.x + state.goldenFlowerGuardian.w && wy >= state.goldenFlowerGuardian.y && wy <= state.goldenFlowerGuardian.y + state.goldenFlowerGuardian.h) {
+      if (!rightClick && input.mouse.justPressed && Game.goldenFlowerGuardianEntity && Game.goldenFlowerGuardianEntity.hitGoldenFlowerGuardian(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
     for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
       const guard = state.fireGuards[i];
       if (wx >= guard.x && wx <= guard.x + guard.w && wy >= guard.y && wy <= guard.y + guard.h) {
@@ -532,6 +554,10 @@
       if (!input.mouse.justPressed) return;
       const drop = getBlockDrop(block);
       addToInventory(state, drop.id, drop.count);
+      if (block === BLOCK.GOLDEN_FLOWER && state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
+        state.waterWorldMeta.goldenGarden.flowerTaken = true;
+        notifyMedicineRecipe(state);
+      }
       onColonyBlockBroken(state, tx, ty);
       if (block === BLOCK.FURNACE) {
         const furnace = removeFurnaceAt(state, tx, ty);
@@ -571,6 +597,10 @@
       audio.playDig();
       const drop = getBlockDrop(block);
       addToInventory(state, drop.id, drop.count);
+      if (block === BLOCK.GOLDEN_FLOWER && state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
+        state.waterWorldMeta.goldenGarden.flowerTaken = true;
+        notifyMedicineRecipe(state);
+      }
       onColonyBlockBroken(state, tx, ty);
       if (block === BLOCK.FURNACE) {
         const furnace = removeFurnaceAt(state, tx, ty);

@@ -13,6 +13,10 @@
     return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
   }
 
+  function canHitPlayer(state, zombie) {
+    return aabb(zombie.x - 4, zombie.y - 4, zombie.w + 8, zombie.h + 8, state.player.x, state.player.y, state.player.w, state.player.h);
+  }
+
   function isMineLike(state, tx, ty) {
     for (let yy = ty - 2; yy <= ty + 2; yy += 1) {
       for (let xx = tx - 3; xx <= tx + 3; xx += 1) {
@@ -244,7 +248,7 @@
       applyMobEnvironmentDamage(state, zombie, dt, wasOnGround, preMoveVy);
 
       zombie.attackCd -= dt;
-      if (targetIsPlayer && !creative && aabb(zombie.x, zombie.y, zombie.w, zombie.h, state.player.x, state.player.y, state.player.w, state.player.h) && zombie.attackCd <= 0) {
+      if (targetIsPlayer && !creative && canHitPlayer(state, zombie) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.7;
         applyPlayerDamage(state, 1, { flash: 0.25 });
       } else if (!targetIsPlayer && target && aabb(zombie.x, zombie.y, zombie.w, zombie.h, target.x, target.y, target.w, target.h) && zombie.attackCd <= 0) {

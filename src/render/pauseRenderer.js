@@ -1,9 +1,11 @@
 (() => {
   const Game = window.MC2D;
   const { TILE } = Game.constants;
+  const { ITEM } = Game.items;
+  const { countItem } = Game.inventory;
 
-  function isCreativeMode(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'creative');
+  function hasCompassMode(state) {
+    return !!(state.worldMeta && state.worldMeta.mode !== 'survival');
   }
 
   function drawCompassArrow(ctx, x, y, dx, dy, scale = 1) {
@@ -84,11 +86,32 @@
         y: well.baseY * TILE,
       };
     }
+    if (key === 'golden_garden') {
+      const garden = state.waterWorldMeta && state.waterWorldMeta.goldenGarden;
+      if (!garden) return null;
+      return {
+        label: 'Сад золотых цветков',
+        x: garden.centerX * TILE,
+        y: garden.groundY * TILE,
+      };
+    }
+    if (key === 'main_well') {
+      const mainWell = state.waterWorldMeta && state.waterWorldMeta.mainWell;
+      if (!mainWell || !mainWell.revealed) return null;
+      return {
+        label: 'Главный колодец',
+        x: mainWell.centerX * TILE,
+        y: mainWell.baseY * TILE,
+      };
+    }
     return null;
   }
 
   function getCompassEntries(state) {
-    return ['fire_pyramid', 'fire_caves', 'water_caves', 'fire_castle', 'fire_dungeon', 'water_well'].map((key) => ({
+    const keys = ['fire_pyramid', 'fire_caves', 'water_caves', 'fire_castle', 'fire_dungeon', 'water_well'];
+    if (countItem(state, ITEM.MAGIC_GARDEN_MAP) > 0) keys.push('golden_garden');
+    if (countItem(state, ITEM.MAIN_WELL_MAP) > 0) keys.push('main_well');
+    return keys.map((key) => ({
       key,
       target: getCompassTarget(state, key),
       label:
@@ -102,7 +125,11 @@
               ? 'Замок огненного короля'
               : key === 'fire_dungeon'
                 ? 'Огненная темница'
-                : 'Водный колодец',
+                : key === 'golden_garden'
+                  ? 'Сад золотых цветков'
+                  : key === 'main_well'
+                    ? 'Главный колодец'
+                  : 'Водный колодец',
     }));
   }
 
@@ -120,7 +147,7 @@
     const mobile = !!(state.ui && state.ui.controlMode === 'touch') || canvas.width < 900;
     const compactHeight = mobile && canvas.height < 760;
     const panelWidth = mobile ? Math.min(canvas.width - 16, 340) : 360;
-    const creativeExtra = isCreativeMode(state) ? 1 : 0;
+    const creativeExtra = hasCompassMode(state) ? 1 : 0;
     const assistantExtra = 1;
     const panelHeight = state.pause.confirmRestart
       ? 240
@@ -212,7 +239,7 @@
         { id: 'continue', label: 'Продолжить', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
         { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
         { id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
-        ...(isCreativeMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH }] : []),
+        ...(hasCompassMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH }] : []),
         { id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (3 + creativeExtra), w: panel.w - 40, h: buttonH },
         { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (4 + creativeExtra), w: panel.w - 40, h: buttonH },
         { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (5 + creativeExtra), w: panel.w - 40, h: buttonH },
@@ -306,7 +333,7 @@
       let lineY = metrics.titleY;
       ctx.font = `${compactHeight ? 13 : 15}px Arial`;
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.fillText('Творческий компас для уникальных пещер.', baseX, lineY);
+      ctx.fillText('Компас для уникальных структур и пещер.', baseX, lineY);
       lineY = metrics.rowsStartY;
 
       for (let index = 0; index < getCompassEntries(state).length; index += 1) {

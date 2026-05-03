@@ -165,6 +165,17 @@ body {
   font-size: 16px;
 }
 
+.menu-textarea {
+  min-height: 120px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 16px;
+  resize: vertical;
+  font-family: "Marcellus", serif;
+}
+
 .menu-mode-row {
   display: flex;
   gap: 10px;
@@ -182,6 +193,7 @@ body {
   color: rgba(255, 248, 236, 0.76);
   margin-bottom: 18px;
 }
+
 
 .item-tooltip {
   position: fixed;

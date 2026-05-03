@@ -10,13 +10,14 @@
   const { getWeatherState, WEATHER } = Game.weatherSystem;
   const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawGoldenFlowerGuardian, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
   const { getLightSourcesInView } = Game.furnaceSystem;
   const { getDoorAt } = Game.doorSystem;
   const { findUsablePortal } = Game.portalSystem;
+  const { getDomeActionTarget } = Game.waterDimensionSystem;
   const { findUsablePillow, findUsableWaterCrystal, hasAllFriendshipTools } = Game.interaction;
 
   let darknessMaskCanvas = null;
@@ -470,6 +471,32 @@
     ctx.restore();
   }
 
+  function drawWaterDomeHint(ctx, dome, canOpen) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(132, 226, 255, 0.92)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(dome.sx - 1, dome.sy - 1, dome.sw + 2, dome.sh + 2);
+    ctx.fillStyle = 'rgba(120, 220, 255, 0.10)';
+    ctx.fillRect(dome.sx, dome.sy, dome.sw, dome.sh);
+    const label = canOpen ? 'E: убрать купол' : 'Нужен полный сет Брони дружбы';
+    ctx.font = '12px Arial';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = dome.sx + dome.sw / 2 - boxW / 2;
+    const boxY = dome.sy - 24;
+    ctx.fillStyle = 'rgba(8, 16, 20, 0.92)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = 'rgba(122, 232, 255, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX + 0.5, boxY + 0.5, boxW - 1, boxH - 1);
+    ctx.fillStyle = '#e9fdff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, dome.sx + dome.sw / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
   function hasFireDungeonKey(state) {
     return countItem(state, ITEM.FIRE_DUNGEON_KEY) > 0;
   }
@@ -605,12 +632,19 @@
     const hoveredPillow = getHoveredPillow(state, renderCamera, input, canvas);
     const hoveredDungeonSeal = getHoveredDungeonSeal(state, renderCamera, input, canvas);
     const hoveredWaterCrystal = getHoveredWaterCrystal(state, renderCamera, input, canvas);
+    const dome = getDomeActionTarget ? getDomeActionTarget(state) : null;
     if (hoveredChest) drawChestHint(ctx, hoveredChest);
     if (hoveredHuman) drawHumanHint(ctx, hoveredHuman, renderCamera);
     if (hoveredPortal) drawPortalHint(ctx, hoveredPortal);
     if (hoveredPillow) drawPillowHint(ctx, hoveredPillow);
     if (hoveredDungeonSeal) drawDungeonSealHint(ctx, hoveredDungeonSeal);
     if (hoveredWaterCrystal) drawWaterCrystalHint(ctx, hoveredWaterCrystal, hasAllFriendshipTools(state));
+    if (dome) drawWaterDomeHint(ctx, {
+      sx: dome.x0 * TILE - renderCamera.x,
+      sy: dome.y0 * TILE - renderCamera.y,
+      sw: (dome.x1 - dome.x0 + 1) * TILE,
+      sh: (dome.y1 - dome.y0 + 1) * TILE,
+    }, Game.combat.hasFullFriendshipArmor(state));
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - renderCamera.x;
@@ -637,6 +671,7 @@
     for (const zombie of state.zombies) drawZombie(ctx, zombie, renderCamera, time);
     for (const spider of state.spiders) drawSpider(ctx, spider, renderCamera, time);
     for (const guard of state.fireGuards || []) drawFireGuard(ctx, guard, renderCamera, time);
+    for (const waterfolk of state.waterfolk || []) drawWaterfolk(ctx, waterfolk, renderCamera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, renderCamera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, renderCamera, time);
     if (state.friendlyFireKing) drawFriendlyFireKing(ctx, state.friendlyFireKing, renderCamera, time);
@@ -646,6 +681,8 @@
     if (state.fireKing) drawBossHealthBar(ctx, state.fireKing, renderCamera);
     if (state.kraken) drawKraken(ctx, state.kraken, renderCamera, time);
     if (state.kraken) drawBossHealthBar(ctx, state.kraken, renderCamera);
+    if (state.goldenFlowerGuardian) drawGoldenFlowerGuardian(ctx, state.goldenFlowerGuardian, renderCamera, time);
+    if (state.goldenFlowerGuardian) drawBossHealthBar(ctx, state.goldenFlowerGuardian, renderCamera);
 
     drawPlayer(ctx, state, renderCamera, time);
 

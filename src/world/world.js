@@ -24,8 +24,12 @@
       id !== BLOCK.CHEST &&
       id !== BLOCK.DRY_BUSH &&
       id !== BLOCK.FIRE_PORTAL &&
+      id !== BLOCK.WATER_DIMENSION_PORTAL &&
       id !== BLOCK.FRIENDSHIP_AMULET &&
-      id !== BLOCK.WATER_CRYSTAL
+      id !== BLOCK.WATER_CRYSTAL &&
+      id !== BLOCK.GOLDEN_GARDEN_SHELL &&
+      id !== BLOCK.CLOUD &&
+      id !== BLOCK.STEAM_WATER
     );
   }
 
@@ -91,6 +95,18 @@
         biome: ty >= lavaLakeStart ? 'lava_lake' : (state.biomeAt[safeTx] || 'red_land'),
         climate: 'warm',
         inCave: true,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (state.activeDimension === 'water') {
+      const waterMeta = state.waterWorldMeta || {};
+      const floorStart = Number.isFinite(waterMeta.floorStart) ? waterMeta.floorStart : WORLD_H - 18;
+      const garden = waterMeta.goldenGarden || null;
+      const inGarden = !!(garden && tx >= garden.x0 && tx <= garden.x1 && ty >= garden.y0 && ty <= garden.y1);
+      return {
+        biome: inGarden ? 'golden_garden' : ty >= floorStart ? 'water_floor' : (state.biomeAt[safeTx] || 'water_surface'),
+        climate: 'any',
+        inCave: false,
         surfaceY: state.surfaceAt[safeTx] || 0,
       };
     }

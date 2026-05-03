@@ -21,6 +21,13 @@
       return;
     }
 
+    if (state.player.steamForm) {
+      state.starvationTick = 0;
+      state.regenTick = 0;
+      state.satietyTick = 0;
+      return;
+    }
+
     const active =
       input.mouse.down ||
       input.keys.has('KeyA') ||

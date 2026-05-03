@@ -2,7 +2,7 @@
   const Game = window.MC2D;
   const { BLOCK } = Game.blocks;
   const { createGameState } = Game.state;
-  const { ensureDimensions } = Game.state;
+  const { ensureDimensions, switchDimension } = Game.state;
   const { createAppState } = Game.appState;
   const { generateWorld, retrofitWorldFeatures } = Game.generation;
   const { withSeed, makeSeed } = Game.random;
@@ -11,21 +11,26 @@
   const { updateZombies } = Game.zombiesEntity;
   const { updateSpiders } = Game.spidersEntity;
   const { updateFireGuards } = Game.fireGuardsEntity;
+  const { updateWaterfolk } = Game.waterfolkEntity;
   const { updateFireKing } = Game.fireKingEntity;
   const { updateFriendlyFireKing } = Game.friendlyFireKingEntity;
   const { updateKraken } = Game.krakenEntity || {};
+  const { updateGoldenFlowerGuardian } = Game.goldenFlowerGuardianEntity || {};
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFirePyramid } = Game.firePyramidSystem;
   const { updateWaterWell } = Game.waterWellSystem;
+  const { updateSteamQuest, useSteamCloud } = Game.steamQuestSystem;
   const { updatePortals, useNearbyPortal } = Game.portalSystem;
+  const { useNearbyWaterDome } = Game.waterDimensionSystem;
   const { updateFurnaces } = Game.furnaceSystem;
   const { updateSatiety, updateBreath } = Game.survival;
   const { updateWeather } = Game.weatherSystem;
   const { getMaxHealth, clampPlayerHealthToMax } = Game.combat;
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
+  const { ITEM } = Game.items;
   const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal } = Game.interaction;
   const { getLocationInfo } = Game.world;
   const { createCamera, updateCamera } = Game.camera;
@@ -112,6 +117,25 @@
       state.ui.noticeText = 'Амулет дружбы возвращён в инвентарь.';
       state.ui.noticeTimer = 5;
     }
+  }
+
+  function tryFireRoofWarp() {
+    if (state.activeDimension !== 'fire') return;
+    if ((state.player.portalCooldown || 0) > 0) return;
+    if (state.player.y > 2) return;
+    ensureDimensions(state);
+    const overworld = state.dimensions && state.dimensions.overworld;
+    const well = overworld && overworld.waterWell;
+    if (!well) return;
+    switchDimension(state, 'overworld');
+    state.player.x = well.centerX * Game.constants.TILE + 2;
+    state.player.y = Math.max(0, (well.waterY0 - 1) * Game.constants.TILE);
+    state.player.vx = 0;
+    state.player.vy = 0;
+    state.player.onGround = false;
+    state.player.portalCooldown = 1.2;
+    state.ui.noticeText = 'Ты вышел к воде у Водного колодца.';
+    state.ui.noticeTimer = 3.5;
   }
 
   function syncBodyUiState() {
@@ -330,6 +354,12 @@
       if (button.id === 'compass_track_water_well') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'water_well' ? null : 'water_well';
       }
+      if (button.id === 'compass_track_golden_garden') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'golden_garden' ? null : 'golden_garden';
+      }
+      if (button.id === 'compass_track_main_well') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'main_well' ? null : 'main_well';
+      }
       if (button.id === 'mode_survival') applyWorldMode('survival');
       if (button.id === 'mode_creative') applyWorldMode('creative');
       if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
@@ -410,7 +440,11 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera)) eatFood(state);
+      if (state.player && state.player.steamForm) {
+        useSteamCloud(state);
+        return;
+      }
+      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !useSteamCloud(state)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing') resetCurrentWorld();
@@ -426,6 +460,7 @@
   });
 
   migrateLegacySave();
+  if (Game.saveSystem.purgeMods) Game.saveSystem.purgeMods();
   refreshWorldList();
   menu.render(app);
   syncBodyUiState();
@@ -468,15 +503,19 @@
     updateZombies(state, dt);
     updateSpiders(state, dt);
     updateFireGuards(state, dt);
+    if (updateWaterfolk) updateWaterfolk(state, dt);
     updateFireKing(state, dt);
     updateFriendlyFireKing(state, dt);
     if (updateKraken) updateKraken(state, dt);
+    if (updateGoldenFlowerGuardian) updateGoldenFlowerGuardian(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
     updateFirePyramid(state, dt);
     if (updateWaterWell) updateWaterWell(state, dt);
+    if (updateSteamQuest) updateSteamQuest(state, dt);
     updatePortals(state, dt);
+    tryFireRoofWarp();
     updateFurnaces(state, dt);
     updateSatiety(state, input, dt);
     updateBreath(state, dt);
@@ -513,11 +552,58 @@
         const dx = state.waterWell.centerX * Game.constants.TILE - px;
         const dy = state.waterWell.baseY * Game.constants.TILE - py;
         reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'water_castle' && state.waterWorldMeta && state.waterWorldMeta.castle) {
+        const castle = state.waterWorldMeta.castle;
+        const dx = castle.centerX * Game.constants.TILE - px;
+        const dy = castle.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 10;
+      } else if (state.pause.activeCompassTarget === 'golden_garden' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
+        const garden = state.waterWorldMeta.goldenGarden;
+        reached = px >= garden.x0 * Game.constants.TILE && px <= garden.x1 * Game.constants.TILE && py >= garden.y0 * Game.constants.TILE && py <= garden.y1 * Game.constants.TILE;
+      } else if (state.pause.activeCompassTarget === 'main_well' && state.waterWorldMeta && state.waterWorldMeta.mainWell) {
+        const mainWell = state.waterWorldMeta.mainWell;
+        const dx = mainWell.centerX * Game.constants.TILE - px;
+        const dy = mainWell.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
       }
       if (reached) {
         state.pause.activeCompassTarget = null;
         state.ui.noticeText = 'Цель компаса достигнута.';
         state.ui.noticeTimer = 3;
+      }
+    }
+
+    if (state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
+      const garden = state.waterWorldMeta.goldenGarden;
+      const px = state.player.x + state.player.w / 2;
+      const py = state.player.y + state.player.h / 2;
+      const insideGarden = px >= garden.x0 * Game.constants.TILE && px <= garden.x1 * Game.constants.TILE && py >= garden.y0 * Game.constants.TILE && py <= garden.y1 * Game.constants.TILE;
+      if (garden.flowerTaken && !insideGarden && !garden.guardianDefeated && !state.goldenFlowerGuardian) {
+        garden.guardianSpawned = true;
+        state.goldenFlowerGuardian = {
+          x: state.player.x - 48,
+          y: state.player.y - 24,
+          w: 44,
+          h: 60,
+          hp: 300,
+          maxHp: 300,
+          phase: 'idle',
+          phaseTimer: 0,
+          attackCd: 0.8,
+          dir: 1,
+          vx: 0,
+          vy: 0,
+          isBoss: true,
+          name: 'Страж золотых цветов',
+          arena: {
+            x0: Math.max(0, (garden.x0 - 4) * Game.constants.TILE),
+            x1: Math.min(state.world[0].length * Game.constants.TILE, (garden.x1 + 4) * Game.constants.TILE),
+            y0: Math.max(0, (garden.y0 - 6) * Game.constants.TILE),
+            y1: Math.min(state.world.length * Game.constants.TILE, (garden.y1 + 8) * Game.constants.TILE),
+          },
+        };
+        state.ui.noticeText = 'Страж золотых цветов напал.';
+        state.ui.noticeTimer = 4;
       }
     }
 

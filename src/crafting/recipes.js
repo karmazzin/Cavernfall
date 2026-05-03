@@ -66,6 +66,15 @@
       result: { id: ITEM.FLOUR, count: 3 },
     },
     {
+      name: 'Лекарство',
+      pattern: [
+        [null, BLOCK.GOLDEN_FLOWER, null],
+        [ITEM.BREAD, ITEM.CARROT, ITEM.BREAD],
+        [null, BLOCK.GOLDEN_FLOWER, null],
+      ],
+      result: { id: ITEM.MEDICINE, count: 1 },
+    },
+    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],
@@ -242,6 +251,40 @@
       result: { id: ITEM.FRIENDSHIP_BOOTS, count: 1 },
     },
     {
+      name: 'Парный шлем',
+      pattern: [
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+      ],
+      result: { id: ITEM.STEAM_HELMET, count: 1 },
+    },
+    {
+      name: 'Парный нагрудник',
+      pattern: [
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, ITEM.STEAM_INGOT],
+      ],
+      result: { id: ITEM.STEAM_CHESTPLATE, count: 1 },
+    },
+    {
+      name: 'Парные поножи',
+      pattern: [
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+      ],
+      result: { id: ITEM.STEAM_LEGGINGS, count: 1 },
+    },
+    {
+      name: 'Парные ботинки',
+      pattern: [
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+        [ITEM.STEAM_INGOT, null, ITEM.STEAM_INGOT],
+      ],
+      result: { id: ITEM.STEAM_BOOTS, count: 1 },
+    },
+    {
       name: 'Большой алмаз',
       pattern: [
         [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],
@@ -329,6 +372,42 @@
         [null, ITEM.STICK, null],
       ],
       result: { id: ITEM.FRIENDSHIP_SWORD, count: 1 },
+    },
+    {
+      name: 'Парная кирка',
+      pattern: [
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, ITEM.STEAM_INGOT],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STEAM_PICKAXE, count: 1 },
+    },
+    {
+      name: 'Парный топор',
+      pattern: [
+        [ITEM.STEAM_INGOT, ITEM.STEAM_INGOT, null],
+        [ITEM.STEAM_INGOT, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STEAM_AXE, count: 1 },
+    },
+    {
+      name: 'Парная лопата',
+      pattern: [
+        [null, ITEM.STEAM_INGOT, null],
+        [null, ITEM.STICK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STEAM_SHOVEL, count: 1 },
+    },
+    {
+      name: 'Парный меч',
+      pattern: [
+        [null, ITEM.STEAM_INGOT, null],
+        [null, ITEM.STEAM_INGOT, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.STEAM_SWORD, count: 1 },
     },
   ];
 

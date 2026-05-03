@@ -143,6 +143,67 @@
       ctx.strokeStyle = '#91dfff';
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+    } else if (id === BLOCK.GOLDEN_FLOWER) {
+      ctx.fillStyle = '#4d8a39';
+      ctx.fillRect(x + 7, y + 7, 2, 8);
+      ctx.fillStyle = '#f7d95a';
+      ctx.beginPath();
+      ctx.arc(x + 8, y + 6, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff2a0';
+      ctx.fillRect(x + 7, y + 5, 2, 2);
+      ctx.fillStyle = '#d5a92a';
+      ctx.fillRect(x + 3, y + 5, 2, 2);
+      ctx.fillRect(x + 11, y + 5, 2, 2);
+      ctx.fillRect(x + 5, y + 2, 2, 2);
+      ctx.fillRect(x + 9, y + 2, 2, 2);
+    } else if (id === BLOCK.GOLDEN_GARDEN_SHELL) {
+      ctx.fillStyle = '#7fc3c6';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#dffeff';
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.fillStyle = '#b2f1ed';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = '#66aca9';
+      ctx.fillRect(x + 5, y + 5, TILE - 10, TILE - 10);
+      ctx.fillStyle = '#f8ffdf';
+      ctx.fillRect(x + 7, y + 7, TILE - 14, TILE - 14);
+    } else if (id === BLOCK.STEAM_ORE) {
+      ctx.fillStyle = '#8b969e';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#b9c9d4';
+      ctx.fillRect(x + 3, y + 3, 4, 4);
+      ctx.fillRect(x + 9, y + 4, 3, 3);
+      ctx.fillRect(x + 7, y + 10, 4, 3);
+      ctx.fillStyle = 'rgba(235,248,255,0.28)';
+      ctx.fillRect(x + 4, y + 4, 2, 1);
+    } else if (id === BLOCK.MAIN_WELL_FRAME) {
+      ctx.fillStyle = '#8fb8c7';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = '#d8f7ff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.strokeRect(x + 4.5, y + 4.5, TILE - 9, TILE - 9);
+      ctx.fillStyle = '#4f7483';
+      ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+      ctx.fillStyle = '#dff7ff';
+      ctx.fillRect(x + 7, y + 7, TILE - 14, TILE - 14);
+    } else if (id === BLOCK.CLOUD) {
+      ctx.fillStyle = 'rgba(242,250,255,0.95)';
+      ctx.beginPath();
+      ctx.arc(x + 5, y + 10, 4, 0, Math.PI * 2);
+      ctx.arc(x + 8, y + 7, 5, 0, Math.PI * 2);
+      ctx.arc(x + 11, y + 10, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(198,225,240,0.65)';
+      ctx.fillRect(x + 4, y + 10, 8, 3);
+    } else if (id === BLOCK.STEAM_WATER) {
+      ctx.fillStyle = 'rgba(178,238,255,0.72)';
+      ctx.fillRect(x, y + 1, TILE, TILE - 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.34)';
+      ctx.fillRect(x, y + 2, TILE, 2);
+      ctx.fillStyle = 'rgba(220,248,255,0.24)';
+      ctx.fillRect(x + 3, y + 6, TILE - 6, 5);
     } else if (id === BLOCK.STONE) {
       ctx.fillStyle = '#999';
       ctx.fillRect(x + 3, y + 3, 3, 3);

@@ -3174,5 +3174,451 @@
     return captureDimensionState(temp);
   }
 
-  Game.generation = { generateWorld, generateFireDimensionBundle, retrofitWorldFeatures, checkFireShrineActivation };
+  function buildWaterHouse(state, centerX, baseY, width = 10, height = 6) {
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const y0 = baseY - height + 1;
+    const y1 = baseY;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === y0 || ty === y1;
+        setBlock(state, tx, ty, border ? BLOCK.WATER_WELL_FRAME : BLOCK.WATER);
+      }
+    }
+    const doorX = centerX;
+    for (let ty = y1 - 2; ty <= y1 - 1; ty += 1) setBlock(state, doorX, ty, BLOCK.WATER);
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 3) {
+      if (tx === doorX) continue;
+      setBlock(state, tx, y0, BLOCK.WATER);
+    }
+    const bedX = x0 + 2;
+    const bedY = y1 - 1;
+    setBlock(state, bedX, bedY, BLOCK.PILLOW);
+    return { x0, x1, y0, y1, centerX, baseY, bedX, bedY };
+  }
+
+  function buildWaterRoad(state, x0, x1, y) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      setBlock(state, tx, y, BLOCK.WATER_WELL_FRAME);
+      if (tx % 7 === 0) {
+        setBlock(state, tx, y - 1, BLOCK.WATER_WELL_FRAME);
+      } else {
+        setBlock(state, tx, y - 1, BLOCK.WATER);
+      }
+    }
+  }
+
+  function buildWaterTower(state, centerX, baseY, height = 18) {
+    const x0 = centerX - 2;
+    const x1 = centerX + 2;
+    const topY = baseY - height;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = topY; ty <= baseY; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === topY || ty === baseY;
+        setBlock(state, tx, ty, border ? BLOCK.WATER_WELL_FRAME : BLOCK.WATER);
+      }
+    }
+    for (let ty = baseY - 1; ty >= topY + 1; ty -= 1) {
+      setBlock(state, centerX, ty, BLOCK.LADDER);
+    }
+    for (let tx = x0 - 1; tx <= x1 + 1; tx += 1) {
+      if (tx === x0 - 1 || tx === x1 + 1 || tx === centerX) setBlock(state, tx, topY - 1, BLOCK.WATER_WELL_FRAME);
+    }
+    return { x0, x1, topY, baseY, centerX };
+  }
+
+  function buildWaterCastle(state, centerX, baseY) {
+    const width = 58;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const floorY = baseY;
+    const topY = baseY - 18;
+    const hallY = baseY - 9;
+    const throneY = baseY - 4;
+    const rooms = [];
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = topY; ty <= floorY; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === topY || ty === floorY;
+        setBlock(state, tx, ty, border ? BLOCK.WATER_WELL_FRAME : BLOCK.WATER);
+      }
+    }
+
+    for (let tx = x0 + 6; tx <= x1 - 6; tx += 1) {
+      setBlock(state, tx, hallY, BLOCK.WATER_WELL_FRAME);
+    }
+    for (let tx = x0 + 20; tx <= x1 - 20; tx += 1) {
+      setBlock(state, tx, topY + 5, BLOCK.WATER_WELL_FRAME);
+    }
+
+    for (let ty = topY + 2; ty <= floorY - 1; ty += 1) {
+      setBlock(state, x0 + 14, ty, BLOCK.WATER_WELL_FRAME);
+      setBlock(state, x1 - 14, ty, BLOCK.WATER_WELL_FRAME);
+    }
+    for (let ty = hallY - 2; ty <= hallY + 1; ty += 1) {
+      setBlock(state, x0 + 14, ty, BLOCK.WATER);
+      setBlock(state, x1 - 14, ty, BLOCK.WATER);
+    }
+    for (let ty = floorY - 4; ty <= floorY - 1; ty += 1) {
+      setBlock(state, x0 + 14, ty, BLOCK.WATER);
+      setBlock(state, x1 - 14, ty, BLOCK.WATER);
+    }
+
+    for (let tx = centerX - 4; tx <= centerX + 4; tx += 1) {
+      for (let ty = floorY - 5; ty <= floorY - 1; ty += 1) setBlock(state, tx, ty, BLOCK.WATER);
+    }
+    for (let ty = floorY - 5; ty <= floorY - 1; ty += 1) {
+      setBlock(state, x0, ty, BLOCK.WATER);
+      setBlock(state, x1, ty, BLOCK.WATER);
+    }
+    for (let ty = floorY - 4; ty <= floorY - 2; ty += 1) {
+      setBlock(state, x0 + 1, ty, BLOCK.WATER);
+      setBlock(state, x1 - 1, ty, BLOCK.WATER);
+    }
+
+    for (let tx = centerX - 5; tx <= centerX + 5; tx += 1) {
+      setBlock(state, tx, throneY + 2, BLOCK.WATER_WELL_FRAME);
+    }
+    for (let tx = centerX - 3; tx <= centerX + 3; tx += 1) {
+      setBlock(state, tx, throneY + 1, BLOCK.WATER_WELL_FRAME);
+    }
+    for (let tx = centerX - 1; tx <= centerX + 1; tx += 1) {
+      setBlock(state, tx, throneY, BLOCK.WATER_WELL_FRAME);
+    }
+    setBlock(state, centerX, throneY - 1, BLOCK.WATER_WELL_FRAME);
+
+    const towers = [
+      buildWaterTower(state, x0 + 5, floorY, 20),
+      buildWaterTower(state, x1 - 5, floorY, 20),
+      buildWaterTower(state, x0 + 18, hallY, 14),
+      buildWaterTower(state, x1 - 18, hallY, 14),
+    ];
+
+    rooms.push({ x0: x0 + 2, x1: x0 + 13, y0: hallY + 1, y1: floorY - 1 });
+    rooms.push({ x0: x1 - 13, x1: x1 - 2, y0: hallY + 1, y1: floorY - 1 });
+    rooms.push({ x0: x0 + 16, x1: centerX - 8, y0: topY + 1, y1: hallY - 1 });
+    rooms.push({ x0: centerX + 8, x1: x1 - 16, y0: topY + 1, y1: hallY - 1 });
+    rooms.push({ x0: centerX - 7, x1: centerX + 7, y0: topY + 1, y1: floorY - 1, throne: true });
+
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 4) {
+      if (Math.abs(tx - centerX) <= 2) continue;
+      setBlock(state, tx, topY, BLOCK.WATER);
+      setBlock(state, tx, topY + 1, BLOCK.WATER);
+    }
+
+    return { x0, x1, baseY, centerX, throneX: centerX, topY, roadX: x0 + 1, towers, rooms, throneY };
+  }
+
+  function buildWaterArrivalDome(state, centerX, centerY) {
+    const rx = 8;
+    const ry = 5;
+    const x0 = centerX - rx;
+    const x1 = centerX + rx;
+    const y0 = centerY - ry;
+    const y1 = centerY + ry;
+    for (let ty = y0; ty <= y1; ty += 1) {
+      for (let tx = x0; tx <= x1; tx += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2 || ty < 2 || ty >= WORLD_H - 2) continue;
+        const dx = (tx - centerX) / rx;
+        const dy = (ty - centerY) / ry;
+        const dist = dx * dx + dy * dy;
+        if (dist > 1.08) continue;
+        if (dist > 0.74) setBlock(state, tx, ty, BLOCK.WATER_WELL_FRAME);
+        else setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+    setBlock(state, centerX, centerY + 3, BLOCK.WATER_DIMENSION_PORTAL);
+    return { cx: centerX, cy: centerY, rx, ry, x0, x1, y0, y1, active: true };
+  }
+
+  function plantGoldenFlower(state, tx, ty) {
+    if (tx < 2 || tx >= WORLD_W - 2 || ty < 2 || ty >= WORLD_H - 2) return;
+    setBlock(state, tx, ty, BLOCK.GOLDEN_FLOWER);
+  }
+
+  function buildGoldenGarden(state, centerX, floorStart) {
+    const width = 42;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const y0 = 2;
+    const groundY = floorStart - 7;
+    const y1 = groundY + 5;
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === y0 || ty === y1;
+        if (border) setBlock(state, tx, ty, BLOCK.GOLDEN_GARDEN_SHELL);
+        else if (ty < groundY) setBlock(state, tx, ty, BLOCK.AIR);
+        else if (ty === groundY) setBlock(state, tx, ty, BLOCK.GRASS);
+        else if (ty <= groundY + 2) setBlock(state, tx, ty, BLOCK.DIRT);
+        else setBlock(state, tx, ty, BLOCK.STONE);
+      }
+    }
+
+    for (let tx = x0 + 4; tx <= x1 - 4; tx += 6) plantGoldenFlower(state, tx, groundY - 1);
+    for (let tx = x0 + 7; tx <= x1 - 7; tx += 8) plantGoldenFlower(state, tx, groundY - 1);
+
+    for (let tx = centerX - 2; tx <= centerX + 1; tx += 1) {
+      setBlock(state, tx, groundY, BLOCK.WATER);
+      setBlock(state, tx, groundY + 1, BLOCK.DIRT);
+    }
+
+    return {
+      x0,
+      x1,
+      y0,
+      y1,
+      centerX,
+      groundY,
+      flowerTaken: false,
+      guardianSpawned: false,
+      guardianDefeated: false,
+    };
+  }
+
+  function stampMainWell(state, centerX, floorY) {
+    const frame = BLOCK.MAIN_WELL_FRAME;
+    const x0 = centerX - 9;
+    const x1 = centerX + 9;
+    const y0 = floorY - 9;
+    const y1 = floorY + 1;
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        if (ty >= floorY) setBlock(state, tx, ty, BLOCK.STONE);
+        else setBlock(state, tx, ty, BLOCK.WATER);
+      }
+    }
+
+    for (let tx = x0; tx <= x1; tx += 1) {
+      setBlock(state, tx, floorY, frame);
+    }
+
+    for (let ty = floorY - 6; ty <= floorY; ty += 1) {
+      setBlock(state, x0, ty, frame);
+      setBlock(state, x1, ty, frame);
+    }
+
+    for (let tx = centerX - 4; tx <= centerX + 4; tx += 1) {
+      setBlock(state, tx, y0 + 2, frame);
+    }
+    for (let ty = y0 + 2; ty <= floorY - 3; ty += 1) {
+      setBlock(state, centerX - 4, ty, frame);
+      setBlock(state, centerX + 4, ty, frame);
+    }
+
+    for (let tx = centerX - 2; tx <= centerX + 2; tx += 1) {
+      setBlock(state, tx, floorY - 1, BLOCK.WATER);
+      setBlock(state, tx, floorY - 2, BLOCK.WATER);
+      setBlock(state, tx, floorY - 3, BLOCK.WATER);
+      setBlock(state, tx, floorY - 4, BLOCK.WATER);
+    }
+
+    for (let tx = centerX - 3; tx <= centerX + 3; tx += 1) {
+      setBlock(state, tx, floorY - 5, frame);
+    }
+    for (let ty = floorY - 4; ty <= floorY - 1; ty += 1) {
+      setBlock(state, centerX - 3, ty, frame);
+      setBlock(state, centerX + 3, ty, frame);
+    }
+
+    for (let ty = floorY - 3; ty <= floorY - 1; ty += 1) {
+      setBlock(state, x0, ty, BLOCK.WATER);
+      setBlock(state, x0 + 1, ty, BLOCK.WATER);
+      setBlock(state, x1, ty, BLOCK.WATER);
+      setBlock(state, x1 - 1, ty, BLOCK.WATER);
+    }
+  }
+
+  function generateWaterDimension(state) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill('water_surface');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.ANY);
+    state.surfaceAt = Array(WORLD_W).fill(6);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.fireGuards = [];
+    state.waterfolk = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.waterWell = null;
+    state.goldenFlowerGuardian = null;
+    state.kraken = null;
+    state.quake = null;
+    state.fireWorldMeta = null;
+    state.waterWorldMeta = null;
+    state.zombieSpawnTick = 0;
+    state.zombieCaveSpawnTick = 0;
+    state.spiderSpawnTick = 0;
+    state.spiderCaveSpawnTick = 0;
+    state.fluidTick = 0;
+
+    const floorStart = Math.floor(WORLD_H * 0.52);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      state.surfaceAt[tx] = 5;
+      for (let ty = 0; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          setBlock(state, tx, ty, BLOCK.BEDROCK);
+        } else if (ty >= floorStart) {
+          state.biomeAt[tx] = 'water_surface';
+          setBlock(state, tx, ty, ty < floorStart + 3 ? BLOCK.SAND : BLOCK.STONE);
+        } else {
+          setBlock(state, tx, ty, BLOCK.WATER);
+        }
+      }
+    }
+
+    const portalX = Math.floor(WORLD_W / 2);
+    const portalY = 18;
+    const arrivalDome = buildWaterArrivalDome(state, portalX, portalY);
+    const goldenGarden = buildGoldenGarden(state, 56, floorStart);
+    const castle = buildWaterCastle(state, WORLD_W - 74, floorStart - 1);
+    const mainWellCenterX = Math.round((goldenGarden.centerX + castle.centerX) / 2);
+    const mainWell = {
+      centerX: mainWellCenterX,
+      baseY: floorStart - 1,
+      waterX0: mainWellCenterX - 2,
+      waterX1: mainWellCenterX + 2,
+      waterY0: floorStart - 4,
+      waterY1: floorStart - 1,
+      revealed: false,
+      completed: false,
+    };
+    const roadStartX = portalX + 14;
+    const roadEndX = castle.x0 + 2;
+    buildWaterRoad(state, roadStartX, roadEndX, floorStart - 1);
+    const houses = [
+      buildWaterHouse(state, roadStartX + 18, floorStart - 1, 10, 6),
+      buildWaterHouse(state, roadStartX + 38, floorStart - 2, 12, 7),
+      buildWaterHouse(state, roadStartX + 60, floorStart - 1, 10, 6),
+      buildWaterHouse(state, roadStartX + 82, floorStart - 2, 12, 7),
+      buildWaterHouse(state, roadStartX + 104, floorStart - 1, 10, 6),
+      buildWaterHouse(state, castle.x0 - 18, floorStart - 2, 12, 7),
+      buildWaterHouse(state, castle.x0 - 34, floorStart - 1, 10, 6),
+    ];
+
+    for (const house of houses) {
+      state.waterfolk.push({
+        x: house.centerX * TILE - 7,
+        y: (house.y0 + 2) * TILE,
+        w: 14,
+        h: 20,
+        dir: Math.random() < 0.5 ? -1 : 1,
+        dirTimer: 1.5 + Math.random() * 2,
+        timer: Math.random() * Math.PI * 2,
+        anchorPhase: Math.random() * Math.PI * 2,
+        anchorX: house.centerX * TILE - 7,
+        anchorY: (house.y0 + 2) * TILE,
+        chief: false,
+        sleeping: false,
+        sleepBlockX: house.bedX * TILE,
+        sleepBlockY: house.bedY * TILE,
+      });
+      state.waterfolk.push({
+        x: (house.centerX + 2) * TILE - 7,
+        y: (house.y0 + 3) * TILE,
+        w: 14,
+        h: 20,
+        dir: Math.random() < 0.5 ? -1 : 1,
+        dirTimer: 1.5 + Math.random() * 2,
+        timer: Math.random() * Math.PI * 2,
+        anchorPhase: Math.random() * Math.PI * 2,
+        anchorX: (house.centerX + 2) * TILE - 7,
+        anchorY: (house.y0 + 3) * TILE,
+        chief: false,
+        sleeping: false,
+        sleepBlockX: house.bedX * TILE,
+        sleepBlockY: house.bedY * TILE,
+      });
+    }
+
+    const castleSubjects = [
+      [castle.centerX - 10, castle.baseY - 4],
+      [castle.centerX + 10, castle.baseY - 4],
+      [castle.centerX - 16, castle.baseY - 10],
+      [castle.centerX + 16, castle.baseY - 10],
+      [castle.centerX - 22, castle.baseY - 3],
+      [castle.centerX + 22, castle.baseY - 3],
+      [castle.centerX - 5, castle.topY + 7],
+      [castle.centerX + 5, castle.topY + 7],
+    ];
+    for (const [tx, ty] of castleSubjects) {
+      state.waterfolk.push({
+        x: tx * TILE - 7,
+        y: ty * TILE,
+        w: 14,
+        h: 20,
+        dir: Math.random() < 0.5 ? -1 : 1,
+        dirTimer: 1.5 + Math.random() * 2,
+        timer: Math.random() * Math.PI * 2,
+        anchorPhase: Math.random() * Math.PI * 2,
+        anchorX: tx * TILE - 7,
+        anchorY: ty * TILE,
+        chief: false,
+        sleeping: false,
+        sleepBlockX: null,
+        sleepBlockY: null,
+      });
+    }
+    state.waterfolk.push({
+      x: castle.centerX * TILE - 7,
+      y: (castle.throneY - 2) * TILE,
+      w: 14,
+      h: 20,
+      dir: -1,
+      dirTimer: 2.2,
+      timer: 0,
+      anchorPhase: 0.7,
+      anchorX: castle.centerX * TILE - 7,
+      anchorY: (castle.throneY - 2) * TILE,
+      chief: true,
+      sleeping: false,
+      sleepBlockX: null,
+      sleepBlockY: null,
+    });
+
+    state.waterWorldMeta = {
+      name: 'Водное измерение',
+      portalX,
+      portalY: portalY + 3,
+      floorStart,
+      arrivalDome,
+      domeReleased: false,
+      questGiven: false,
+      medicinePromptShown: false,
+      medicineDelivered: false,
+      mainWellMapGiven: false,
+      returnAfterWellShown: false,
+      steamAmuletGiven: false,
+      goldenGarden,
+      mainWell,
+      castle,
+      houses,
+      road: { x0: roadStartX, x1: roadEndX, y: floorStart - 1 },
+    };
+    state.player.x = portalX * TILE;
+    state.player.y = (portalY + 1) * TILE;
+  }
+
+  function generateWaterDimensionBundle(worldMeta, seed) {
+    const temp = createGameState(worldMeta);
+    withSeed(`${seed || ''}:water`, () => generateWaterDimension(temp));
+    return captureDimensionState(temp);
+  }
+
+  Game.generation = { generateWorld, generateFireDimensionBundle, generateWaterDimensionBundle, retrofitWorldFeatures, checkFireShrineActivation, stampMainWell };
 })();

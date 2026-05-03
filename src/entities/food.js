@@ -21,6 +21,11 @@
         continue;
       }
 
+      if (Game.steamQuestSystem && Game.steamQuestSystem.tryActivateMainWell(state, food)) {
+        state.foods.splice(i, 1);
+        continue;
+      }
+
       const centerX = Math.floor((food.x + food.w * 0.5) / Game.constants.TILE);
       const centerY = Math.floor((food.y + food.h * 0.5) / Game.constants.TILE);
       if (food.itemId === ITEM.FLOUR && getBlock(state, centerX, centerY) === BLOCK.WATER) {
@@ -31,7 +36,7 @@
       }
 
       if (aabb(food.x, food.y, food.w, food.h, state.player.x, state.player.y, state.player.w, state.player.h)) {
-        if (addToInventory(state, food.itemId, food.amount)) {
+        if (addToInventory(state, food.itemId, food.amount, food.durability ?? null)) {
           if (Game.achievementsSystem) Game.achievementsSystem.updateAchievements(state, 999);
           state.foods.splice(i, 1);
         }

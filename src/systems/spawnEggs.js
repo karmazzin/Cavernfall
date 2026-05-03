@@ -92,6 +92,42 @@
     };
   }
 
+  function createWaterfolk(tx, ty, chief = false) {
+    return {
+      x: tx * TILE + 2,
+      y: ty * TILE,
+      w: 16,
+      h: 20,
+      dir: Math.random() < 0.5 ? -1 : 1,
+      dirTimer: rand(1.8, 4),
+      timer: 0,
+      anchorX: tx * TILE + 2,
+      anchorY: ty * TILE,
+      anchorPhase: Math.random() * Math.PI * 2,
+      chief,
+    };
+  }
+
+  function createGoldenFlowerGuardian(tx, ty) {
+    return {
+      x: tx * TILE - 20,
+      y: ty * TILE - 24,
+      w: 44,
+      h: 60,
+      hp: 300,
+      maxHp: 300,
+      phase: 'idle',
+      phaseTimer: 0,
+      attackCd: 0.8,
+      dir: 1,
+      vx: 0,
+      vy: 0,
+      isBoss: true,
+      name: 'Страж золотых цветов',
+      arena: { x0: Math.max(0, (tx - 16) * TILE), x1: (tx + 16) * TILE, y0: Math.max(0, (ty - 12) * TILE), y1: (ty + 10) * TILE },
+    };
+  }
+
   const EGG_DEFS = [
     { id: ITEM.SPAWN_EGG_SHEEP, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.animals.push(createAnimal(tx, ty)); } },
     { id: ITEM.SPAWN_EGG_ZOMBIE, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.zombies.push(createZombie(tx, ty)); } },
@@ -110,6 +146,9 @@
     { id: ITEM.SPAWN_EGG_FIRE_KING, wTiles: 5, hTiles: 10, spawn(state, tx, ty) { state.fireKing = createFireKing(tx, ty); } },
     { id: ITEM.SPAWN_EGG_FRIENDLY_FIRE_KING, wTiles: 2, hTiles: 3, spawn(state, tx, ty) { state.friendlyFireKing = createFriendlyFireKing(tx, ty); } },
     { id: ITEM.SPAWN_EGG_KRAKEN, wTiles: 4, hTiles: 4, spawn(state, tx, ty) { state.kraken = createKraken(tx, ty); } },
+    { id: ITEM.SPAWN_EGG_WATERFOLK, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.waterfolk.push(createWaterfolk(tx, ty, false)); } },
+    { id: ITEM.SPAWN_EGG_WATERFOLK_CHIEF, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.waterfolk.push(createWaterfolk(tx, ty, true)); } },
+    { id: ITEM.SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN, wTiles: 3, hTiles: 4, spawn(state, tx, ty) { state.goldenFlowerGuardian = createGoldenFlowerGuardian(tx, ty); } },
   ];
 
   const EGG_MAP = Object.fromEntries(EGG_DEFS.map((entry) => [entry.id, entry]));

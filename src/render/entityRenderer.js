@@ -78,6 +78,20 @@
     }
     const x = player.x - camera.x;
     const y = player.y - camera.y;
+    if (player.steamForm) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5);
+      ctx.fillStyle = `rgba(242,250,255,${0.88 + pulse * 0.08})`;
+      ctx.beginPath();
+      ctx.arc(x + player.w * 0.28, y + player.h * 0.58, 6, 0, Math.PI * 2);
+      ctx.arc(x + player.w * 0.52, y + player.h * 0.36, 8, 0, Math.PI * 2);
+      ctx.arc(x + player.w * 0.75, y + player.h * 0.58, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(188,221,236,0.72)';
+      ctx.fillRect(x + 3, y + player.h * 0.56, player.w - 6, 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillRect(x + 5, y + 6, player.w - 10, 2);
+      return;
+    }
     const dir = player.facing === -1 ? -1 : 1;
     const walkAmount = Math.min(1, Math.abs(player.vx) / 90);
     const walkPhase = Math.sin(time * 12) * 2.4 * walkAmount;
@@ -266,6 +280,71 @@
       ctx.fillStyle = palette.accent;
       ctx.fillRect(x + 3, y + 10, 6, 2);
     }
+  }
+
+  function drawWaterfolk(ctx, waterfolk, camera, time) {
+    if (waterfolk.sleeping && Number.isFinite(waterfolk.sleepBlockX) && Number.isFinite(waterfolk.sleepBlockY)) {
+      const x = waterfolk.sleepBlockX - camera.x - 4;
+      const y = waterfolk.sleepBlockY - camera.y - 5;
+      ctx.fillStyle = '#d7f5ff';
+      ctx.fillRect(x + 1, y + 11, 16, 4);
+      ctx.fillStyle = waterfolk.chief ? '#2f8fc6' : '#4ba6d8';
+      ctx.fillRect(x + 6, y + 7, 10, 5);
+      ctx.fillStyle = '#a3ecff';
+      ctx.fillRect(x + 1, y + 6, 5, 4);
+      ctx.fillStyle = '#174b69';
+      ctx.fillRect(x + 3, y + 7, 1, 1);
+      return;
+    }
+    const x = waterfolk.x - camera.x;
+    const y = waterfolk.y - camera.y;
+    const swim = Math.sin(time * 3.2 + waterfolk.x * 0.02) * 2.2;
+    ctx.fillStyle = waterfolk.chief ? '#2f8fc6' : '#4ba6d8';
+    ctx.fillRect(x + 2, y + 8 + swim * 0.2, 10, 9);
+    ctx.fillStyle = '#a3ecff';
+    ctx.fillRect(x + 3, y + 2 + swim * 0.12, 8, 7);
+    ctx.fillStyle = '#174b69';
+    ctx.fillRect(x + (waterfolk.dir > 0 ? 8 : 4), y + 5 + swim * 0.12, 2, 2);
+    ctx.fillStyle = '#69d0ff';
+    ctx.beginPath();
+    ctx.moveTo(x + 12, y + 12);
+    ctx.lineTo(x + 16, y + 10 + swim * 0.15);
+    ctx.lineTo(x + 16, y + 16 - swim * 0.15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(x + 4, y + 17, 3, 4);
+    ctx.fillRect(x + 8, y + 17, 3, 4);
+    if (waterfolk.chief) {
+      ctx.fillStyle = '#d8f7ff';
+      ctx.fillRect(x + 4, y + 1, 6, 1);
+      ctx.fillRect(x + 5, y, 1, 2);
+      ctx.fillRect(x + 8, y, 1, 2);
+    }
+  }
+
+  function drawGoldenFlowerGuardian(ctx, guardian, camera, time) {
+    const x = guardian.x - camera.x;
+    const y = guardian.y - camera.y;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 4 + guardian.x * 0.01);
+    ctx.fillStyle = '#6f5520';
+    ctx.fillRect(x + 10, y + 18, 24, 28);
+    ctx.fillStyle = '#d2a93e';
+    ctx.fillRect(x + 12, y + 8, 20, 14);
+    ctx.fillStyle = '#fff1a0';
+    ctx.beginPath();
+    ctx.arc(x + 22, y + 15, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#8d6d1b';
+    ctx.fillRect(x + 4, y + 22 + pulse, 8, 6);
+    ctx.fillRect(x + 32, y + 22 - pulse, 8, 6);
+    ctx.fillRect(x + 13, y + 46, 7, 10);
+    ctx.fillRect(x + 24, y + 46, 7, 10);
+    ctx.fillStyle = '#3f2f10';
+    ctx.fillRect(x + (guardian.dir > 0 ? 24 : 18), y + 13, 2, 2);
+    ctx.fillStyle = `rgba(255,227,120,${0.18 + pulse * 0.22})`;
+    ctx.beginPath();
+    ctx.arc(x + 22, y + 18, 20, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawDwarf(ctx, state, dwarf, camera, time) {
@@ -551,5 +630,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawGoldenFlowerGuardian, drawBossHealthBar };
 })();

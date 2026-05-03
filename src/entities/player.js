@@ -58,6 +58,7 @@
     const creative = isCreative(state);
     const spectator = isSpectator(state);
     const creativeFlight = creative && (touchMode || player.creativeFlight);
+    const steamFlight = !!player.steamForm;
     const sprintMultiplier = sprintKey ? SPRINT_FACTOR : WALK_FACTOR;
     const moveSpeed = PLAYER_SPEED * sprintMultiplier;
     const flightSpeed = SWIM_SPEED * sprintMultiplier;
@@ -91,7 +92,13 @@
       return;
     }
 
-    if (creativeFlight) {
+    if (steamFlight) {
+      const flyingDown = !controlsLocked && input.keys.has('KeyS');
+      player.onLadder = false;
+      player.vy = 0;
+      if (jump) player.vy = -flightSpeed;
+      else if (flyingDown) player.vy = flightSpeed;
+    } else if (creativeFlight) {
       const flyingDown = !controlsLocked && input.keys.has('KeyS');
       player.inWater = false;
       player.underwater = false;
@@ -136,7 +143,7 @@
       player.vy += GRAVITY * dt;
     }
 
-    if (inCobweb && !creativeFlight) {
+    if (inCobweb && !creativeFlight && !steamFlight) {
       player.vx *= 0.5;
       player.vy *= 0.5;
     }
@@ -147,7 +154,10 @@
     player.x = clamp(player.x, 0, WORLD_W * TILE - player.w);
 
     if (!creative && !wasOnGround && player.onGround && !player.inWater && preMoveVy > 700) {
-      const damage = Math.ceil((preMoveVy - 700) / 180);
+      const footTx = Math.floor((player.x + player.w / 2) / TILE);
+      const supportTy = Math.floor((player.y + player.h) / TILE);
+      const cushioned = !!(Game.steamQuestSystem && Game.steamQuestSystem.softenFallWithSteam(state, footTx, supportTy));
+      const damage = cushioned ? 0 : Math.ceil((preMoveVy - 700) / 180);
       if (damage > 0) applyPlayerDamage(state, damage, { flash: 0.18 });
     }
 
@@ -166,6 +176,11 @@
       }
     } else {
       player.lavaSoundTimer = 0;
+    }
+
+    if (!creative && !spectator && player.steamForm) {
+      if (under === BLOCK.WATER || inBody === BLOCK.WATER) applyPlayerDamage(state, dt * 2.4, { flash: 0.12, ignoreArmor: true });
+      if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) applyPlayerDamage(state, dt * 5.5, { flash: 0.24, ignoreArmor: true });
     }
 
     if (player.inWater) player.vx *= 0.7;

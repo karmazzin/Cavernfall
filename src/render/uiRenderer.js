@@ -80,6 +80,9 @@
     if (biomeKey === 'deep') return 'Глубины';
     if (biomeKey === 'fire_caves') return 'Огненные пещеры';
     if (biomeKey === 'water_caves') return 'Водные пещеры';
+    if (biomeKey === 'water_surface') return 'Водная гладь';
+    if (biomeKey === 'water_floor') return 'Дно';
+    if (biomeKey === 'golden_garden') return 'Сад золотых цветков';
     if (biomeKey === 'void') return 'Пустота';
     if (biomeKey === 'red_land') return 'Красная земля';
     if (biomeKey === 'lava_lake') return 'Лавовое озеро';
@@ -143,6 +146,33 @@
         label: 'Водный колодец',
         x: well.centerX * TILE,
         y: well.baseY * TILE,
+      };
+    }
+    if (key === 'water_castle') {
+      const castle = state.waterWorldMeta && state.waterWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок водяного',
+        x: castle.centerX * TILE,
+        y: castle.baseY * TILE,
+      };
+    }
+    if (key === 'golden_garden') {
+      const garden = state.waterWorldMeta && state.waterWorldMeta.goldenGarden;
+      if (!garden) return null;
+      return {
+        label: 'Сад золотых цветков',
+        x: garden.centerX * TILE,
+        y: garden.groundY * TILE,
+      };
+    }
+    if (key === 'main_well') {
+      const mainWell = state.waterWorldMeta && state.waterWorldMeta.mainWell;
+      if (!mainWell || !mainWell.revealed) return null;
+      return {
+        label: 'Главный колодец',
+        x: mainWell.centerX * TILE,
+        y: mainWell.baseY * TILE,
       };
     }
     return null;

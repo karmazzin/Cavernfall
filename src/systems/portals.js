@@ -4,8 +4,14 @@
   const { BLOCK } = Game.blocks;
   const { getBlock, setBlock } = Game.world;
   const { ensureDimensions, switchDimension, syncActiveDimension } = Game.state;
-  const { generateFireDimensionBundle } = Game.generation;
-  const ENTITY_GROUPS = ['animals', 'zombies', 'spiders', 'humans', 'dwarves', 'fireGuards'];
+  const { generateFireDimensionBundle, generateWaterDimensionBundle } = Game.generation;
+  const ENTITY_GROUPS = ['animals', 'zombies', 'spiders', 'humans', 'dwarves', 'fireGuards', 'waterfolk'];
+
+  function portalTypeForBlock(blockId) {
+    if (blockId === BLOCK.FIRE_PORTAL) return 'fire';
+    if (blockId === BLOCK.WATER_DIMENSION_PORTAL) return 'water';
+    return null;
+  }
 
   function findTouchedPortalForRect(state, entity) {
     const x0 = Math.floor(entity.x / TILE);
@@ -14,7 +20,8 @@
     const y1 = Math.floor((entity.y + entity.h - 1) / TILE);
     for (let ty = y0; ty <= y1; ty += 1) {
       for (let tx = x0; tx <= x1; tx += 1) {
-        if (getBlock(state, tx, ty) === BLOCK.FIRE_PORTAL) return { tx, ty };
+        const type = portalTypeForBlock(getBlock(state, tx, ty));
+        if (type) return { tx, ty, type };
       }
     }
     return null;
@@ -33,9 +40,10 @@
     if (input && input.mouse && camera) {
       const tx = Math.floor((input.mouse.x / Game.constants.VIEW_ZOOM + camera.x) / TILE);
       const ty = Math.floor((input.mouse.y / Game.constants.VIEW_ZOOM + camera.y) / TILE);
-      if (getBlock(state, tx, ty) === BLOCK.FIRE_PORTAL) {
+      const type = portalTypeForBlock(getBlock(state, tx, ty));
+      if (type) {
         const dist = Math.hypot(tx * TILE + TILE / 2 - playerCx, ty * TILE + TILE / 2 - playerCy);
-        if (dist <= 110) return { tx, ty };
+        if (dist <= 110) return { tx, ty, type };
       }
     }
 
@@ -43,11 +51,12 @@
     const centerTy = Math.floor(playerCy / TILE);
     for (let ty = centerTy - 3; ty <= centerTy + 3; ty += 1) {
       for (let tx = centerTx - 3; tx <= centerTx + 3; tx += 1) {
-        if (getBlock(state, tx, ty) !== BLOCK.FIRE_PORTAL) continue;
+        const type = portalTypeForBlock(getBlock(state, tx, ty));
+        if (!type) continue;
         const dist = Math.hypot(tx * TILE + TILE / 2 - playerCx, ty * TILE + TILE / 2 - playerCy);
         if (dist <= 110 && dist < bestDist) {
           bestDist = dist;
-          best = { tx, ty };
+          best = { tx, ty, type };
         }
       }
     }
@@ -95,21 +104,47 @@
     }
   }
 
+  function ensureWaterLink(state, originPortal) {
+    ensureDimensions(state);
+    if (!state.dimensions.water) {
+      syncActiveDimension(state);
+      state.dimensions.water = generateWaterDimensionBundle(state.worldMeta, state.worldMeta && state.worldMeta.seed);
+    }
+    if (!state.portalLinks.waterGate) {
+      const waterMeta = state.dimensions.water.waterWorldMeta || { portalX: Math.floor(420), portalY: Math.floor(24) };
+      state.portalLinks.waterGate = {
+        overworld: { x: originPortal.tx, y: originPortal.ty },
+        water: { x: waterMeta.portalX, y: waterMeta.portalY },
+      };
+    }
+  }
+
+  function portalBlockForType(type) {
+    return type === 'water' ? BLOCK.WATER_DIMENSION_PORTAL : BLOCK.FIRE_PORTAL;
+  }
+
   function ensureTargetBundle(state, originPortal) {
     ensureDimensions(state);
-    if (state.activeDimension === 'overworld') {
+    if (state.activeDimension === 'overworld' && originPortal.type === 'fire') {
       ensureFireLink(state, originPortal);
       return { name: 'fire', bundle: state.dimensions.fire, portal: state.portalLinks.fireGate.fire };
     }
-    if (state.activeDimension === 'fire' && state.portalLinks.fireGate) {
+    if (state.activeDimension === 'overworld' && originPortal.type === 'water') {
+      ensureWaterLink(state, originPortal);
+      return { name: 'water', bundle: state.dimensions.water, portal: state.portalLinks.waterGate.water };
+    }
+    if (state.activeDimension === 'fire' && originPortal.type === 'fire' && state.portalLinks.fireGate) {
       return { name: 'overworld', bundle: state.dimensions.overworld, portal: state.portalLinks.fireGate.overworld };
+    }
+    if (state.activeDimension === 'water' && originPortal.type === 'water' && state.portalLinks.waterGate) {
+      return { name: 'overworld', bundle: state.dimensions.overworld, portal: state.portalLinks.waterGate.overworld };
     }
     return null;
   }
 
   function teleportViaPortal(state, touched) {
     if (!touched) return false;
-    if (state.activeDimension === 'overworld') {
+    if (state.activeDimension === 'overworld' && touched.type === 'fire') {
       ensureFireLink(state, touched);
       const link = state.portalLinks.fireGate;
       switchDimension(state, 'fire');
@@ -118,11 +153,26 @@
       placePlayerAtPortal(state, link.fire.x, link.fire.y);
       return true;
     }
+    if (state.activeDimension === 'overworld' && touched.type === 'water') {
+      ensureWaterLink(state, touched);
+      const link = state.portalLinks.waterGate;
+      switchDimension(state, 'water');
+      setBlock(state, link.water.x, link.water.y, BLOCK.WATER_DIMENSION_PORTAL);
+      placePlayerAtPortal(state, link.water.x, link.water.y);
+      return true;
+    }
 
-    if (state.activeDimension === 'fire' && state.portalLinks.fireGate) {
+    if (state.activeDimension === 'fire' && touched.type === 'fire' && state.portalLinks.fireGate) {
       const link = state.portalLinks.fireGate;
       switchDimension(state, 'overworld');
       setBlock(state, link.overworld.x, link.overworld.y, BLOCK.FIRE_PORTAL);
+      placePlayerAtPortal(state, link.overworld.x, link.overworld.y);
+      return true;
+    }
+    if (state.activeDimension === 'water' && touched.type === 'water' && state.portalLinks.waterGate) {
+      const link = state.portalLinks.waterGate;
+      switchDimension(state, 'overworld');
+      setBlock(state, link.overworld.x, link.overworld.y, BLOCK.WATER_DIMENSION_PORTAL);
       placePlayerAtPortal(state, link.overworld.x, link.overworld.y);
       return true;
     }
@@ -153,7 +203,7 @@
         ensureEntityArrays(targetInfo.bundle);
         const target = targetInfo.bundle[key];
         if (!Array.isArray(target)) continue;
-        setBlock(targetInfo.bundle, targetInfo.portal.x, targetInfo.portal.y, BLOCK.FIRE_PORTAL);
+        setBlock(targetInfo.bundle, targetInfo.portal.x, targetInfo.portal.y, portalBlockForType(touched.type));
         source.splice(i, 1);
         placeEntityAtPortal(entity, targetInfo.portal.x, targetInfo.portal.y);
         target.push(entity);

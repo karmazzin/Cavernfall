@@ -13,6 +13,12 @@
     legs: ITEM.FRIENDSHIP_LEGGINGS,
     feet: ITEM.FRIENDSHIP_BOOTS,
   };
+  const STEAM_ARMOR_BY_SLOT = {
+    head: ITEM.STEAM_HELMET,
+    chest: ITEM.STEAM_CHESTPLATE,
+    legs: ITEM.STEAM_LEGGINGS,
+    feet: ITEM.STEAM_BOOTS,
+  };
 
   function createArmorSlots() {
     return {
@@ -66,6 +72,15 @@
     for (const slotId of ARMOR_SLOT_ORDER) {
       const slot = armor[slotId];
       if (!slot || slot.count <= 0 || slot.id !== FRIENDSHIP_ARMOR_BY_SLOT[slotId]) return false;
+    }
+    return true;
+  }
+
+  function hasFullSteamArmor(state) {
+    const armor = ensureArmorSlots(state.player);
+    for (const slotId of ARMOR_SLOT_ORDER) {
+      const slot = armor[slotId];
+      if (!slot || slot.count <= 0 || slot.id !== STEAM_ARMOR_BY_SLOT[slotId]) return false;
     }
     return true;
   }
@@ -128,6 +143,7 @@
     getMaxHealth,
     clampPlayerHealthToMax,
     hasFullFriendshipArmor,
+    hasFullSteamArmor,
     hasFriendshipAmuletAura,
     getDamageMultiplier,
     applyPlayerDamage,

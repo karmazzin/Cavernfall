@@ -12,6 +12,10 @@
     return id === BLOCK.BLACKSTONE || id === BLOCK.BASALT || id === BLOCK.RED_EARTH;
   }
 
+  function canHitPlayer(state, guard) {
+    return aabb(guard.x - 5, guard.y - 5, guard.w + 10, guard.h + 10, state.player.x, state.player.y, state.player.w, state.player.h);
+  }
+
   function updateFireGuards(state, dt) {
     for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
       const guard = state.fireGuards[i];
@@ -76,7 +80,7 @@
         guard.vy = Math.min(guard.vy, 120);
       }
 
-      if (aabb(guard.x, guard.y, guard.w, guard.h, state.player.x, state.player.y, state.player.w, state.player.h) && guard.attackCd <= 0) {
+      if (canHitPlayer(state, guard) && guard.attackCd <= 0) {
         guard.attackCd = 0.9;
         applyPlayerDamage(state, 3, { flash: 0.25 });
       }
