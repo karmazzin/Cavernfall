@@ -113,6 +113,7 @@
       portalLinks: state.portalLinks,
       player: state.player,
       gameOver: state.gameOver,
+      hardcoreDeath: state.hardcoreDeath,
       cycleTime: state.cycleTime,
       satietyTick: state.satietyTick,
       starvationTick: state.starvationTick,
@@ -315,6 +316,7 @@
           }
         : { fireGate: null, waterGate: null };
       state.gameOver = !!data.gameOver;
+      state.hardcoreDeath = data.hardcoreDeath && typeof data.hardcoreDeath === 'object' ? data.hardcoreDeath : null;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;
       state.starvationTick = Number.isFinite(data.starvationTick) ? data.starvationTick : state.starvationTick;
@@ -350,6 +352,10 @@
         state.player.hotbar = normalizeSlotArray(data.player.hotbar, HOTBAR_SIZE);
         state.player.inventory = normalizeSlotArray(data.player.inventory, 27);
         state.player.armor = normalizeArmorSlots(data.player.armor);
+        if (!state.player.spawnPoint || typeof state.player.spawnPoint !== 'object') {
+          state.player.spawnPoint = { dimension: 'overworld', x: state.player.x, y: state.player.y };
+        }
+        if (!Array.isArray(state.player.sleepRespawnHistory)) state.player.sleepRespawnHistory = [];
       }
 
       state.crafting.open = false;

@@ -76,6 +76,8 @@
       sleepTimer: 0,
       sleepBlockX: null,
       sleepBlockY: null,
+      spawnPoint: null,
+      sleepRespawnHistory: [],
       steamCloudCooldown: 0,
       steamForm: false,
     };
@@ -152,6 +154,7 @@
       },
       player: createPlayer(),
       gameOver: false,
+      hardcoreDeath: null,
       cycleTime: 0,
       satietyTick: 0,
       starvationTick: 0,

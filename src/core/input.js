@@ -4,13 +4,20 @@
   function setupInput(canvas, state, actions) {
     const keys = new Set();
     const mouse = { x: 0, y: 0, down: false, justPressed: false, button: 0 };
+    const touchTarget = { x: 0, y: 0, active: false, lastTapAt: 0 };
     const touchControls = document.getElementById('touchControls');
     const touchStick = document.getElementById('touchStick');
     const touchStickKnob = document.getElementById('touchStickKnob');
     const touchState = { active: false, pointerId: null };
 
     function detectTouchMode() {
-      return window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 900;
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const anyCoarse = window.matchMedia('(any-pointer: coarse)').matches;
+      const touchPoints = Math.max(navigator.maxTouchPoints || 0, navigator.msMaxTouchPoints || 0);
+      const ua = navigator.userAgent || '';
+      const tabletLike = /iPad|Tablet|Android(?!.*Mobile)|Silk/i.test(ua);
+      const smallScreen = Math.min(window.innerWidth, window.innerHeight) <= 1100;
+      return coarse || anyCoarse || touchPoints > 0 || (tabletLike && smallScreen) || window.innerWidth <= 1024;
     }
 
     function isTouchMode() {
@@ -60,6 +67,7 @@
       keys.delete('KeyS');
       mouse.down = false;
       mouse.justPressed = false;
+      touchTarget.active = false;
       touchState.active = false;
       touchState.pointerId = null;
       if (touchStickKnob) {
@@ -87,6 +95,15 @@
       const rect = canvas.getBoundingClientRect();
       mouse.x = clientX - rect.left;
       mouse.y = clientY - rect.top;
+    }
+
+    function updateTouchTarget() {
+      if (!isTouchMode()) return null;
+      const verticalOffset = Math.min(52, Math.max(32, canvas.height * 0.08));
+      touchTarget.x = mouse.x;
+      touchTarget.y = mouse.y - verticalOffset;
+      touchTarget.active = true;
+      return { x: touchTarget.x, y: touchTarget.y };
     }
 
     function handleSlotNumber(slotNumber) {
@@ -118,7 +135,7 @@
       if (event.code === 'KeyF' && !event.repeat) actions.toggleCreativeFlight();
       if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
       if (event.code === 'Escape' && !event.repeat) actions.togglePause();
-      if (state.gameOver && event.code === 'KeyR') actions.restart();
+      if (state.gameOver && !state.hardcoreDeath && event.code === 'KeyR') actions.restart();
 
       let slotNumber = null;
       if (event.code.startsWith('Digit')) slotNumber = Number(event.code.slice(5));
@@ -166,9 +183,22 @@
         mouse.justPressed = false;
         return;
       }
-      mouse.down = true;
-      mouse.justPressed = true;
+      const prevX = touchTarget.x;
+      const prevY = touchTarget.y;
+      const prevActive = touchTarget.active;
+      const nextTarget = updateTouchTarget();
+      const now = performance.now();
+      const sameTarget = nextTarget && prevActive && Math.abs(prevX - nextTarget.x) <= 14 && Math.abs(prevY - nextTarget.y) <= 14;
+      const recentlySelected = sameTarget && now - touchTarget.lastTapAt <= 700;
       mouse.button = event.touches.length > 1 ? 2 : 0;
+      if (recentlySelected) {
+        mouse.down = true;
+        mouse.justPressed = true;
+      } else {
+        mouse.down = false;
+        mouse.justPressed = false;
+      }
+      touchTarget.lastTapAt = now;
     }
 
     function onTouchMove(event) {
@@ -177,12 +207,16 @@
       const touch = event.changedTouches[0];
       if (!touch) return;
       updateMousePosition(touch.clientX, touch.clientY);
+      updateTouchTarget();
     }
 
     function onTouchEnd(event) {
       if (!isTouchMode()) return;
       event.preventDefault();
-      if (event.touches.length === 0) mouse.down = false;
+      if (event.touches.length === 0) {
+        mouse.down = false;
+        mouse.justPressed = false;
+      }
     }
 
     function bindHoldButton(button, code) {
@@ -310,6 +344,7 @@
     return {
       keys,
       mouse,
+      touchTarget,
       syncUiState() {
         ensureUiState();
         updateModeUi();

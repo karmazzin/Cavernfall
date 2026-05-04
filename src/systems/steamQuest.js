@@ -32,7 +32,7 @@
       itemId === ITEM.STEAM_BOOTS;
   }
 
-  function spawnDroppedStack(state, x, y, itemId, count, durability = null) {
+  function spawnDroppedStack(state, x, y, itemId, count, durability = null, pickupDelay = 0) {
     state.foods.push({
       x,
       y,
@@ -44,6 +44,7 @@
       itemId,
       amount: count,
       durability,
+      pickupDelay,
     });
   }
 
@@ -56,7 +57,7 @@
     for (let i = 0; i < slots.length; i += 1) {
       const slot = slots[i];
       if (!slot || slot.id == null || slot.count <= 0 || preservedCloudItem(slot.id)) continue;
-      spawnDroppedStack(state, baseX + ((i % 6) - 2.5) * 10, baseY + Math.floor(i / 6) * 4, slot.id, slot.count, slot.durability ?? null);
+      spawnDroppedStack(state, baseX + ((i % 6) - 2.5) * 10, baseY + Math.floor(i / 6) * 4, slot.id, slot.count, slot.durability ?? null, 1.1);
       slot.id = null;
       slot.count = 0;
       slot.durability = null;
@@ -65,7 +66,7 @@
     for (const slotId of ['head', 'chest', 'legs', 'feet']) {
       const slot = player.armor && player.armor[slotId];
       if (!slot || slot.id == null || slot.count <= 0 || preservedCloudItem(slot.id)) continue;
-      spawnDroppedStack(state, baseX + randOffset(slotId), baseY - 10, slot.id, slot.count, slot.durability ?? null);
+      spawnDroppedStack(state, baseX + randOffset(slotId), baseY - 10, slot.id, slot.count, slot.durability ?? null, 1.1);
       slot.id = null;
       slot.count = 0;
       slot.durability = null;
@@ -140,7 +141,7 @@
   function useSteamCloud(state) {
     if (!hasSteamPower(state)) return false;
     const player = state.player;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return false;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return false;
     if (player.steamForm) {
       setSteamForm(state, false);
       player.vy = Math.min(player.vy, 0);

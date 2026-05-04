@@ -14,6 +14,8 @@
     if (mode === 'creative') return 'Творческий';
     if (mode === 'infinite_inventory') return 'Бесконечный инвентарь';
     if (mode === 'spectator') return 'Спектатор';
+    if (mode === 'hardcore') return 'Хардкор';
+    if (mode === 'hardcore_spectator') return 'Хардкорный спектатор';
     return 'Выживание';
   }
 
@@ -81,6 +83,7 @@
             <button class="menu-mode-btn ${model.mode === 'creative' ? 'is-active' : ''}" data-menu-mode="creative">Творческий</button>
             <button class="menu-mode-btn ${model.mode === 'infinite_inventory' ? 'is-active' : ''}" data-menu-mode="infinite_inventory">Бесконечный инвентарь</button>
             <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
+            <button class="menu-mode-btn ${model.mode === 'hardcore' ? 'is-active' : ''}" data-menu-mode="hardcore">Хардкор</button>
           </div>
         </div>
         <div class="menu-field">
@@ -135,7 +138,9 @@
                       ? model.cavernBiome === 'mix'
                         ? 'Сплошной пещерный мир со всеми пещерными биомами: пещеры, пещеры гномов, глубины, огненные и водные пещеры.'
                         : `Сплошной пещерный мир в биоме: ${cavernBiomeLabel(model.cavernBiome)}.`
-                      : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>
+              : model.mode === 'hardcore'
+                ? 'Хардкор: после смерти нельзя продолжить игру. Можно только удалить мир или стать безвыходным спектатором.'
+                : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>
         <div class="menu-actions menu-actions-inline">
           <button class="menu-btn menu-btn-primary" data-menu-action="create-world">Создать</button>
           <button class="menu-btn" data-menu-action="back-main">Назад</button>

@@ -36,7 +36,7 @@
   }
 
   function isSpectator(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+    return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
   function getBlockDrop(blockId) {
@@ -109,6 +109,37 @@
     return {
       tx: Math.floor((mx / VIEW_ZOOM + camera.x) / TILE),
       ty: Math.floor((my / VIEW_ZOOM + camera.y) / TILE),
+    };
+  }
+
+  function resolvePointerTarget(state, input, camera) {
+    const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
+    const pointerX = touchMode && input.touchTarget && input.touchTarget.active ? input.touchTarget.x : input.mouse.x;
+    const pointerY = touchMode && input.touchTarget && input.touchTarget.active ? input.touchTarget.y : input.mouse.y;
+    const worldX = pointerX / VIEW_ZOOM + camera.x;
+    const worldY = pointerY / VIEW_ZOOM + camera.y;
+    const baseTx = Math.floor(worldX / TILE);
+    const baseTy = Math.floor(worldY / TILE);
+    let best = { tx: baseTx, ty: baseTy };
+    let bestScore = Infinity;
+    for (let yy = baseTy - 1; yy <= baseTy + 1; yy += 1) {
+      for (let xx = baseTx - 1; xx <= baseTx + 1; xx += 1) {
+        const cx = xx * TILE + TILE / 2;
+        const cy = yy * TILE + TILE / 2;
+        const score = Math.hypot(cx - worldX, cy - worldY);
+        if (score < bestScore) {
+          bestScore = score;
+          best = { tx: xx, ty: yy };
+        }
+      }
+    }
+    return {
+      tx: best.tx,
+      ty: best.ty,
+      wx: best.tx * TILE + TILE / 2,
+      wy: best.ty * TILE + TILE / 2,
+      pointerX,
+      pointerY,
     };
   }
 
@@ -211,6 +242,16 @@
   function useNearbyPillow(state, input, camera) {
     const target = findUsablePillow(state, input, camera);
     if (!target) return false;
+    if (!Array.isArray(state.player.sleepRespawnHistory)) state.player.sleepRespawnHistory = [];
+    const lastPoint = state.player.sleepRespawnHistory[state.player.sleepRespawnHistory.length - 1];
+    if (!lastPoint || lastPoint.dimension !== state.activeDimension || lastPoint.tx !== target.tx || lastPoint.ty !== target.ty) {
+      state.player.sleepRespawnHistory.push({
+        dimension: state.activeDimension,
+        tx: target.tx,
+        ty: target.ty,
+      });
+      if (state.player.sleepRespawnHistory.length > 16) state.player.sleepRespawnHistory.shift();
+    }
     state.player.sleeping = true;
     state.player.sleepTimer = 0.8;
     state.player.sleepBlockX = target.tx * TILE;
@@ -304,9 +345,10 @@
       return;
     }
 
-    const { tx, ty } = screenToTile(input.mouse.x, input.mouse.y, camera);
-    const wx = input.mouse.x / VIEW_ZOOM + camera.x;
-    const wy = input.mouse.y / VIEW_ZOOM + camera.y;
+    const pointer = resolvePointerTarget(state, input, camera);
+    const { tx, ty } = pointer;
+    const wx = pointer.wx;
+    const wy = pointer.wy;
     const rightClick = input.mouse.button === 2;
     const dist = Math.hypot(
       tx * TILE + TILE / 2 - (state.player.x + state.player.w / 2),
@@ -629,6 +671,7 @@
 
   Game.interaction = {
     screenToTile,
+    resolvePointerTarget,
     canPlaceBlock,
     useNearbyDoor,
     useNearbyPillow,

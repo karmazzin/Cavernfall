@@ -42,7 +42,7 @@
   }
 
   function isSpectatorMode(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+    return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
   function clearSlot(slot) {

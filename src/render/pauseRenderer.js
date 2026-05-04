@@ -8,6 +8,10 @@
     return !!(state.worldMeta && state.worldMeta.mode !== 'survival');
   }
 
+  function isHardcoreSpectator(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'hardcore_spectator');
+  }
+
   function drawCompassArrow(ctx, x, y, dx, dy, scale = 1) {
     const len = 24 * scale;
     const angle = Math.atan2(dy, dx);
@@ -154,7 +158,7 @@
       : state.pause.showControls
         ? (mobile ? (compactHeight ? 286 : 320) : 300)
         : state.pause.showModePicker
-          ? (mobile ? (compactHeight ? 346 : 388) : 390)
+          ? (mobile ? (compactHeight ? 404 : 452) : 454)
           : state.pause.showAssistant
             ? (mobile ? (compactHeight ? 146 : 168) : 176)
           : state.pause.showCompass
@@ -194,9 +198,10 @@
         panel,
         buttons: [
           { id: 'mode_survival', label: 'Выживание', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
-          { id: 'mode_creative', label: 'Творческий', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
-          { id: 'mode_infinite_inventory', label: 'Бесконечный инвентарь', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
-          { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
+          { id: 'mode_hardcore', label: 'Хардкор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
+          { id: 'mode_creative', label: 'Творческий', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
+          { id: 'mode_infinite_inventory', label: 'Бесконечный инвентарь', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
+          { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 4, w: panel.w - 40, h: buttonH },
           { id: 'mode_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: buttonH },
         ],
       };
@@ -238,13 +243,13 @@
       buttons: [
         { id: 'continue', label: 'Продолжить', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
         { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
-        { id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
-        ...(hasCompassMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH }] : []),
-        { id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (3 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (4 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (5 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (6 + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (7 + creativeExtra), w: panel.w - 40, h: buttonH },
+        ...(!isHardcoreSpectator(state) ? [{ id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH }] : []),
+        ...(hasCompassMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (isHardcoreSpectator(state) ? 2 : 3), w: panel.w - 40, h: buttonH }] : []),
+        { id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 2 : 3) + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 3 : 4) + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 4 : 5) + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 5 : 6) + creativeExtra), w: panel.w - 40, h: buttonH },
+        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 6 : 7) + creativeExtra), w: panel.w - 40, h: buttonH },
       ],
     };
   }
@@ -317,9 +322,11 @@
     } else if (state.pause.showModePicker) {
       const labels = {
         survival: 'Выживание',
+        hardcore: 'Хардкор',
         creative: 'Творческий',
         infinite_inventory: 'Бесконечный инвентарь',
         spectator: 'Спектатор',
+        hardcore_spectator: 'Хардкорный спектатор',
       };
       const currentMode = state.worldMeta && state.worldMeta.mode ? state.worldMeta.mode : 'survival';
       ctx.font = `${compactHeight ? 13 : 15}px Arial`;

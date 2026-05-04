@@ -12,7 +12,7 @@
   const MAX_SPIDERS = 14;
 
   function ignoresPlayer(state) {
-    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
   function canHitPlayer(state, spider) {

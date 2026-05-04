@@ -16,7 +16,7 @@
   }
 
   function isSpectator(state) {
-    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+    return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
   function updatePlayer(state, input, dt) {
@@ -167,7 +167,7 @@
     const inBody = getBlock(state, footTx, Math.floor((player.y + player.h / 2) / TILE));
 
     const lavaImmune = hasFullFriendshipArmor(state) || hasFriendshipAmuletAura(state, true);
-    if (!creative && !spectator && (under === BLOCK.LAVA || inBody === BLOCK.LAVA) && !lavaImmune) {
+    if (!creative && !spectator && !player.steamForm && (under === BLOCK.LAVA || inBody === BLOCK.LAVA) && !lavaImmune) {
       applyPlayerDamage(state, dt * 2, { flash: 0.2 });
       player.lavaSoundTimer -= dt;
       if (player.lavaSoundTimer <= 0) {
@@ -179,8 +179,8 @@
     }
 
     if (!creative && !spectator && player.steamForm) {
-      if (under === BLOCK.WATER || inBody === BLOCK.WATER) applyPlayerDamage(state, dt * 2.4, { flash: 0.12, ignoreArmor: true });
-      if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) applyPlayerDamage(state, dt * 5.5, { flash: 0.24, ignoreArmor: true });
+      if (under === BLOCK.WATER || inBody === BLOCK.WATER) applyPlayerDamage(state, dt * 2.4, { flash: 0.12, ignoreArmor: true, allowSteamDamage: true });
+      if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) applyPlayerDamage(state, dt * 5.5, { flash: 0.24, ignoreArmor: true, allowSteamDamage: true });
     }
 
     if (player.inWater) player.vx *= 0.7;

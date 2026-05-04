@@ -37,7 +37,7 @@
   const { setupInput } = Game.input;
   const { ensureCraftingState, handleCraftingPointer, toggleCrafting, closeCrafting } = Game.crafting;
   const { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave } = Game.saveSystem;
-  const { draw } = Game.renderer;
+  const { draw, getHardcoreDeathLayout } = Game.renderer;
   const { updateAchievements } = Game.achievementsSystem;
   const { drawMenuBackground } = Game.menuRenderer;
   const { createMenuUi } = Game.menuUi;
@@ -66,7 +66,15 @@
   }
 
   function isSpectatorMode() {
-    return !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+    return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+  }
+
+  function isHardcoreMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'hardcore');
+  }
+
+  function isHardcoreSpectatorMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'hardcore_spectator');
   }
 
   function toggleCreativeFlight() {
@@ -155,7 +163,7 @@
     for (const key of Object.keys(state)) delete state[key];
     Object.assign(state, nextState);
     ensureCraftingState(state);
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') {
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) {
       state.crafting.open = false;
       state.crafting.chestOpenKey = null;
       state.crafting.tradeSettlementId = null;
@@ -196,7 +204,13 @@
     withSeed(meta.seed, () => generateWorld(state));
     ensureDimensions(state);
     spawnAnimals(state);
-    if (meta.mode !== 'creative' && meta.mode !== 'spectator' && meta.mode !== 'infinite_inventory') seedStarterInventory();
+    state.player.spawnPoint = {
+      dimension: 'overworld',
+      x: state.player.x,
+      y: state.player.y,
+    };
+    state.player.sleepRespawnHistory = [];
+    if (meta.mode !== 'creative' && meta.mode !== 'spectator' && meta.mode !== 'hardcore_spectator' && meta.mode !== 'infinite_inventory') seedStarterInventory();
   }
 
   function startNewWorld(options) {
@@ -283,11 +297,18 @@
   function applyWorldMode(mode) {
     if (!state.worldMeta) return;
     const currentMode = state.worldMeta.mode || 'survival';
+    if (currentMode === 'hardcore_spectator') {
+      state.pause.statusText = 'Хардкорный спектатор не может сменить режим.';
+      state.pause.showModePicker = false;
+      return;
+    }
     const modeLabels = {
       survival: 'Выживание',
+      hardcore: 'Хардкор',
       creative: 'Творческий',
       infinite_inventory: 'Бесконечный инвентарь',
       spectator: 'Спектатор',
+      hardcore_spectator: 'Хардкорный спектатор',
     };
     if (currentMode === mode) {
       state.pause.statusText = `Режим уже: ${modeLabels[mode] || 'Выживание'}`;
@@ -306,8 +327,9 @@
       state.breaking = null;
     }
 
-    if (mode !== 'spectator') {
+    if (mode !== 'spectator' && mode !== 'hardcore_spectator') {
       state.gameOver = false;
+      state.hardcoreDeath = null;
       if (state.player.health <= 0) state.player.health = getMaxHealth(state);
     }
 
@@ -361,6 +383,7 @@
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'main_well' ? null : 'main_well';
       }
       if (button.id === 'mode_survival') applyWorldMode('survival');
+      if (button.id === 'mode_hardcore') applyWorldMode('hardcore');
       if (button.id === 'mode_creative') applyWorldMode('creative');
       if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
       if (button.id === 'mode_spectator') applyWorldMode('spectator');
@@ -447,7 +470,7 @@
       if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !useSteamCloud(state)) eatFood(state);
     },
     restart: () => {
-      if (app.screen === 'playing') resetCurrentWorld();
+      if (app.screen === 'playing' && !state.hardcoreDeath) resetCurrentWorld();
     },
     unlockAudio: () => Game.audio.unlock(),
     toggleCreativeFlight,
@@ -464,6 +487,122 @@
   refreshWorldList();
   menu.render(app);
   syncBodyUiState();
+
+  function getBundleForDimension(dimension) {
+    if (!dimension) return null;
+    if (state.activeDimension === dimension) return state;
+    if (!state.dimensions || typeof state.dimensions !== 'object') return null;
+    return state.dimensions[dimension] || null;
+  }
+
+  function bundleBlockAt(bundle, tx, ty) {
+    if (!bundle || !Array.isArray(bundle.world)) return BLOCK.BEDROCK;
+    if (ty < 0 || ty >= bundle.world.length) return BLOCK.BEDROCK;
+    const row = bundle.world[ty];
+    if (!Array.isArray(row) || tx < 0 || tx >= row.length) return BLOCK.BEDROCK;
+    return row[tx];
+  }
+
+  function findRespawnPoint() {
+    const history = Array.isArray(state.player.sleepRespawnHistory) ? state.player.sleepRespawnHistory : [];
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      const point = history[i];
+      if (!point || !Number.isFinite(point.tx) || !Number.isFinite(point.ty) || !point.dimension) continue;
+      const bundle = getBundleForDimension(point.dimension);
+      if (!bundle) continue;
+      if (bundleBlockAt(bundle, point.tx, point.ty) !== BLOCK.PILLOW) continue;
+      return {
+        dimension: point.dimension,
+        x: point.tx * Game.constants.TILE + 2,
+        y: point.ty * Game.constants.TILE - state.player.h + 12,
+      };
+    }
+    const spawnPoint = state.player.spawnPoint;
+    if (spawnPoint && Number.isFinite(spawnPoint.x) && Number.isFinite(spawnPoint.y) && spawnPoint.dimension) {
+      return {
+        dimension: spawnPoint.dimension,
+        x: spawnPoint.x,
+        y: spawnPoint.y,
+      };
+    }
+    return {
+      dimension: state.activeDimension || 'overworld',
+      x: state.player.x,
+      y: state.player.y,
+    };
+  }
+
+  function respawnPlayer() {
+    ensureDimensions(state);
+    const point = findRespawnPoint();
+    if (point.dimension && point.dimension !== state.activeDimension) switchDimension(state, point.dimension);
+    state.player.health = getMaxHealth(state);
+    state.player.breath = Game.constants.BREATH_TOTAL;
+    state.player.x = point.x;
+    state.player.y = point.y;
+    state.player.vx = 0;
+    state.player.vy = 0;
+    state.player.onGround = false;
+    state.player.sleeping = false;
+    state.player.sleepTimer = 0;
+    state.player.sleepBlockX = null;
+    state.player.sleepBlockY = null;
+    state.player.respawnInvuln = 1.5;
+    state.player.creativeFlight = false;
+    state.gameOver = false;
+    state.hardcoreDeath = null;
+    state.ui.noticeText = 'Ты возродился.';
+    state.ui.noticeTimer = 3;
+  }
+
+  function onPlayerDeath() {
+    if (state.gameOver) return;
+    if (isCreativeMode() || isSpectatorMode() || isInfiniteInventoryMode()) return;
+    if (isHardcoreMode()) {
+      state.gameOver = true;
+      state.hardcoreDeath = { at: Date.now() };
+      return;
+    }
+    respawnPlayer();
+  }
+
+  function handleHardcoreDeathPointer(inputRef, canvasRef) {
+    if (!state.gameOver || !state.hardcoreDeath || !inputRef.mouse.justPressed) return false;
+    const layout = getHardcoreDeathLayout(canvasRef);
+    const { x, y } = inputRef.mouse;
+    for (const button of layout.buttons) {
+      if (!contains(button, x, y)) continue;
+      if (button.id === 'hardcore_delete') {
+        if (state.worldMeta && state.worldMeta.id) deleteWorld(state.worldMeta.id);
+        refreshWorldList();
+        app.currentWorldId = null;
+        app.screen = 'menu';
+        state.gameOver = false;
+        state.hardcoreDeath = null;
+        menu.render(app);
+        syncBodyUiState();
+      }
+      if (button.id === 'hardcore_spectator') {
+        state.worldMeta.mode = 'hardcore_spectator';
+        state.worldMeta.updatedAt = Date.now();
+        state.gameOver = false;
+        state.hardcoreDeath = null;
+        state.player.health = getMaxHealth(state);
+        state.player.breath = Game.constants.BREATH_TOTAL;
+        state.player.vx = 0;
+        state.player.vy = 0;
+        state.player.creativeFlight = false;
+        state.player.respawnInvuln = 1.5;
+        closeCrafting(state);
+        state.ui.noticeText = 'Мир продолжится только в хардкорном спектаторе.';
+        state.ui.noticeTimer = 4;
+      }
+      inputRef.mouse.justPressed = false;
+      return true;
+    }
+    inputRef.mouse.justPressed = false;
+    return true;
+  }
 
   function update(dt) {
     syncBodyUiState();
@@ -634,14 +773,13 @@
 
     const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
     if (worldType === 'floating_islands' && state.player.y > state.world.length * Game.constants.TILE + 32) {
-      const isSpectator = !!(state.worldMeta && state.worldMeta.mode === 'spectator');
+      const isSpectator = isSpectatorMode();
       if (!isSpectator) {
         state.player.health = 0;
-        state.gameOver = true;
       }
     }
 
-    if (!isCreativeMode() && !isSpectatorMode() && !isInfiniteInventoryMode() && state.player.health <= 0) state.gameOver = true;
+    if (!isCreativeMode() && !isSpectatorMode() && !isInfiniteInventoryMode() && state.player.health <= 0) onPlayerDeath();
   }
 
   const camera = createCamera(state, canvas);
@@ -660,7 +798,14 @@
 
     updateCamera(camera, state, canvas);
 
-    if (state.pause.open) {
+    if (state.gameOver && state.hardcoreDeath) {
+      if (handleHardcoreDeathPointer(input, canvas)) {
+        updateCamera(camera, state, canvas);
+        draw(ctx, canvas, state, camera, input);
+        requestAnimationFrame(loop);
+        return;
+      }
+    } else if (state.pause.open) {
       if (handlePausePointer(input, canvas)) {
         updateCamera(camera, state, canvas);
         draw(ctx, canvas, state, camera, input);

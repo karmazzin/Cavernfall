@@ -10,6 +10,7 @@
     for (let i = state.foods.length - 1; i >= 0; i -= 1) {
       const food = state.foods[i];
       food.t += dt;
+      food.pickupDelay = Math.max(0, (food.pickupDelay || 0) - dt);
 
       if (Game.firePyramidSystem && Game.firePyramidSystem.tryActivateFirePyramid(state, food)) {
         state.foods.splice(i, 1);
@@ -35,7 +36,7 @@
         continue;
       }
 
-      if (aabb(food.x, food.y, food.w, food.h, state.player.x, state.player.y, state.player.w, state.player.h)) {
+      if ((food.pickupDelay || 0) <= 0 && aabb(food.x, food.y, food.w, food.h, state.player.x, state.player.y, state.player.w, state.player.h)) {
         if (addToInventory(state, food.itemId, food.amount, food.durability ?? null)) {
           if (Game.achievementsSystem) Game.achievementsSystem.updateAchievements(state, 999);
           state.foods.splice(i, 1);

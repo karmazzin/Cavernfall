@@ -5,7 +5,7 @@
   const { clamp } = Game.math;
   const { getBlock, getLocationInfo } = Game.world;
   const { ITEM } = Game.items;
-  const { countItem } = Game.inventory;
+  const { countItem, selectedItemId, selectedPlaceableId } = Game.inventory;
   const { phaseInfo } = Game.dayCycle;
   const { getWeatherState, WEATHER } = Game.weatherSystem;
   const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
@@ -18,7 +18,7 @@
   const { getDoorAt } = Game.doorSystem;
   const { findUsablePortal } = Game.portalSystem;
   const { getDomeActionTarget } = Game.waterDimensionSystem;
-  const { findUsablePillow, findUsableWaterCrystal, hasAllFriendshipTools } = Game.interaction;
+  const { findUsablePillow, findUsableWaterCrystal, hasAllFriendshipTools, canPlaceBlock, resolvePointerTarget } = Game.interaction;
 
   let darknessMaskCanvas = null;
   let darknessMaskCtx = null;
@@ -241,7 +241,7 @@
 
   function getHoveredChest(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     if (input.mouse.x < 0 || input.mouse.y < 0 || input.mouse.x > canvas.width || input.mouse.y > canvas.height) return null;
     const tx = Math.floor((input.mouse.x / VIEW_ZOOM + camera.x) / TILE);
@@ -258,7 +258,7 @@
 
   function getHoveredHuman(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     const wx = input.mouse.x / VIEW_ZOOM + camera.x;
     const wy = input.mouse.y / VIEW_ZOOM + camera.y;
@@ -274,7 +274,7 @@
 
   function getHoveredPortal(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     if (input.mouse.x < 0 || input.mouse.y < 0 || input.mouse.x > canvas.width || input.mouse.y > canvas.height) return null;
     const target = findUsablePortal(state, input, camera);
@@ -360,7 +360,7 @@
 
   function getHoveredPillow(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver || state.player.sleeping) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     const target = findUsablePillow(state, input, camera);
     if (!target) return null;
@@ -395,7 +395,7 @@
 
   function getHoveredDungeonSeal(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     const dungeon = state.fireDungeon;
     if (state.activeDimension !== 'fire' || !dungeon || dungeon.released || !hasFireDungeonKey(state)) return null;
@@ -436,9 +436,44 @@
     ctx.restore();
   }
 
+  function drawTouchTarget(ctx, state, camera, input, time) {
+    if (!(state.ui && state.ui.controlMode === 'touch') || !input.touchTarget || !input.touchTarget.active) return;
+    const target = resolvePointerTarget(state, input, camera);
+    if (!target) return;
+    const { tx, ty } = target;
+    const sx = tx * TILE - camera.x;
+    const sy = ty * TILE - camera.y;
+    const blockId = getBlock(state, tx, ty);
+    const creativeLike = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'infinite_inventory'));
+    const selectedBlockId = creativeLike ? selectedItemId(state) : selectedPlaceableId(state);
+    const canPreviewPlacement = selectedBlockId && canPlaceBlock(state, tx, ty, selectedBlockId);
+    if (canPreviewPlacement) {
+      ctx.save();
+      ctx.globalAlpha = 0.42 + 0.08 * Math.sin(time * 6);
+      drawBlock(ctx, selectedBlockId, sx, sy, time);
+      ctx.restore();
+    } else if (blockId !== BLOCK.AIR) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.strokeStyle = canPreviewPlacement ? 'rgba(120,255,180,0.96)' : 'rgba(255,230,120,0.96)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+    ctx.fillStyle = 'rgba(18,14,10,0.86)';
+    ctx.fillRect(sx - 6, sy - 18, 64, 14);
+    ctx.fillStyle = '#fff2cf';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(canPreviewPlacement ? 'Тап ещё раз' : 'Цель', sx - 2, sy - 7);
+    ctx.restore();
+  }
+
   function getHoveredWaterCrystal(state, camera, input, canvas) {
     if (!input.mouse || state.pause.open || state.crafting.open || state.gameOver) return null;
-    if (state.worldMeta && state.worldMeta.mode === 'spectator') return null;
+    if (state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) return null;
     if (state.ui && state.ui.controlMode === 'touch') return null;
     const target = findUsableWaterCrystal(state, input, camera);
     if (!target) return null;
@@ -645,6 +680,7 @@
       sw: (dome.x1 - dome.x0 + 1) * TILE,
       sh: (dome.y1 - dome.y0 + 1) * TILE,
     }, Game.combat.hasFullFriendshipArmor(state));
+    drawTouchTarget(ctx, state, renderCamera, input, time);
 
     if (state.breaking) {
       const px = state.breaking.tx * TILE - renderCamera.x;
@@ -736,7 +772,28 @@
     drawCraftingOverlay(ctx, canvas, state, input);
     drawPauseOverlay(ctx, canvas, state);
 
-    if (state.gameOver) {
+    if (state.gameOver && state.hardcoreDeath) {
+      const layout = getHardcoreDeathLayout(canvas);
+      ctx.fillStyle = 'rgba(0,0,0,0.78)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
+      ctx.font = `bold ${touchMode ? 28 : 38}px Arial`;
+      ctx.fillText('Ты больше не можешь продолжать игру', canvas.width / 2, layout.panel.y + 64);
+      ctx.font = `${touchMode ? 16 : 20}px Arial`;
+      ctx.fillText('Этот хардкорный мир нужно удалить или остаться в безвыходном спектаторе.', canvas.width / 2, layout.panel.y + 104);
+      for (const button of layout.buttons) {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(button.x, button.y, button.w, button.h);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeRect(button.x, button.y, button.w, button.h);
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${touchMode ? 18 : 20}px Arial`;
+        ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 6);
+      }
+      ctx.textAlign = 'left';
+    } else if (state.gameOver) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
@@ -750,5 +807,21 @@
     }
   }
 
-  Game.renderer = { draw };
+  function getHardcoreDeathLayout(canvas) {
+    const mobile = canvas.width < 900;
+    const panelW = Math.min(canvas.width - 24, mobile ? 360 : 560);
+    const panelH = mobile ? 250 : 270;
+    const x = Math.floor((canvas.width - panelW) / 2);
+    const y = Math.floor((canvas.height - panelH) / 2);
+    const buttonH = mobile ? 42 : 48;
+    return {
+      panel: { x, y, w: panelW, h: panelH },
+      buttons: [
+        { id: 'hardcore_delete', label: 'Удалить мир', x: x + 24, y: y + panelH - 98, w: panelW - 48, h: buttonH },
+        { id: 'hardcore_spectator', label: 'Перейти в режим спектатора', x: x + 24, y: y + panelH - 44, w: panelW - 48, h: buttonH },
+      ],
+    };
+  }
+
+  Game.renderer = { draw, getHardcoreDeathLayout };
 })();

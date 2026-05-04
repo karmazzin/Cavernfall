@@ -110,7 +110,8 @@
   function applyPlayerDamage(state, amount, options = {}) {
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     if ((state.player.respawnInvuln || 0) > 0) return 0;
-    const noDamage = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator'));
+    if (state.player.steamForm && !options.allowSteamDamage) return 0;
+    const noDamage = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
     if (noDamage) return 0;
     const infiniteInventory = !!(state.worldMeta && state.worldMeta.mode === 'infinite_inventory');
 
@@ -127,8 +128,6 @@
         state.player.vy = 0;
         state.player.respawnInvuln = 1.25;
         state.attackFlash = Math.max(state.attackFlash || 0, 0.3);
-      } else {
-        state.gameOver = true;
       }
     }
     return actual;
