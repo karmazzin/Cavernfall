@@ -10,7 +10,7 @@
   const { getWeatherState, WEATHER } = Game.weatherSystem;
   const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawGoldenFlowerGuardian, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawGoldenFlowerGuardian, drawAirGuardian, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -22,6 +22,21 @@
 
   let darknessMaskCanvas = null;
   let darknessMaskCtx = null;
+
+  function roundRect(ctx, x, y, w, h, r) {
+    const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
 
   function weatherTint(type, intensity) {
     const a = clamp(intensity, 0, 1);
@@ -537,6 +552,19 @@
   }
 
   function getVisibleBlockId(state, tx, ty, id) {
+    const airEntrance = state.airCaves && state.airCaves.entrance;
+    if (
+      state.activeDimension === 'overworld' &&
+      airEntrance &&
+      airEntrance.spawned &&
+      !airEntrance.revealed &&
+      !state.player.steamForm &&
+      tx >= airEntrance.x0 && tx <= airEntrance.x1 &&
+      ty >= airEntrance.y0 && ty <= airEntrance.y1 &&
+      (id === BLOCK.AIR_ENTRANCE_FRAME || id === BLOCK.AIR_DIMENSION_PORTAL)
+    ) {
+      return BLOCK.AIR;
+    }
     if (state.activeDimension !== 'fire' || !state.fireDungeon || hasFireDungeonKey(state)) return id;
     const d = state.fireDungeon;
     if (tx < d.x0 || tx > d.x1 || ty < d.y0 || ty > d.y1) return id;
@@ -572,6 +600,56 @@
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('Ключ указывает на огненную темницу', cx, cy + 22);
+    ctx.textAlign = 'left';
+  }
+
+  function drawAirEntranceGuide(ctx, canvas, state) {
+    if (state.activeDimension !== 'overworld' || !state.player.steamForm || !state.airCaves || !state.airCaves.lightGuide) return;
+    const guide = state.airCaves.lightGuide;
+    const dx = guide.x - (state.player.x + state.player.w / 2);
+    const dy = guide.y - (state.player.y + state.player.h / 2);
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq < 56 * 56) return;
+    const distance = Math.max(1, Math.sqrt(distanceSq));
+    const nx = dx / distance;
+    const ny = dy / distance;
+    const angle = Math.atan2(dy, dx);
+    const cx = canvas.width / 2 + nx * Math.min(canvas.width * 0.28, 240);
+    const cy = canvas.height * 0.24 + ny * Math.min(canvas.height * 0.12, 88);
+    ctx.save();
+
+    const glow = ctx.createRadialGradient(cx, cy, 6, cx, cy, 72);
+    glow.addColorStop(0, 'rgba(236,251,255,0.98)');
+    glow.addColorStop(0.24, 'rgba(181,232,255,0.78)');
+    glow.addColorStop(0.6, 'rgba(118,191,255,0.26)');
+    glow.addColorStop(1, 'rgba(118,191,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 72, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    const beam = ctx.createLinearGradient(-136, 0, 136, 0);
+    beam.addColorStop(0, 'rgba(150,220,255,0)');
+    beam.addColorStop(0.18, 'rgba(150,220,255,0.18)');
+    beam.addColorStop(0.5, 'rgba(228,248,255,0.68)');
+    beam.addColorStop(0.82, 'rgba(150,220,255,0.18)');
+    beam.addColorStop(1, 'rgba(150,220,255,0)');
+    ctx.fillStyle = beam;
+    roundRect(ctx, -136, -10, 272, 20, 10);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(12,20,28,0.78)';
+    roundRect(ctx, canvas.width / 2 - 168, 32, 336, 34, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(190,236,255,0.34)';
+    ctx.strokeRect(canvas.width / 2 - 168, 32, 336, 34);
+    ctx.fillStyle = '#eefbff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Иди за светом и узнаешь новую тайну.', canvas.width / 2, 54);
     ctx.textAlign = 'left';
   }
 
@@ -708,6 +786,7 @@
     for (const spider of state.spiders) drawSpider(ctx, spider, renderCamera, time);
     for (const guard of state.fireGuards || []) drawFireGuard(ctx, guard, renderCamera, time);
     for (const waterfolk of state.waterfolk || []) drawWaterfolk(ctx, waterfolk, renderCamera, time);
+    for (const windy of state.windfolk || []) drawWindfolk(ctx, windy, renderCamera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, renderCamera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, renderCamera, time);
     if (state.friendlyFireKing) drawFriendlyFireKing(ctx, state.friendlyFireKing, renderCamera, time);
@@ -719,6 +798,8 @@
     if (state.kraken) drawBossHealthBar(ctx, state.kraken, renderCamera);
     if (state.goldenFlowerGuardian) drawGoldenFlowerGuardian(ctx, state.goldenFlowerGuardian, renderCamera, time);
     if (state.goldenFlowerGuardian) drawBossHealthBar(ctx, state.goldenFlowerGuardian, renderCamera);
+    if (state.airGuardian) drawAirGuardian(ctx, state.airGuardian, renderCamera, time);
+    if (state.airGuardian) drawBossHealthBar(ctx, state.airGuardian, renderCamera);
 
     drawPlayer(ctx, state, renderCamera, time);
 
@@ -755,6 +836,7 @@
       ctx.fillStyle = `rgba(235,252,255,${alpha * 0.46})`;
       ctx.fillRect(beamX - 3, 0, 6, Math.max(0, beamBottom));
     }
+    drawAirEntranceGuide(ctx, canvas, state);
 
     if (darkness > 0) drawDarknessMask(ctx, view, state, renderCamera, input, location, darkness);
 

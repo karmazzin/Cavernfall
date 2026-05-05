@@ -63,6 +63,15 @@
         y: ((region.y0 + region.y1) / 2) * TILE,
       };
     }
+    if (key === 'air_caves') {
+      const region = state.airCaves && state.airCaves.region;
+      if (!region) return null;
+      return {
+        label: 'Воздушные пещеры',
+        x: ((region.x0 + region.x1) / 2) * TILE,
+        y: ((region.y0 + region.y1) / 2) * TILE,
+      };
+    }
     if (key === 'fire_castle') {
       const castle = state.fireWorldMeta && state.fireWorldMeta.castle;
       if (!castle) return null;
@@ -108,13 +117,33 @@
         y: mainWell.baseY * TILE,
       };
     }
+    if (key === 'air_entrance') {
+      const entrance = state.airCaves && state.airCaves.entrance;
+      if (!entrance || !entrance.spawned) return null;
+      return {
+        label: 'Вход в воздушное измерение',
+        x: entrance.centerX * TILE,
+        y: entrance.baseY * TILE,
+      };
+    }
+    if (key === 'air_castle') {
+      const castle = state.airWorldMeta && state.airWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок воздушного короля',
+        x: castle.centerX * TILE,
+        y: castle.baseY * TILE,
+      };
+    }
     return null;
   }
 
   function getCompassEntries(state) {
-    const keys = ['fire_pyramid', 'fire_caves', 'water_caves', 'fire_castle', 'fire_dungeon', 'water_well'];
+    const keys = ['fire_pyramid', 'fire_caves', 'water_caves', 'air_caves', 'fire_castle', 'fire_dungeon', 'water_well'];
     if (countItem(state, ITEM.MAGIC_GARDEN_MAP) > 0) keys.push('golden_garden');
     if (countItem(state, ITEM.MAIN_WELL_MAP) > 0) keys.push('main_well');
+    if (state.airCaves && state.airCaves.entrance && state.airCaves.entrance.spawned) keys.push('air_entrance');
+    if (state.airWorldMeta && state.airWorldMeta.castle) keys.push('air_castle');
     return keys.map((key) => ({
       key,
       target: getCompassTarget(state, key),
@@ -124,7 +153,9 @@
           : key === 'fire_caves'
             ? 'Огненные пещеры'
             : key === 'water_caves'
-            ? 'Водные пещеры'
+              ? 'Водные пещеры'
+              : key === 'air_caves'
+                ? 'Воздушные пещеры'
             : key === 'fire_castle'
               ? 'Замок огненного короля'
               : key === 'fire_dungeon'
@@ -133,8 +164,25 @@
                   ? 'Сад золотых цветков'
                   : key === 'main_well'
                     ? 'Главный колодец'
+                    : key === 'air_entrance'
+                      ? 'Вход в воздушное измерение'
+                      : key === 'air_castle'
+                        ? 'Замок воздушного короля'
                   : 'Водный колодец',
     }));
+  }
+
+  function getCompassPageSize(compactHeight) {
+    return compactHeight ? 4 : 5;
+  }
+
+  function getCompassPagedEntries(state, compactHeight) {
+    const entries = getCompassEntries(state);
+    const pageSize = getCompassPageSize(compactHeight);
+    const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+    const page = Math.max(0, Math.min(pageCount - 1, state.pause && Number.isFinite(state.pause.compassPage) ? state.pause.compassPage : 0));
+    const pageEntries = entries.slice(page * pageSize, page * pageSize + pageSize);
+    return { entries, pageEntries, page, pageCount, pageSize };
   }
 
   function getCompassMetrics(panel, compactHeight) {
@@ -208,14 +256,15 @@
     }
 
     if (state.pause.showCompass) {
-      const entries = getCompassEntries(state);
+      const { pageEntries, pageCount } = getCompassPagedEntries(state, compactHeight);
       const metrics = getCompassMetrics(panel, compactHeight);
-      const contentBottom = metrics.rowsStartY + Math.max(0, entries.length - 1) * metrics.rowStep + metrics.buttonH + 28;
+      const pageNavExtra = pageCount > 1 ? (compactHeight ? 48 : 56) : 0;
+      const contentBottom = metrics.rowsStartY + Math.max(0, pageEntries.length - 1) * metrics.rowStep + metrics.buttonH + 28 + pageNavExtra;
       panel.h = Math.max(panel.h, contentBottom - panel.y + (compactHeight ? 68 : 78));
       return {
         panel,
         buttons: [
-          ...entries.map((entry, index) => ({
+          ...pageEntries.map((entry, index) => ({
             id: `compass_track_${entry.key}`,
             label: state.pause.activeCompassTarget === entry.key ? 'Убрать' : 'В путь',
             x: panel.x + panel.w - metrics.buttonW - 24,
@@ -223,6 +272,12 @@
             w: metrics.buttonW,
             h: metrics.buttonH,
           })),
+          ...(pageCount > 1
+            ? [
+                { id: 'compass_prev_page', label: 'Пред.', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 96 : 116), w: Math.floor((panel.w - 56) / 2), h: compactHeight ? 34 : 38 },
+                { id: 'compass_next_page', label: 'Дальше', x: panel.x + panel.w - Math.floor((panel.w - 56) / 2) - 20, y: panel.y + panel.h - (compactHeight ? 96 : 116), w: Math.floor((panel.w - 56) / 2), h: compactHeight ? 34 : 38 },
+              ]
+            : []),
           { id: 'compass_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: compactHeight ? 36 : 42 },
         ],
       };
@@ -337,14 +392,21 @@
       const py = state.player.y + state.player.h / 2;
       const baseX = layout.panel.x + 24;
       const metrics = getCompassMetrics(layout.panel, compactHeight);
+      const { pageEntries, page, pageCount } = getCompassPagedEntries(state, compactHeight);
       let lineY = metrics.titleY;
       ctx.font = `${compactHeight ? 13 : 15}px Arial`;
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.fillText('Компас для уникальных структур и пещер.', baseX, lineY);
+      if (pageCount > 1) {
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.fillText(`Страница ${page + 1}/${pageCount}`, layout.panel.x + layout.panel.w - 24, lineY);
+        ctx.textAlign = 'left';
+      }
       lineY = metrics.rowsStartY;
 
-      for (let index = 0; index < getCompassEntries(state).length; index += 1) {
-        const entry = getCompassEntries(state)[index];
+      for (let index = 0; index < pageEntries.length; index += 1) {
+        const entry = pageEntries[index];
         const { key, target } = entry;
         const rowY = metrics.rowsStartY + index * metrics.rowStep;
         const label = target ? target.label : entry.label;

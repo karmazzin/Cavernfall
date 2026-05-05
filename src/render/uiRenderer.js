@@ -80,6 +80,7 @@
     if (biomeKey === 'deep') return 'Глубины';
     if (biomeKey === 'fire_caves') return 'Огненные пещеры';
     if (biomeKey === 'water_caves') return 'Водные пещеры';
+    if (biomeKey === 'air_caves') return 'Воздушные пещеры';
     if (biomeKey === 'water_surface') return 'Водная гладь';
     if (biomeKey === 'water_floor') return 'Дно';
     if (biomeKey === 'golden_garden') return 'Сад золотых цветков';
@@ -117,6 +118,15 @@
       if (!region) return null;
       return {
         label: 'Водные пещеры',
+        x: ((region.x0 + region.x1) / 2) * TILE,
+        y: ((region.y0 + region.y1) / 2) * TILE,
+      };
+    }
+    if (key === 'air_caves') {
+      const region = state.airCaves && state.airCaves.region;
+      if (!region) return null;
+      return {
+        label: 'Воздушные пещеры',
         x: ((region.x0 + region.x1) / 2) * TILE,
         y: ((region.y0 + region.y1) / 2) * TILE,
       };
@@ -173,6 +183,24 @@
         label: 'Главный колодец',
         x: mainWell.centerX * TILE,
         y: mainWell.baseY * TILE,
+      };
+    }
+    if (key === 'air_entrance') {
+      const entrance = state.airCaves && state.airCaves.entrance;
+      if (!entrance || !entrance.spawned) return null;
+      return {
+        label: 'Вход в воздушное измерение',
+        x: entrance.centerX * TILE,
+        y: entrance.baseY * TILE,
+      };
+    }
+    if (key === 'air_castle') {
+      const castle = state.airWorldMeta && state.airWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок воздушного короля',
+        x: castle.centerX * TILE,
+        y: castle.baseY * TILE,
       };
     }
     return null;

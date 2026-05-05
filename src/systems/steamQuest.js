@@ -11,6 +11,10 @@
     return countItem(state, ITEM.STEAM_AMULET) > 0 || hasFullSteamArmor(state);
   }
 
+  function hasSteamAmulet(state) {
+    return countItem(state, ITEM.STEAM_AMULET) > 0;
+  }
+
   function canSpawnSteamOre(baseBlock) {
     return baseBlock === BLOCK.STONE || baseBlock === BLOCK.DIRT || baseBlock === BLOCK.GRASS || baseBlock === BLOCK.SAND || baseBlock === BLOCK.BLACKSTONE || baseBlock === BLOCK.DEEPSTONE;
   }
@@ -182,6 +186,30 @@
   function updateSteamQuest(state, dt) {
     if (state.player) state.player.steamCloudCooldown = Math.max(0, (state.player.steamCloudCooldown || 0) - dt);
     revealMainWell(state);
+    if (state.activeDimension === 'overworld' && hasSteamAmulet(state) && state.airCaves && (!state.airCaves.entrance || !state.airCaves.entrance.spawned) && Game.generation && Game.generation.spawnAirEntrance) {
+      Game.generation.spawnAirEntrance(state);
+    }
+    const entrance = state.airCaves && state.airCaves.entrance;
+    if (state.activeDimension === 'overworld' && entrance && entrance.spawned) {
+      const playerCx = state.player.x + state.player.w / 2;
+      const playerCy = state.player.y + state.player.h / 2;
+      const insideEntrance = playerCx >= entrance.x0 * TILE && playerCx <= (entrance.x1 + 1) * TILE && playerCy >= entrance.y0 * TILE && playerCy <= (entrance.y1 + 1) * TILE;
+      if (state.player.steamForm && !entrance.discovered) {
+        state.airCaves.lightGuide = { x: entrance.centerX * TILE + TILE / 2, y: entrance.baseY * TILE };
+        if (insideEntrance) {
+          entrance.discovered = true;
+          entrance.revealed = true;
+          state.airCaves.lightGuide = null;
+          if (state.pause) state.pause.activeCompassTarget = null;
+          state.ui.noticeText = 'Свет погас. Вход в воздушное измерение открылся.';
+          state.ui.noticeTimer = 4.5;
+        }
+      } else if (entrance.discovered || !state.player.steamForm) {
+        state.airCaves.lightGuide = null;
+      }
+    } else if (state.airCaves) {
+      state.airCaves.lightGuide = null;
+    }
     if (!Array.isArray(state.steamEffects) || state.steamEffects.length === 0) return;
     for (let i = state.steamEffects.length - 1; i >= 0; i -= 1) {
       const effect = state.steamEffects[i];
@@ -206,6 +234,7 @@
     softenFallWithSteam,
     updateSteamQuest,
     hasSteamPower,
+    hasSteamAmulet,
     setSteamForm,
     preservedCloudItem,
   };

@@ -12,9 +12,11 @@
     DEEP_START,
   } = Game.constants;
   const { BLOCK } = Game.blocks;
+  const { ITEM } = Game.items;
   const { rand, clamp } = Game.math;
   const { createGrid, getBlock, setBlock } = Game.world;
   const { chestKey, createChestState, fillChestLoot, ensureChestAt } = Game.chestSystem;
+  const { createItemStack } = Game.inventory;
   const { placeDoor } = Game.doorSystem;
   const { createGameState, captureDimensionState } = Game.state;
   const { withSeed } = Game.random;
@@ -43,6 +45,9 @@
     TEMPERATE: 'temperate',
     WARM: 'warm',
   };
+  const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
+  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
+  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
 
   function clearChestSlots(chest) {
     for (let i = 0; i < chest.slots.length; i += 1) chest.slots[i] = { id: null, count: 0, durability: null };
@@ -1317,6 +1322,144 @@
     };
   }
 
+  function generateAirCaves(state) {
+    const blockedRegion = state.waterCaves && state.waterCaves.region;
+    let region = null;
+    for (let attempt = 0; attempt < 48 && !region; attempt += 1) {
+      const centerX = Math.floor(rand(96, WORLD_W - 96));
+      const centerY = Math.floor(rand(DWARF_START + 4, Math.min(DWARF_END - 8, DEEP_START - 10)));
+      const radiusX = Math.floor(rand(22, 32));
+      const radiusY = Math.floor(rand(10, 15));
+      const candidate = {
+        x0: centerX - radiusX - 3,
+        x1: centerX + radiusX + 3,
+        y0: centerY - radiusY - 3,
+        y1: centerY + radiusY + 5,
+        centerX,
+        centerY,
+        radiusX,
+        radiusY,
+      };
+      if (candidate.x0 < 10 || candidate.x1 > WORLD_W - 11 || candidate.y0 < UPPER_CAVE_START + 6 || candidate.y1 > DEEP_START - 4) continue;
+      if (blockedRegion && !(candidate.x1 < blockedRegion.x0 - 20 || candidate.x0 > blockedRegion.x1 + 20 || candidate.y1 < blockedRegion.y0 - 8 || candidate.y0 > blockedRegion.y1 + 8)) continue;
+      region = candidate;
+    }
+    if (!region) {
+      state.airCaves = null;
+      return;
+    }
+
+    for (let ty = region.y0; ty <= region.y1; ty += 1) {
+      for (let tx = region.x0; tx <= region.x1; tx += 1) {
+        const nx = (tx - region.centerX) / region.radiusX;
+        const ny = (ty - region.centerY) / region.radiusY;
+        const oval = nx * nx + ny * ny;
+        if (oval > 1.18) continue;
+        if (oval > 0.9) setBlock(state, tx, ty, Math.random() < 0.5 ? BLOCK.STONE : BLOCK.CLOUD);
+        else setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+
+    for (let i = 0; i < 7; i += 1) {
+      const platformX = Math.floor(rand(region.x0 + 5, region.x1 - 5));
+      const platformY = Math.floor(rand(region.y0 + 5, region.y1 - 4));
+      const half = Math.floor(rand(2, 5));
+      for (let tx = platformX - half; tx <= platformX + half; tx += 1) {
+        const topY = platformY + Math.min(2, Math.abs(tx - platformX));
+        setBlock(state, tx, topY, Math.random() < 0.45 ? BLOCK.CLOUD : BLOCK.STONE);
+        if (Math.random() < 0.35) setBlock(state, tx, topY + 1, BLOCK.CLOUD);
+      }
+    }
+
+    const crystalX = region.centerX;
+    const crystalY = region.centerY - 3;
+    setBlock(state, crystalX, crystalY + 3, BLOCK.CLOUD);
+    setBlock(state, crystalX - 1, crystalY + 4, BLOCK.CLOUD);
+    setBlock(state, crystalX + 1, crystalY + 4, BLOCK.CLOUD);
+    setBlock(state, crystalX, crystalY, BLOCK.AIR_CRYSTAL);
+
+    state.airCaves = {
+      region,
+      crystalX,
+      crystalY,
+      crystalTaken: false,
+      cleared: false,
+      warningTimer: 0,
+      entrance: null,
+    };
+  }
+
+  function stampAirEntrance(state, centerX, baseY) {
+    const frame = BLOCK.AIR_ENTRANCE_FRAME;
+    const x0 = centerX - 10;
+    const x1 = centerX + 10;
+    const y0 = baseY - 10;
+    const y1 = baseY + 2;
+    for (let tx = x0 - 2; tx <= x1 + 2; tx += 1) {
+      for (let ty = y0 - 3; ty <= y1 + 3; ty += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2 || ty < 2 || ty >= WORLD_H - 2) continue;
+        setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+    for (let tx = x0; tx <= x1; tx += 1) {
+      setBlock(state, tx, y1, frame);
+      if (tx <= x0 + 2 || tx >= x1 - 2) setBlock(state, tx, y0, frame);
+    }
+    for (let ty = y0; ty <= y1; ty += 1) {
+      setBlock(state, x0, ty, frame);
+      setBlock(state, x1, ty, frame);
+    }
+    for (let tx = centerX - 4; tx <= centerX + 4; tx += 1) {
+      setBlock(state, tx, y1, BLOCK.AIR);
+      setBlock(state, tx, y1 - 1, BLOCK.AIR);
+    }
+    for (let ty = baseY - 1; ty <= baseY + 1; ty += 1) {
+      setBlock(state, x0, ty, BLOCK.AIR);
+      setBlock(state, x0 + 1, ty, BLOCK.AIR);
+      setBlock(state, x1, ty, BLOCK.AIR);
+      setBlock(state, x1 - 1, ty, BLOCK.AIR);
+    }
+    for (let tx = centerX - 3; tx <= centerX + 3; tx += 1) setBlock(state, tx, baseY - 3, frame);
+    for (let ty = baseY - 3; ty <= baseY + 1; ty += 1) {
+      setBlock(state, centerX - 3, ty, frame);
+      setBlock(state, centerX + 3, ty, frame);
+    }
+    for (let tx = centerX - 1; tx <= centerX + 1; tx += 1) {
+      setBlock(state, tx, baseY - 2, BLOCK.AIR);
+      setBlock(state, tx, baseY - 1, BLOCK.AIR);
+      setBlock(state, tx, baseY, BLOCK.AIR);
+      setBlock(state, tx, baseY + 1, BLOCK.AIR);
+    }
+    for (let tx = centerX - 6; tx <= centerX + 6; tx += 1) setBlock(state, tx, y1 + 1, BLOCK.CLOUD);
+  }
+
+  function spawnAirEntrance(state) {
+    if (!state.airCaves || state.activeDimension !== 'overworld') return false;
+    if (state.airCaves.entrance && state.airCaves.entrance.spawned) return false;
+    const centerX = Math.floor(rand(WORLD_W * 0.62, WORLD_W - 28));
+    const baseY = 10;
+    stampAirEntrance(state, centerX, baseY);
+    state.airCaves.entrance = {
+      centerX,
+      baseY,
+      x0: centerX - 10,
+      x1: centerX + 10,
+      y0: baseY - 10,
+      y1: baseY + 2,
+      altarX: centerX,
+      altarY: baseY - 1,
+      discovered: false,
+      revealed: false,
+      spawned: true,
+      guardianSpawned: false,
+      guardianDefeated: false,
+      crystalPlaced: false,
+      portalX: centerX,
+      portalY: baseY - 7,
+    };
+    return true;
+  }
+
   function oreHostMatches(blockId) {
     return blockId === BLOCK.STONE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE;
   }
@@ -1415,6 +1558,14 @@
   }
 
   function retrofitWorldFeatures(state) {
+    if (!('airCaves' in state)) state.airCaves = null;
+    if (!('airGuardian' in state)) state.airGuardian = null;
+    const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
+    if (!state.airCaves && state.activeDimension !== 'fire' && state.activeDimension !== 'water' && worldType !== 'flat') generateAirCaves(state);
+    if (state.airCaves && !state.airCaves.crystalTaken && Number.isFinite(state.airCaves.crystalX) && Number.isFinite(state.airCaves.crystalY)) {
+      const current = getBlock(state, state.airCaves.crystalX, state.airCaves.crystalY);
+      if (current === BLOCK.AIR) setBlock(state, state.airCaves.crystalX, state.airCaves.crystalY, BLOCK.AIR_CRYSTAL);
+    }
     const volcanoSegments = [];
     let x = 0;
     while (x < WORLD_W) {
@@ -2324,18 +2475,46 @@
   }
 
   function applySingleBiomeSurface(state, biome) {
-    let prev = SURFACE_BASE;
-    const center = (WORLD_W - 1) / 2;
-    const half = Math.max(1, center);
-    const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : biome === 'snow_plains' ? rand(0.4, 1.8) : biome === 'volcano' ? rand(1, 3) : rand(0, 1.2);
-    const segmentBase = biome === 'plains' || biome === 'desert' || biome === 'snow_plains' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
     const climate = climateForBiome(biome);
+    let prev = SURFACE_BASE;
+    const mountainRidges = [];
+    const volcanoCones = [];
+    if (biome === 'mountains') {
+      let cursor = Math.floor(rand(24, 42));
+      while (cursor < WORLD_W - 24) {
+        mountainRidges.push({
+          center: cursor + Math.floor(rand(-8, 9)),
+          width: Math.floor(rand(26, 58)),
+          lift: rand(7, 15),
+        });
+        cursor += Math.floor(rand(36, 74));
+      }
+    }
+    if (biome === 'volcano') {
+      let cursor = Math.floor(rand(26, 48));
+      while (cursor < WORLD_W - 26) {
+        volcanoCones.push({
+          center: cursor + Math.floor(rand(-6, 7)),
+          width: Math.floor(rand(18, 34)),
+          lift: rand(6, 11),
+          crater: Math.random() < 0.58,
+          lava: Math.random() < 0.45,
+        });
+        cursor += Math.floor(rand(40, 78));
+      }
+    }
     for (let x = 0; x < WORLD_W; x += 1) {
-      let target = segmentBase;
+      let target = biome === 'plains' || biome === 'desert' || biome === 'snow_plains'
+        ? SURFACE_BASE + rand(-0.6, 0.6)
+        : SURFACE_BASE + rand(-1.2, 1.2);
       if (biome === 'mountains') {
-        const t = Math.abs((x - center) / half);
-        const ridge = Math.pow(Math.max(0, 1 - t), 0.55);
-        target = SURFACE_BASE - peakLift * ridge + rand(-0.6, 0.6);
+        target = SURFACE_BASE + 4.6 + Math.sin(x / 23) * 1.1 + rand(-0.45, 0.45);
+        for (const ridge of mountainRidges) {
+          const dist = Math.abs(x - ridge.center) / Math.max(1, ridge.width);
+          if (dist > 1) continue;
+          const shape = Math.pow(1 - dist, 0.6);
+          target -= ridge.lift * shape;
+        }
       } else if (biome === 'forest') {
         target += Math.sin(x / 9) * 1.2 + rand(-0.4, 0.4);
       } else if (biome === 'desert') {
@@ -2343,16 +2522,221 @@
       } else if (biome === 'snow_plains') {
         target += Math.sin(x / 12) * 0.7 + rand(-0.2, 0.2);
       } else if (biome === 'volcano') {
-        target += Math.sin(x / 18) * 0.5 + rand(-0.2, 0.2);
+        target = SURFACE_BASE + 4.8 + Math.sin(x / 17) * 0.55 + rand(-0.22, 0.22);
+        for (const cone of volcanoCones) {
+          const dist = Math.abs(x - cone.center) / Math.max(1, cone.width);
+          if (dist > 1) continue;
+          const shape = Math.pow(1 - dist * dist, 0.5);
+          target -= cone.lift * shape;
+          if (cone.crater && Math.abs(x - cone.center) <= Math.max(2, Math.floor(cone.width * 0.16))) target += 3.2;
+        }
       } else if (x % Math.floor(rand(12, 22)) === 0) {
         target += rand(-0.4, 0.4);
       }
-      const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : 0.4;
-      state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
+      const maxStep = biome === 'mountains' ? 2.1 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : biome === 'volcano' ? 1.35 : 0.4;
+      const minY = biome === 'mountains' ? 8 : biome === 'volcano' ? 10 : 20;
+      const maxY = biome === 'mountains' ? 30 : biome === 'volcano' ? 34 : 36;
+      state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), minY, maxY));
       state.biomeAt[x] = biome;
       state.climateAt[x] = climate;
       prev = state.surfaceAt[x];
     }
+  }
+
+  function collectSingleBiomeVolcanoSegments(state) {
+    const segments = [];
+    let x = 0;
+    while (x < WORLD_W) {
+      if (state.surfaceAt[x] > SURFACE_BASE + 1) {
+        x += 1;
+        continue;
+      }
+      const start = x;
+      while (x < WORLD_W && state.surfaceAt[x] <= SURFACE_BASE + 1) x += 1;
+      const end = x - 1;
+      if (end - start + 1 >= 12) segments.push({ start, end, center: Math.floor((start + end) / 2) });
+    }
+    if (segments.length === 0) {
+      for (let center = 42; center < WORLD_W - 42; center += 64) {
+        segments.push({ start: center - 12, end: center + 12, center });
+      }
+    }
+    return segments;
+  }
+
+  function generateSingleBiomeFireWorld(state, biome) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill(biome);
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.WARM);
+    state.surfaceAt = Array(WORLD_W).fill(8);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.fireGuards = [];
+    state.waterfolk = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.airCaves = null;
+    state.waterWell = null;
+    state.airGuardian = null;
+    state.kraken = null;
+    state.quake = null;
+    state.fireWorldMeta = null;
+    state.waterWorldMeta = null;
+
+    const lavaLakeStart = Math.floor(WORLD_H * 0.62);
+    const ceil = Array(WORLD_W).fill(8);
+    const floor = Array(WORLD_W).fill(lavaLakeStart - 22);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      const ceiling = Math.round(8 + Math.sin(tx / 21) * 1.8 + Math.sin(tx / 9) * 1.1);
+      let floorY = Math.round(42 + Math.sin(tx / 29) * 3.8 + Math.sin(tx / 14) * 2.1);
+      if (biome === 'lava_lake') floorY += 4;
+      ceil[tx] = clamp(ceiling, 6, 13);
+      floor[tx] = clamp(floorY, 34, lavaLakeStart - 6);
+      state.surfaceAt[tx] = ceil[tx];
+      for (let ty = 0; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          setBlock(state, tx, ty, BLOCK.BEDROCK);
+          continue;
+        }
+        if (ty >= lavaLakeStart) {
+          setBlock(state, tx, ty, BLOCK.LAVA);
+          continue;
+        }
+        if (ty <= ceil[tx] || ty >= floor[tx]) {
+          setBlock(state, tx, ty, biome === 'red_land' ? BLOCK.RED_EARTH : BLOCK.BASALT);
+        } else {
+          setBlock(state, tx, ty, BLOCK.AIR);
+        }
+      }
+      if (biome === 'lava_lake') {
+        const lavaTop = floor[tx] - Math.floor(rand(2, 5));
+        for (let ty = lavaTop; ty < floor[tx]; ty += 1) setBlock(state, tx, ty, BLOCK.LAVA);
+        for (let ty = lavaTop - 2; ty < lavaTop; ty += 1) if (getBlock(state, tx, ty) !== BLOCK.LAVA) setBlock(state, tx, ty, BLOCK.BASALT);
+      }
+    }
+
+    for (let i = 0; i < 18; i += 1) {
+      const sx = rand(8, WORLD_W - 9);
+      const sy = rand(12, lavaLakeStart - 10);
+      carveTunnel(state, sx, sy, Math.floor(rand(24, 64)), Math.floor(rand(3, 5)), 8, lavaLakeStart - 8);
+    }
+
+    const spawnX = Math.floor(WORLD_W * 0.2);
+    const spawnY = Math.floor((ceil[spawnX] + floor[spawnX]) / 2);
+    carveRect(state, spawnX - 6, spawnY - 3, spawnX + 6, spawnY + 4, BLOCK.AIR);
+    for (let tx = spawnX - 3; tx <= spawnX + 3; tx += 1) setBlock(state, tx, spawnY + 4, BLOCK.BASALT);
+    state.player.x = spawnX * TILE;
+    state.player.y = spawnY * TILE;
+  }
+
+  function generateSingleBiomeWaterWorld(state, biome) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill(biome);
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.ANY);
+    state.surfaceAt = Array(WORLD_W).fill(6);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.fireGuards = [];
+    state.waterfolk = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.airCaves = null;
+    state.waterWell = null;
+    state.goldenFlowerGuardian = null;
+    state.airGuardian = null;
+    state.kraken = null;
+    state.quake = null;
+    state.fireWorldMeta = null;
+    state.waterWorldMeta = null;
+
+    if (biome === 'golden_garden') {
+      const groundBase = SURFACE_BASE + 2;
+      for (let tx = 0; tx < WORLD_W; tx += 1) {
+        const top = Math.round(groundBase + Math.sin(tx / 17) * 1.1 + Math.sin(tx / 8) * 0.5);
+        state.surfaceAt[tx] = top;
+        for (let ty = 0; ty < WORLD_H; ty += 1) {
+          if (ty === WORLD_H - 1) setBlock(state, tx, ty, BLOCK.BEDROCK);
+          else if (ty < top) setBlock(state, tx, ty, BLOCK.AIR);
+          else if (ty === top) setBlock(state, tx, ty, BLOCK.GRASS);
+          else if (ty <= top + 2) setBlock(state, tx, ty, BLOCK.DIRT);
+          else setBlock(state, tx, ty, BLOCK.STONE);
+        }
+        if (Math.random() < 0.18 && tx > 6 && tx < WORLD_W - 6) plantGoldenFlower(state, tx, top - 1);
+      }
+      state.waterWorldMeta = {
+        name: 'Сад золотых цветков',
+        goldenGarden: {
+          x0: 0,
+          x1: WORLD_W - 1,
+          y0: 0,
+          y1: WORLD_H - 2,
+          centerX: Math.floor(WORLD_W / 2),
+          groundY: state.surfaceAt[Math.floor(WORLD_W / 2)],
+          flowerTaken: false,
+          guardianSpawned: false,
+          guardianDefeated: false,
+        },
+      };
+      const spawnX = Math.floor(WORLD_W * 0.2);
+      state.player.x = spawnX * TILE;
+      state.player.y = (state.surfaceAt[spawnX] - 3) * TILE;
+      return;
+    }
+
+    const floorStart = biome === 'water_floor' ? Math.floor(WORLD_H * 0.36) : Math.floor(WORLD_H * 0.54);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      const floorY = biome === 'water_floor'
+        ? Math.round(floorStart + Math.sin(tx / 23) * 2.4 + Math.sin(tx / 11) * 1.2)
+        : Math.round(floorStart + Math.sin(tx / 31) * 1.5 + Math.sin(tx / 15) * 0.8);
+      state.surfaceAt[tx] = 5;
+      for (let ty = 0; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          setBlock(state, tx, ty, BLOCK.BEDROCK);
+        } else if (ty >= floorY) {
+          setBlock(state, tx, ty, ty < floorY + 3 ? BLOCK.SAND : BLOCK.STONE);
+        } else {
+          setBlock(state, tx, ty, BLOCK.WATER);
+        }
+      }
+      if (biome === 'water_floor') state.biomeAt[tx] = 'water_floor';
+    }
+    state.waterWorldMeta = {
+      name: biome === 'water_floor' ? 'Дно' : 'Водная гладь',
+      floorStart,
+    };
+    const spawnX = Math.floor(WORLD_W / 2);
+    const spawnY = biome === 'water_floor' ? floorStart - 8 : 18;
+    carveRect(state, spawnX - 5, spawnY - 3, spawnX + 5, spawnY + 4, BLOCK.WATER);
+    state.player.x = spawnX * TILE;
+    state.player.y = spawnY * TILE;
   }
 
   function generateFlatWorld(state) {
@@ -2373,6 +2757,19 @@
   }
 
   function generateSingleBiomeWorld(state, biome) {
+    if (SINGLE_BIOME_CAVE_SET.has(biome)) {
+      generateCavernWorld(state, biome);
+      state.worldMeta.worldType = 'single_biome';
+      return;
+    }
+    if (SINGLE_BIOME_FIRE_SET.has(biome)) {
+      generateSingleBiomeFireWorld(state, biome);
+      return;
+    }
+    if (SINGLE_BIOME_WATER_SET.has(biome)) {
+      generateSingleBiomeWaterWorld(state, biome);
+      return;
+    }
     const basins = [];
     const surfaceFluidColumns = new Set();
     applySingleBiomeSurface(state, biome);
@@ -2380,7 +2777,7 @@
     if (biome === 'plains' || biome === 'desert' || biome === 'snow_plains') flattenPlains(state);
     if (biome === 'plains' || biome === 'desert' || biome === 'snow_plains') addPlainMicroRelief(state);
 
-    const volcanoSegments = biome === 'volcano' ? [{ start: 0, end: WORLD_W - 1, center: Math.floor((WORLD_W - 1) / 2) }] : [];
+    const volcanoSegments = biome === 'volcano' ? collectSingleBiomeVolcanoSegments(state) : [];
     if (biome === 'volcano') shapeVolcanoes(state, volcanoSegments);
 
     if (biome === 'plains' || biome === 'forest') {
@@ -2600,6 +2997,9 @@
     if (allowMix || cavernBiome === 'water_caves') {
       generateWaterCaves(state);
     }
+    if (allowMix || cavernBiome === 'air_caves') {
+      generateAirCaves(state);
+    }
 
     generateCoalOre(state);
     generateIronOre(state);
@@ -2653,6 +3053,8 @@
     state.fireBoss = null;
     state.waterWell = null;
     state.waterCaves = null;
+    state.airCaves = null;
+    state.airGuardian = null;
     state.kraken = null;
     state.quake = null;
     ensureClimateAt(state);
@@ -2741,6 +3143,7 @@
     generateDeepZones(state, volcanoSegments);
     generateFireCaves(state);
     generateWaterCaves(state);
+    generateAirCaves(state);
     for (const segment of volcanoSegments) carveVolcanoCore(state, segment);
     generateCoalOre(state);
     generateIronOre(state);
@@ -3455,8 +3858,10 @@
     state.fireDungeon = null;
     state.friendlyFireKing = null;
     state.waterCaves = null;
+    state.airCaves = null;
     state.waterWell = null;
     state.goldenFlowerGuardian = null;
+    state.airGuardian = null;
     state.kraken = null;
     state.quake = null;
     state.fireWorldMeta = null;
@@ -3620,5 +4025,253 @@
     return captureDimensionState(temp);
   }
 
-  Game.generation = { generateWorld, generateFireDimensionBundle, generateWaterDimensionBundle, retrofitWorldFeatures, checkFireShrineActivation, stampMainWell };
+  function carveCloudIsland(state, centerX, centerY, rx, ry, thickness = 4) {
+    const x0 = centerX - rx - 2;
+    const x1 = centerX + rx + 2;
+    const y0 = centerY - ry - 2;
+    const y1 = centerY + ry + thickness + 2;
+    for (let ty = y0; ty <= y1; ty += 1) {
+      for (let tx = x0; tx <= x1; tx += 1) {
+        if (tx < 2 || tx >= WORLD_W - 2 || ty < 2 || ty >= WORLD_H - 2) continue;
+        const nx = (tx - centerX) / rx;
+        const ny = (ty - centerY) / ry;
+        const oval = nx * nx + ny * ny;
+        const lower = (tx - centerX) * (tx - centerX) / ((rx + 2) * (rx + 2)) + (ty - (centerY + thickness)) * (ty - (centerY + thickness)) / ((ry + thickness + 1) * (ry + thickness + 1));
+        if (oval <= 1.05 || lower <= 1.12) setBlock(state, tx, ty, BLOCK.CLOUD);
+      }
+    }
+    return { x0, x1, y0, y1, centerX, centerY, rx, ry, topY: centerY - ry };
+  }
+
+  function cutAirRoom(state, x0, x1, y0, y1) {
+    for (let ty = y0; ty <= y1; ty += 1) {
+      for (let tx = x0; tx <= x1; tx += 1) {
+        if (tx < 1 || tx >= WORLD_W - 1 || ty < 1 || ty >= WORLD_H - 1) continue;
+        setBlock(state, tx, ty, BLOCK.AIR);
+      }
+    }
+  }
+
+  function buildAirHouse(state, centerX, baseY, width = 10, height = 6, withSteamAmulet = false) {
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const y0 = baseY - height + 1;
+    const y1 = baseY;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === y0 || ty === y1;
+        setBlock(state, tx, ty, border ? BLOCK.CLOUD : BLOCK.AIR);
+      }
+    }
+    const doorX = centerX;
+    setBlock(state, doorX, y1, BLOCK.AIR);
+    setBlock(state, doorX, y1 - 1, BLOCK.AIR);
+    setBlock(state, x0 + 2, y0 + 2, BLOCK.AIR);
+    setBlock(state, x1 - 2, y0 + 2, BLOCK.AIR);
+    const boxY = y1 + 1;
+    setBlock(state, x0 + 2, boxY, BLOCK.CLOUD);
+    setBlock(state, x0 + 2, boxY - 1, BLOCK.GOLDEN_FLOWER);
+    setBlock(state, x1 - 2, boxY, BLOCK.CLOUD);
+    setBlock(state, x1 - 2, boxY - 1, BLOCK.GOLDEN_FLOWER);
+    const bedX = x0 + 2;
+    const bedY = y1 - 1;
+    setBlock(state, bedX, bedY, BLOCK.PILLOW);
+    const chestX = x1 - 2;
+    const chestY = y1 - 1;
+    setBlock(state, chestX, chestY, BLOCK.CHEST);
+    const chest = ensureChestAt(state, chestX, chestY, null);
+    if (withSteamAmulet) chest.slots[0] = createItemStack(ITEM.STEAM_AMULET, 1);
+    return { x0, x1, y0, y1, centerX, baseY, bedX, bedY, chestX, chestY, chestKey: chestKey(chestX, chestY) };
+  }
+
+  function buildAirCastle(state, centerX, baseY) {
+    const width = 52;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const topY = baseY - 16;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = topY; ty <= baseY; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === topY || ty === baseY;
+        setBlock(state, tx, ty, border ? BLOCK.CLOUD : BLOCK.AIR);
+      }
+    }
+    for (let tx = centerX - 4; tx <= centerX + 4; tx += 1) {
+      setBlock(state, tx, baseY, BLOCK.AIR);
+      setBlock(state, tx, baseY - 1, BLOCK.AIR);
+      setBlock(state, tx, baseY - 2, BLOCK.AIR);
+    }
+    for (const towerX of [x0 + 5, x1 - 5]) {
+      for (let tx = towerX - 2; tx <= towerX + 2; tx += 1) {
+        for (let ty = topY - 8; ty <= baseY; ty += 1) {
+          const border = tx === towerX - 2 || tx === towerX + 2 || ty === topY - 8 || ty === baseY;
+          setBlock(state, tx, ty, border ? BLOCK.CLOUD : BLOCK.AIR);
+        }
+      }
+      for (let ty = baseY - 1; ty >= topY - 7; ty -= 1) setBlock(state, towerX, ty, BLOCK.LADDER);
+    }
+    const throneX = centerX;
+    const throneY = baseY - 3;
+    for (let tx = throneX - 3; tx <= throneX + 3; tx += 1) setBlock(state, tx, throneY + 1, BLOCK.CLOUD);
+    for (let tx = throneX - 1; tx <= throneX + 1; tx += 1) setBlock(state, tx, throneY, BLOCK.CLOUD);
+    return { x0, x1, baseY, topY, centerX, throneX, throneY };
+  }
+
+  function generateAirDimension(state) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill('air_isles');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.ANY);
+    state.surfaceAt = Array(WORLD_W).fill(18);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.fireGuards = [];
+    state.waterfolk = [];
+    state.windfolk = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.airCaves = null;
+    state.waterWell = null;
+    state.goldenFlowerGuardian = null;
+    state.airGuardian = null;
+    state.kraken = null;
+    state.quake = null;
+    state.fireWorldMeta = null;
+    state.waterWorldMeta = null;
+    state.airWorldMeta = null;
+    state.zombieSpawnTick = 0;
+    state.zombieCaveSpawnTick = 0;
+    state.spiderSpawnTick = 0;
+    state.spiderCaveSpawnTick = 0;
+    state.fluidTick = 0;
+
+    const voidStart = Math.floor(WORLD_H * 0.58);
+
+    const islands = [];
+    const startIsland = carveCloudIsland(state, Math.floor(WORLD_W / 2), 36, 40, 11, 10);
+    const castleIsland = carveCloudIsland(state, WORLD_W - 90, 36, 52, 13, 12);
+    islands.push({ ...startIsland, kind: 'start' });
+    islands.push({ ...castleIsland, kind: 'castle' });
+    const randomCenters = [46, 118, 190, 262, 334, 406, 478, 550, 622, 694];
+    for (let i = 0; i < randomCenters.length; i += 1) {
+      const cx = randomCenters[i];
+      if (Math.abs(cx - startIsland.centerX) < 72 || Math.abs(cx - castleIsland.centerX) < 78) continue;
+      const cy = 28 + (i % 4) * 7 + Math.floor(rand(0, 4));
+      const rx = 22 + (i % 3) * 8;
+      const ry = 7 + (i % 2) * 2;
+      const thickness = 7 + (i % 3);
+      islands.push({ ...carveCloudIsland(state, cx, cy, rx, ry, thickness), kind: 'wild' });
+    }
+
+    const houses = [];
+    for (const island of islands) {
+      if (island.kind === 'castle') continue;
+      if (Math.random() < 0.18 && island.kind !== 'start') continue;
+      const largeIsland = island.rx >= 30;
+      const houseCount = island.kind === 'start' ? 3 : largeIsland ? (island.rx >= 38 ? 3 : 2) : 1;
+      const offsets = houseCount === 1
+        ? [0]
+        : houseCount === 2
+          ? [-12, 12]
+          : [-16, 0, 16];
+      for (let i = 0; i < offsets.length; i += 1) {
+        const withSteamAmulet = island.kind === 'start' ? i === 1 : Math.random() < 0.35;
+        const house = buildAirHouse(
+          state,
+          island.centerX + offsets[i],
+          island.topY - 1,
+          island.kind === 'start' ? 11 : 9,
+          island.kind === 'start' ? 7 : 6,
+          withSteamAmulet
+        );
+        houses.push({ ...house, islandKind: island.kind });
+      }
+    }
+
+    const castle = buildAirCastle(state, castleIsland.centerX, castleIsland.topY - 1);
+    const portalX = startIsland.centerX;
+    const portalY = startIsland.topY - 1;
+    setBlock(state, portalX, portalY, BLOCK.AIR_DIMENSION_PORTAL);
+
+    for (const house of houses) {
+      state.windfolk.push({
+        x: house.centerX * TILE - 7,
+        y: (house.y0 + 2) * TILE,
+        w: 14,
+        h: 20,
+        dir: Math.random() < 0.5 ? -1 : 1,
+        dirTimer: 1.5 + Math.random() * 2,
+        timer: Math.random() * Math.PI * 2,
+        anchorPhase: Math.random() * Math.PI * 2,
+        anchorX: house.centerX * TILE - 7,
+        anchorY: (house.y0 + 2) * TILE,
+        chief: false,
+        steamForm: false,
+        chestKey: house.chestKey,
+        sleeping: false,
+        sleepBlockX: house.bedX * TILE,
+        sleepBlockY: house.bedY * TILE,
+      });
+    }
+
+    state.windfolk.push({
+      x: castle.throneX * TILE - 7,
+      y: (castle.throneY - 1) * TILE,
+      w: 14,
+      h: 20,
+      dir: -1,
+      dirTimer: 2.2,
+      timer: 0,
+      anchorPhase: 0.4,
+      anchorX: castle.throneX * TILE - 7,
+      anchorY: (castle.throneY - 1) * TILE,
+      chief: true,
+      steamForm: false,
+      chestKey: null,
+      sleeping: false,
+      sleepBlockX: null,
+      sleepBlockY: null,
+    });
+
+    state.airWorldMeta = {
+      name: 'Воздушное измерение',
+      portalX,
+      portalY,
+      voidStart,
+      startIsland: {
+        x0: startIsland.x0,
+        x1: startIsland.x1,
+        y0: startIsland.y0,
+        y1: startIsland.y1 + 8,
+        unlocked: false,
+        guideShown: false,
+      },
+      castle,
+      islands,
+      houses,
+      questGiven: false,
+    };
+    state.player.x = portalX * TILE;
+    state.player.y = (startIsland.topY - 4) * TILE;
+  }
+
+  function generateAirDimensionBundle(worldMeta, seed) {
+    const temp = createGameState(worldMeta);
+    withSeed(`${seed || ''}:air`, () => generateAirDimension(temp));
+    return captureDimensionState(temp);
+  }
+
+  Game.generation = { generateWorld, generateFireDimensionBundle, generateWaterDimensionBundle, generateAirDimensionBundle, retrofitWorldFeatures, checkFireShrineActivation, stampMainWell, stampAirEntrance, spawnAirEntrance };
 })();

@@ -197,6 +197,23 @@
       return;
     }
 
+    if (itemId === ITEM.AIR_CRYSTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
+      ctx.fillStyle = '#b9dded';
+      ctx.fillRect(x + size * 0.44, y + size * 0.38, size * 0.12, size * 0.30);
+      ctx.fillStyle = '#eefcff';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.12);
+      ctx.lineTo(x + size * 0.72, y + size * 0.40);
+      ctx.lineTo(x + size * 0.50, y + size * 0.78);
+      ctx.lineTo(x + size * 0.28, y + size * 0.40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${0.24 + pulse * 0.28})`;
+      ctx.fillRect(x + size * 0.36, y + size * 0.24, size * 0.28, size * 0.18);
+      return;
+    }
+
     if (itemId === ITEM.RAW_GOLD) {
       ctx.fillStyle = '#c59c3c';
       ctx.beginPath();

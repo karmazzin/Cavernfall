@@ -87,6 +87,7 @@
       spiders: state.spiders,
       fireGuards: state.fireGuards,
       waterfolk: state.waterfolk,
+      windfolk: state.windfolk,
       humans: state.humans,
       humanSettlements: state.humanSettlements,
       dwarves: state.dwarves,
@@ -102,12 +103,15 @@
       fireDungeon: state.fireDungeon,
       friendlyFireKing: state.friendlyFireKing,
       waterCaves: state.waterCaves,
+      airCaves: state.airCaves,
       waterWell: state.waterWell,
       goldenFlowerGuardian: state.goldenFlowerGuardian,
+      airGuardian: state.airGuardian,
       kraken: state.kraken,
       quake: state.quake,
       fireWorldMeta: state.fireWorldMeta,
       waterWorldMeta: state.waterWorldMeta,
+      airWorldMeta: state.airWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
       portalLinks: state.portalLinks,
@@ -234,6 +238,7 @@
       state.spiders = Array.isArray(data.spiders) ? data.spiders : state.spiders;
       state.fireGuards = Array.isArray(data.fireGuards) ? data.fireGuards : state.fireGuards;
       state.waterfolk = Array.isArray(data.waterfolk) ? data.waterfolk : state.waterfolk;
+      state.windfolk = Array.isArray(data.windfolk) ? data.windfolk : state.windfolk;
       state.humans = Array.isArray(data.humans) ? data.humans : state.humans;
       state.humanSettlements = data.humanSettlements && typeof data.humanSettlements === 'object'
         ? {
@@ -283,12 +288,18 @@
       state.waterCaves = data.waterCaves && typeof data.waterCaves === 'object'
         ? data.waterCaves
         : state.waterCaves;
+      state.airCaves = data.airCaves && typeof data.airCaves === 'object'
+        ? data.airCaves
+        : state.airCaves;
       state.waterWell = data.waterWell && typeof data.waterWell === 'object'
         ? data.waterWell
         : state.waterWell;
       state.goldenFlowerGuardian = data.goldenFlowerGuardian && typeof data.goldenFlowerGuardian === 'object'
         ? data.goldenFlowerGuardian
         : state.goldenFlowerGuardian;
+      state.airGuardian = data.airGuardian && typeof data.airGuardian === 'object'
+        ? data.airGuardian
+        : state.airGuardian;
       state.kraken = data.kraken && typeof data.kraken === 'object'
         ? data.kraken
         : state.kraken;
@@ -301,11 +312,15 @@
       state.waterWorldMeta = data.waterWorldMeta && typeof data.waterWorldMeta === 'object'
         ? data.waterWorldMeta
         : state.waterWorldMeta;
+      state.airWorldMeta = data.airWorldMeta && typeof data.airWorldMeta === 'object'
+        ? data.airWorldMeta
+        : state.airWorldMeta;
       state.dimensions = data.dimensions && typeof data.dimensions === 'object'
         ? {
             overworld: data.dimensions.overworld || null,
             fire: data.dimensions.fire || null,
             water: data.dimensions.water || null,
+            air: data.dimensions.air || null,
           }
         : state.dimensions;
       state.activeDimension = typeof data.activeDimension === 'string' ? data.activeDimension : 'overworld';
@@ -313,8 +328,9 @@
         ? {
             fireGate: data.portalLinks.fireGate || null,
             waterGate: data.portalLinks.waterGate || null,
+            airGate: data.portalLinks.airGate || null,
           }
-        : { fireGate: null, waterGate: null };
+        : { fireGate: null, waterGate: null, airGate: null };
       state.gameOver = !!data.gameOver;
       state.hardcoreDeath = data.hardcoreDeath && typeof data.hardcoreDeath === 'object' ? data.hardcoreDeath : null;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;

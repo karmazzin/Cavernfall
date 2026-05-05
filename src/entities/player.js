@@ -6,6 +6,8 @@
   const { getBlock, getLocationInfo } = Game.world;
   const { moveEntity } = Game.physics;
   const { applyPlayerDamage, hasFullFriendshipArmor, hasFriendshipAmuletAura } = Game.combat;
+  const { countItem } = Game.inventory;
+  const { ITEM } = Game.items;
   const audio = Game.audio;
   const LADDER_SPEED = 165;
   const WALK_FACTOR = 0.9;
@@ -190,6 +192,7 @@
       Math.floor((player.x + player.w / 2) / TILE),
       Math.floor((player.y + player.h / 2) / TILE)
     );
+    const steamAmuletReady = !!(Game.steamQuestSystem && Game.steamQuestSystem.hasSteamAmulet && Game.steamQuestSystem.hasSteamAmulet(state));
     if (location.biome !== 'water_caves' || hasFullFriendshipArmor(state) || creative || spectator) {
       player.waterCaveSafeX = player.x;
       player.waterCaveSafeY = player.y;
@@ -206,6 +209,68 @@
           state.ui.noticeText = 'Без полного сета брони дружбы Водные пещеры не пропускают.';
           state.ui.noticeTimer = 3.5;
           state.waterCaves.warningTimer = 2.6;
+        }
+      }
+    }
+
+    if (location.biome === 'air_caves' && (steamAmuletReady || creative || spectator)) {
+      player.airCaveInside = true;
+      player.airCaveSafeX = player.x;
+      player.airCaveSafeY = player.y;
+    } else if (location.biome === 'air_caves' && !steamAmuletReady && !creative && !spectator) {
+      if (Number.isFinite(player.airCaveSafeX) && Number.isFinite(player.airCaveSafeY)) {
+        player.x = player.airCaveSafeX;
+        player.y = player.airCaveSafeY;
+      }
+      player.vx = 0;
+      player.vy = 0;
+      if (state.airCaves) {
+        state.airCaves.warningTimer = Math.max(0, (state.airCaves.warningTimer || 0) - dt);
+        if ((state.airCaves.warningTimer || 0) <= 0) {
+          state.ui.noticeText = 'Без Амулета пара Воздушные пещеры не пропускают.';
+          state.ui.noticeTimer = 3.5;
+          state.airCaves.warningTimer = 2.6;
+        }
+      }
+    } else if (player.airCaveInside && state.airCaves && !state.airCaves.crystalTaken && !creative && !spectator) {
+      if (Number.isFinite(player.airCaveSafeX) && Number.isFinite(player.airCaveSafeY)) {
+        player.x = player.airCaveSafeX;
+        player.y = player.airCaveSafeY;
+      }
+      player.vx = 0;
+      player.vy = 0;
+      player.airCaveInside = false;
+      state.ui.noticeText = 'Сначала возьми Воздушный кристалл.';
+      state.ui.noticeTimer = 3.5;
+    } else if (location.biome !== 'air_caves') {
+      player.airCaveInside = false;
+    }
+
+    if (state.activeDimension === 'air' && state.airWorldMeta && state.airWorldMeta.startIsland) {
+      const start = state.airWorldMeta.startIsland;
+      const hasSteamAmulet = countItem(state, ITEM.STEAM_AMULET) > 0;
+      const playerCx = player.x + player.w / 2;
+      const playerCy = player.y + player.h / 2;
+      const insideStart = playerCx >= start.x0 * TILE && playerCx <= (start.x1 + 1) * TILE && playerCy >= start.y0 * TILE && playerCy <= (start.y1 + 1) * TILE;
+      if (hasSteamAmulet && !start.unlocked) {
+        start.unlocked = true;
+        state.ui.noticeText = 'Амулет пара рассеял барьер стартового облака.';
+        state.ui.noticeTimer = 4;
+      }
+      if (insideStart || !Number.isFinite(player.airStartSafeX) || !Number.isFinite(player.airStartSafeY)) {
+        player.airStartSafeX = player.x;
+        player.airStartSafeY = player.y;
+      }
+      if (!start.unlocked && !insideStart && !creative && !spectator) {
+        player.x = player.airStartSafeX;
+        player.y = player.airStartSafeY;
+        player.vx = 0;
+        player.vy = 0;
+        start.warningTimer = Math.max(0, (start.warningTimer || 0) - dt);
+        if ((start.warningTimer || 0) <= 0) {
+          state.ui.noticeText = 'Без Амулета пара невидимый барьер не выпускает со стартового облака.';
+          state.ui.noticeTimer = 3.5;
+          start.warningTimer = 2.6;
         }
       }
     }

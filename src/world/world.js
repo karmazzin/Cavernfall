@@ -2,6 +2,41 @@
   const Game = window.MC2D;
   const { WORLD_H, WORLD_W, TILE, UPPER_CAVE_END, DWARF_END, DEEP_START } = Game.constants;
   const { BLOCK } = Game.blocks;
+  const BIOME_LABELS = {
+    plains: 'Равнина',
+    forest: 'Лес',
+    mountains: 'Горы',
+    snow_plains: 'Снежная равнина',
+    desert: 'Пустыня',
+    volcano: 'Вулкан',
+    cave: 'Пещера',
+    dwarf_caves: 'Пещеры гномов',
+    deep: 'Глубины',
+    fire_caves: 'Огненные пещеры',
+    water_caves: 'Водные пещеры',
+    red_land: 'Красная земля',
+    lava_lake: 'Лавовое озеро',
+    water_surface: 'Водная гладь',
+    water_floor: 'Дно',
+    golden_garden: 'Сад золотых цветков',
+    air_caves: 'Воздушные пещеры',
+    air_isles: 'Облачные острова',
+    air_void: 'Небесная пустота',
+    lake: 'Озеро',
+    void: 'Пустота',
+  };
+  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void']);
+  const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
+  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
+  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
+
+  function biomeLabel(biome) {
+    return BIOME_LABELS[biome] || biome;
+  }
+
+  function getSelectableSingleBiomes() {
+    return Object.keys(BIOME_LABELS).filter((biome) => !SINGLE_BIOME_EXCLUDED.has(biome));
+  }
 
   function createGrid() {
     return Array.from({ length: WORLD_H }, () => Array(WORLD_W).fill(BLOCK.AIR));
@@ -25,10 +60,11 @@
       id !== BLOCK.DRY_BUSH &&
       id !== BLOCK.FIRE_PORTAL &&
       id !== BLOCK.WATER_DIMENSION_PORTAL &&
+      id !== BLOCK.AIR_CRYSTAL &&
+      id !== BLOCK.AIR_DIMENSION_PORTAL &&
       id !== BLOCK.FRIENDSHIP_AMULET &&
       id !== BLOCK.WATER_CRYSTAL &&
       id !== BLOCK.GOLDEN_GARDEN_SHELL &&
-      id !== BLOCK.CLOUD &&
       id !== BLOCK.STEAM_WATER
     );
   }
@@ -68,6 +104,32 @@
 
   function getLocationInfo(state, tx, ty) {
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
+    const singleBiome = state.worldMeta && state.worldMeta.worldType === 'single_biome' ? state.worldMeta.singleBiome : null;
+    if (singleBiome && SINGLE_BIOME_CAVE_SET.has(singleBiome)) {
+      const biome = state.biomeAt[safeTx] || singleBiome;
+      return {
+        biome,
+        climate: biome === 'fire_caves' ? 'warm' : 'any',
+        inCave: true,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (singleBiome && SINGLE_BIOME_FIRE_SET.has(singleBiome)) {
+      return {
+        biome: state.biomeAt[safeTx] || singleBiome,
+        climate: 'warm',
+        inCave: true,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (singleBiome && SINGLE_BIOME_WATER_SET.has(singleBiome)) {
+      return {
+        biome: state.biomeAt[safeTx] || singleBiome,
+        climate: 'any',
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
     if (state.worldMeta && state.worldMeta.worldType === 'cavern') {
       const biome = state.worldMeta.cavernBiome && state.worldMeta.cavernBiome !== 'mix'
         ? state.worldMeta.cavernBiome
@@ -110,6 +172,16 @@
         surfaceY: state.surfaceAt[safeTx] || 0,
       };
     }
+    if (state.activeDimension === 'air') {
+      const airMeta = state.airWorldMeta || {};
+      const voidStart = Number.isFinite(airMeta.voidStart) ? airMeta.voidStart : Math.floor(WORLD_H * 0.58);
+      return {
+        biome: ty >= voidStart ? 'air_void' : (state.biomeAt[safeTx] || 'air_isles'),
+        climate: 'any',
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
     const surfaceY = state.surfaceAt[safeTx];
     const block = getBlock(state, tx, ty);
     const airLike = block === BLOCK.AIR || block === BLOCK.COBWEB || block === BLOCK.TORCH || block === BLOCK.PILLAR || block === BLOCK.LADDER || liquid(block);
@@ -123,14 +195,16 @@
     const inFireCaves = !!(fireRegion && tx >= fireRegion.x0 && tx <= fireRegion.x1 && ty >= fireRegion.y0 && ty <= fireRegion.y1);
     const waterRegion = state.waterCaves && state.waterCaves.region;
     const inWaterCaves = !!(waterRegion && tx >= waterRegion.x0 && tx <= waterRegion.x1 && ty >= waterRegion.y0 && ty <= waterRegion.y1);
+    const airRegion = state.airCaves && state.airCaves.region;
+    const inAirCaves = !!(airRegion && tx >= airRegion.x0 && tx <= airRegion.x1 && ty >= airRegion.y0 && ty <= airRegion.y1);
     const surfaceBiome = state.biomeAt[safeTx];
     const surfaceClimate = state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate';
-    const biome = inWaterCaves ? 'water_caves' : inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
-    const climate = inFireCaves ? 'warm' : inWaterCaves || inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
+    const biome = inAirCaves ? 'air_caves' : inWaterCaves ? 'water_caves' : inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
+    const climate = inFireCaves ? 'warm' : inAirCaves || inWaterCaves || inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
     return {
       biome,
       climate,
-      inCave: inCave || inWaterCaves,
+      inCave: inCave || inWaterCaves || inAirCaves,
       surfaceY,
     };
   }
@@ -157,5 +231,19 @@
     return false;
   }
 
-  Game.world = { createGrid, blockSolid, liquid, getBlock, setBlock, isSolidAtPixel, getLocationInfo, isLitAt, getStaticLightRadius, isOpenDoorAt };
+  Game.world = {
+    BIOME_LABELS,
+    biomeLabel,
+    getSelectableSingleBiomes,
+    createGrid,
+    blockSolid,
+    liquid,
+    getBlock,
+    setBlock,
+    isSolidAtPixel,
+    getLocationInfo,
+    isLitAt,
+    getStaticLightRadius,
+    isOpenDoorAt,
+  };
 })();

@@ -108,6 +108,27 @@
     };
   }
 
+  function createWindfolk(tx, ty, chief = false) {
+    return {
+      x: tx * TILE + 2,
+      y: ty * TILE,
+      w: 14,
+      h: 20,
+      dir: Math.random() < 0.5 ? -1 : 1,
+      dirTimer: rand(1.8, 4),
+      timer: 0,
+      anchorX: tx * TILE + 2,
+      anchorY: ty * TILE,
+      anchorPhase: Math.random() * Math.PI * 2,
+      chief,
+      steamForm: false,
+      chestKey: null,
+      sleeping: false,
+      sleepBlockX: null,
+      sleepBlockY: null,
+    };
+  }
+
   function createGoldenFlowerGuardian(tx, ty) {
     return {
       x: tx * TILE - 20,
@@ -125,6 +146,24 @@
       isBoss: true,
       name: 'Страж золотых цветов',
       arena: { x0: Math.max(0, (tx - 16) * TILE), x1: (tx + 16) * TILE, y0: Math.max(0, (ty - 12) * TILE), y1: (ty + 10) * TILE },
+    };
+  }
+
+  function createAirGuardian(tx, ty) {
+    return {
+      x: tx * TILE - 18,
+      y: ty * TILE - 18,
+      w: 36,
+      h: 36,
+      hp: 450,
+      maxHp: 450,
+      vx: 0,
+      vy: 0,
+      dir: 1,
+      phaseTimer: 0,
+      isBoss: true,
+      name: 'Страж воздуха',
+      arena: { x0: Math.max(0, (tx - 18) * TILE), x1: (tx + 18) * TILE, y0: Math.max(0, (ty - 16) * TILE), y1: (ty + 16) * TILE },
     };
   }
 
@@ -148,7 +187,10 @@
     { id: ITEM.SPAWN_EGG_KRAKEN, wTiles: 4, hTiles: 4, spawn(state, tx, ty) { state.kraken = createKraken(tx, ty); } },
     { id: ITEM.SPAWN_EGG_WATERFOLK, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.waterfolk.push(createWaterfolk(tx, ty, false)); } },
     { id: ITEM.SPAWN_EGG_WATERFOLK_CHIEF, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.waterfolk.push(createWaterfolk(tx, ty, true)); } },
+    { id: ITEM.SPAWN_EGG_WINDFOLK, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { if (!Array.isArray(state.windfolk)) state.windfolk = []; state.windfolk.push(createWindfolk(tx, ty, false)); } },
+    { id: ITEM.SPAWN_EGG_WINDFOLK_CHIEF, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { if (!Array.isArray(state.windfolk)) state.windfolk = []; state.windfolk.push(createWindfolk(tx, ty, true)); } },
     { id: ITEM.SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN, wTiles: 3, hTiles: 4, spawn(state, tx, ty) { state.goldenFlowerGuardian = createGoldenFlowerGuardian(tx, ty); } },
+    { id: ITEM.SPAWN_EGG_AIR_GUARDIAN, wTiles: 3, hTiles: 3, spawn(state, tx, ty) { state.airGuardian = createAirGuardian(tx, ty); } },
   ];
 
   const EGG_MAP = Object.fromEntries(EGG_DEFS.map((entry) => [entry.id, entry]));

@@ -322,6 +322,50 @@
     }
   }
 
+  function drawWindfolk(ctx, windy, camera, time) {
+    if (windy.sleeping && Number.isFinite(windy.sleepBlockX) && Number.isFinite(windy.sleepBlockY)) {
+      const x = windy.sleepBlockX - camera.x - 4;
+      const y = windy.sleepBlockY - camera.y - 5;
+      ctx.fillStyle = '#f6fcff';
+      ctx.fillRect(x + 1, y + 11, 16, 4);
+      ctx.fillStyle = '#d9f4ff';
+      ctx.fillRect(x + 6, y + 7, 10, 5);
+      ctx.fillStyle = '#9fdaf0';
+      ctx.fillRect(x + 1, y + 6, 5, 4);
+      return;
+    }
+    const x = windy.x - camera.x;
+    const y = windy.y - camera.y;
+    if (windy.steamForm) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5 + windy.x * 0.03);
+      ctx.fillStyle = `rgba(244,251,255,${0.88 + pulse * 0.08})`;
+      ctx.beginPath();
+      ctx.arc(x + windy.w * 0.28, y + windy.h * 0.58, 5, 0, Math.PI * 2);
+      ctx.arc(x + windy.w * 0.52, y + windy.h * 0.34, 7, 0, Math.PI * 2);
+      ctx.arc(x + windy.w * 0.76, y + windy.h * 0.58, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(184,220,236,0.72)';
+      ctx.fillRect(x + 3, y + windy.h * 0.56, windy.w - 6, 3);
+      return;
+    }
+    const drift = Math.sin(time * 2.8 + windy.x * 0.02) * 1.6;
+    ctx.fillStyle = windy.chief ? '#cbeeff' : '#dff6ff';
+    ctx.fillRect(x + 2, y + 8 + drift * 0.2, 10, 9);
+    ctx.fillStyle = '#f7fdff';
+    ctx.fillRect(x + 3, y + 2 + drift * 0.12, 8, 7);
+    ctx.fillStyle = '#7eb4cc';
+    ctx.fillRect(x + (windy.dir > 0 ? 8 : 4), y + 5 + drift * 0.12, 2, 2);
+    ctx.fillStyle = '#9fdaf0';
+    ctx.fillRect(x + 4, y + 17, 3, 4);
+    ctx.fillRect(x + 8, y + 17, 3, 4);
+    if (windy.chief) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 4, y + 1, 6, 1);
+      ctx.fillRect(x + 5, y, 1, 2);
+      ctx.fillRect(x + 8, y, 1, 2);
+    }
+  }
+
   function drawGoldenFlowerGuardian(ctx, guardian, camera, time) {
     const x = guardian.x - camera.x;
     const y = guardian.y - camera.y;
@@ -344,6 +388,40 @@
     ctx.fillStyle = `rgba(255,227,120,${0.18 + pulse * 0.22})`;
     ctx.beginPath();
     ctx.arc(x + 22, y + 18, 20, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawAirGuardian(ctx, guardian, camera, time) {
+    const x = guardian.x - camera.x;
+    const y = guardian.y - camera.y;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 7 + guardian.x * 0.02);
+    const wing = Math.sin(time * 10) * 6;
+    ctx.fillStyle = 'rgba(230,248,255,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(x + 18, y + 18, 14, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(190,230,244,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y + 18);
+    ctx.lineTo(x - 3, y + 12 + wing);
+    ctx.lineTo(x + 2, y + 24 - wing * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + 26, y + 18);
+    ctx.lineTo(x + 39, y + 12 - wing);
+    ctx.lineTo(x + 34, y + 24 + wing * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 13, y + 13, 4, 4);
+    ctx.fillRect(x + 20, y + 13, 4, 4);
+    ctx.fillStyle = '#7fd6ff';
+    ctx.fillRect(x + 14, y + 14, 2, 2);
+    ctx.fillRect(x + 21, y + 14, 2, 2);
+    ctx.fillStyle = `rgba(244,252,255,${0.16 + pulse * 0.24})`;
+    ctx.beginPath();
+    ctx.arc(x + 18, y + 18, 18, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -630,5 +708,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawGoldenFlowerGuardian, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawGoldenFlowerGuardian, drawAirGuardian, drawBossHealthBar };
 })();

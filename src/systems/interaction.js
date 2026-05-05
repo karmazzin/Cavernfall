@@ -326,6 +326,80 @@
     return true;
   }
 
+  function findUsableAirCrystal(state, input, camera) {
+    if (isSpectator(state) || state.activeDimension !== 'overworld' || !state.airCaves || state.airCaves.crystalTaken) return null;
+    const air = state.airCaves;
+    if (getBlock(state, air.crystalX, air.crystalY) !== BLOCK.AIR_CRYSTAL) return null;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const dist = Math.hypot(air.crystalX * TILE + TILE / 2 - playerCx, air.crystalY * TILE + TILE / 2 - playerCy);
+    if (dist > 120) return null;
+    return { tx: air.crystalX, ty: air.crystalY };
+  }
+
+  function useNearbyAirCrystal(state, input, camera) {
+    const target = findUsableAirCrystal(state, input, camera);
+    if (!target) return false;
+    if (!addToInventory(state, ITEM.AIR_CRYSTAL, 1)) {
+      state.ui.noticeText = 'Инвентарь заполнен. Освободи слот для Кристалла воздуха.';
+      state.ui.noticeTimer = 3.5;
+      return true;
+    }
+    state.airCaves.crystalTaken = true;
+    state.airCaves.cleared = true;
+    setBlock(state, target.tx, target.ty, BLOCK.AIR);
+    state.ui.noticeText = 'Воздушный кристалл получен. Теперь можно покинуть Воздушные пещеры.';
+    state.ui.noticeTimer = 4.5;
+    return true;
+  }
+
+  function findUsableAirEntrance(state) {
+    if (isSpectator(state) || state.activeDimension !== 'overworld' || !state.airCaves || !state.airCaves.entrance) return null;
+    const entrance = state.airCaves.entrance;
+    if (!entrance.spawned || !entrance.revealed || entrance.guardianSpawned || entrance.guardianDefeated) return null;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const dist = Math.hypot(entrance.altarX * TILE + TILE / 2 - playerCx, entrance.altarY * TILE + TILE / 2 - playerCy);
+    if (dist > 110) return null;
+    return entrance;
+  }
+
+  function useNearbyAirEntrance(state) {
+    const entrance = findUsableAirEntrance(state);
+    if (!entrance) return false;
+    if (countItem(state, ITEM.AIR_CRYSTAL) <= 0) {
+      state.ui.noticeText = 'Нужен Кристалл воздуха.';
+      state.ui.noticeTimer = 3;
+      return true;
+    }
+    removeItem(state, ITEM.AIR_CRYSTAL, 1);
+    entrance.crystalPlaced = true;
+    entrance.guardianSpawned = true;
+    state.airGuardian = {
+      x: entrance.centerX * TILE - 18,
+      y: (entrance.y0 + 3) * TILE,
+      w: 36,
+      h: 36,
+      hp: 450,
+      maxHp: 450,
+      vx: 0,
+      vy: 0,
+      dir: 1,
+      phaseTimer: 0,
+      isBoss: true,
+      name: 'Страж воздуха',
+      arena: {
+        x0: (entrance.x0 - 6) * TILE,
+        x1: (entrance.x1 + 6) * TILE,
+        y0: Math.max(0, (entrance.y0 - 6) * TILE),
+        y1: Math.min(state.world.length * TILE, (entrance.y1 + 6) * TILE),
+      },
+    };
+    state.ui.noticeText = 'Страж воздуха пробудился.';
+    state.ui.noticeTimer = 4;
+    return true;
+  }
+
   function handleMouse(state, input, camera, dt) {
     if (isSpectator(state)) {
       state.breaking = null;
@@ -390,6 +464,15 @@
 
     if (state.goldenFlowerGuardian && wx >= state.goldenFlowerGuardian.x && wx <= state.goldenFlowerGuardian.x + state.goldenFlowerGuardian.w && wy >= state.goldenFlowerGuardian.y && wy <= state.goldenFlowerGuardian.y + state.goldenFlowerGuardian.h) {
       if (!rightClick && input.mouse.justPressed && Game.goldenFlowerGuardianEntity && Game.goldenFlowerGuardianEntity.hitGoldenFlowerGuardian(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (state.airGuardian && wx >= state.airGuardian.x && wx <= state.airGuardian.x + state.airGuardian.w && wy >= state.airGuardian.y && wy <= state.airGuardian.y + state.airGuardian.h) {
+      if (!rightClick && input.mouse.justPressed && Game.airGuardianEntity && Game.airGuardianEntity.hitAirGuardian(state)) {
         audio.playHit();
         useSelectedTool(state);
       }
@@ -679,6 +762,9 @@
     hasAllFriendshipTools,
     useNearbyWaterCrystal,
     findUsableWaterCrystal,
+    useNearbyAirCrystal,
+    findUsableAirCrystal,
+    useNearbyAirEntrance,
     useNearbyDungeonSeal,
     findUsableDungeonSeal,
     handleMouse,

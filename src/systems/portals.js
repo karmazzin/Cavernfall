@@ -1,15 +1,16 @@
 (() => {
   const Game = window.MC2D;
-  const { TILE } = Game.constants;
+  const { TILE, WORLD_W } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { getBlock, setBlock } = Game.world;
   const { ensureDimensions, switchDimension, syncActiveDimension } = Game.state;
-  const { generateFireDimensionBundle, generateWaterDimensionBundle } = Game.generation;
-  const ENTITY_GROUPS = ['animals', 'zombies', 'spiders', 'humans', 'dwarves', 'fireGuards', 'waterfolk'];
+  const { generateFireDimensionBundle, generateWaterDimensionBundle, generateAirDimensionBundle } = Game.generation;
+  const ENTITY_GROUPS = ['animals', 'zombies', 'spiders', 'humans', 'dwarves', 'fireGuards', 'waterfolk', 'windfolk'];
 
   function portalTypeForBlock(blockId) {
     if (blockId === BLOCK.FIRE_PORTAL) return 'fire';
     if (blockId === BLOCK.WATER_DIMENSION_PORTAL) return 'water';
+    if (blockId === BLOCK.AIR_DIMENSION_PORTAL) return 'air';
     return null;
   }
 
@@ -119,8 +120,25 @@
     }
   }
 
+  function ensureAirLink(state, originPortal) {
+    ensureDimensions(state);
+    if (!state.dimensions.air) {
+      syncActiveDimension(state);
+      state.dimensions.air = generateAirDimensionBundle(state.worldMeta, state.worldMeta && state.worldMeta.seed);
+    }
+    if (!state.portalLinks.airGate) {
+      const airMeta = state.dimensions.air.airWorldMeta || { portalX: Math.floor(WORLD_W / 2), portalY: 24 };
+      state.portalLinks.airGate = {
+        overworld: { x: originPortal.tx, y: originPortal.ty },
+        air: { x: airMeta.portalX, y: airMeta.portalY },
+      };
+    }
+  }
+
   function portalBlockForType(type) {
-    return type === 'water' ? BLOCK.WATER_DIMENSION_PORTAL : BLOCK.FIRE_PORTAL;
+    if (type === 'water') return BLOCK.WATER_DIMENSION_PORTAL;
+    if (type === 'air') return BLOCK.AIR_DIMENSION_PORTAL;
+    return BLOCK.FIRE_PORTAL;
   }
 
   function ensureTargetBundle(state, originPortal) {
@@ -133,11 +151,18 @@
       ensureWaterLink(state, originPortal);
       return { name: 'water', bundle: state.dimensions.water, portal: state.portalLinks.waterGate.water };
     }
+    if (state.activeDimension === 'overworld' && originPortal.type === 'air') {
+      ensureAirLink(state, originPortal);
+      return { name: 'air', bundle: state.dimensions.air, portal: state.portalLinks.airGate.air };
+    }
     if (state.activeDimension === 'fire' && originPortal.type === 'fire' && state.portalLinks.fireGate) {
       return { name: 'overworld', bundle: state.dimensions.overworld, portal: state.portalLinks.fireGate.overworld };
     }
     if (state.activeDimension === 'water' && originPortal.type === 'water' && state.portalLinks.waterGate) {
       return { name: 'overworld', bundle: state.dimensions.overworld, portal: state.portalLinks.waterGate.overworld };
+    }
+    if (state.activeDimension === 'air' && originPortal.type === 'air' && state.portalLinks.airGate) {
+      return { name: 'overworld', bundle: state.dimensions.overworld, portal: state.portalLinks.airGate.overworld };
     }
     return null;
   }
@@ -161,6 +186,14 @@
       placePlayerAtPortal(state, link.water.x, link.water.y);
       return true;
     }
+    if (state.activeDimension === 'overworld' && touched.type === 'air') {
+      ensureAirLink(state, touched);
+      const link = state.portalLinks.airGate;
+      switchDimension(state, 'air');
+      setBlock(state, link.air.x, link.air.y, BLOCK.AIR_DIMENSION_PORTAL);
+      placePlayerAtPortal(state, link.air.x, link.air.y);
+      return true;
+    }
 
     if (state.activeDimension === 'fire' && touched.type === 'fire' && state.portalLinks.fireGate) {
       const link = state.portalLinks.fireGate;
@@ -173,6 +206,13 @@
       const link = state.portalLinks.waterGate;
       switchDimension(state, 'overworld');
       setBlock(state, link.overworld.x, link.overworld.y, BLOCK.WATER_DIMENSION_PORTAL);
+      placePlayerAtPortal(state, link.overworld.x, link.overworld.y);
+      return true;
+    }
+    if (state.activeDimension === 'air' && touched.type === 'air' && state.portalLinks.airGate) {
+      const link = state.portalLinks.airGate;
+      switchDimension(state, 'overworld');
+      setBlock(state, link.overworld.x, link.overworld.y, BLOCK.AIR_DIMENSION_PORTAL);
       placePlayerAtPortal(state, link.overworld.x, link.overworld.y);
       return true;
     }

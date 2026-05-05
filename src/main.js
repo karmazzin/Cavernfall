@@ -12,10 +12,12 @@
   const { updateSpiders } = Game.spidersEntity;
   const { updateFireGuards } = Game.fireGuardsEntity;
   const { updateWaterfolk } = Game.waterfolkEntity;
+  const { updateWindfolk } = Game.windfolkEntity || {};
   const { updateFireKing } = Game.fireKingEntity;
   const { updateFriendlyFireKing } = Game.friendlyFireKingEntity;
   const { updateKraken } = Game.krakenEntity || {};
   const { updateGoldenFlowerGuardian } = Game.goldenFlowerGuardianEntity || {};
+  const { updateAirGuardian } = Game.airGuardianEntity || {};
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
@@ -31,7 +33,7 @@
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
   const { ITEM } = Game.items;
-  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal } = Game.interaction;
+  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal, useNearbyAirCrystal, useNearbyAirEntrance } = Game.interaction;
   const { getLocationInfo } = Game.world;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
@@ -355,14 +357,22 @@
       if (button.id === 'controls_back') state.pause.showControls = false;
       if (button.id === 'choose_mode') state.pause.showModePicker = true;
       if (button.id === 'mode_back') state.pause.showModePicker = false;
-      if (button.id === 'compass') state.pause.showCompass = true;
+      if (button.id === 'compass') {
+        state.pause.showCompass = true;
+        state.pause.compassPage = 0;
+      }
       if (button.id === 'compass_back') state.pause.showCompass = false;
+      if (button.id === 'compass_prev_page') state.pause.compassPage = Math.max(0, (state.pause.compassPage || 0) - 1);
+      if (button.id === 'compass_next_page') state.pause.compassPage = (state.pause.compassPage || 0) + 1;
       if (button.id === 'assistant') state.pause.showAssistant = true;
       if (button.id === 'compass_track_fire_caves') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_caves' ? null : 'fire_caves';
       }
       if (button.id === 'compass_track_water_caves') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'water_caves' ? null : 'water_caves';
+      }
+      if (button.id === 'compass_track_air_caves') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'air_caves' ? null : 'air_caves';
       }
       if (button.id === 'compass_track_fire_pyramid') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_pyramid' ? null : 'fire_pyramid';
@@ -381,6 +391,12 @@
       }
       if (button.id === 'compass_track_main_well') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'main_well' ? null : 'main_well';
+      }
+      if (button.id === 'compass_track_air_entrance') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'air_entrance' ? null : 'air_entrance';
+      }
+      if (button.id === 'compass_track_air_castle') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'air_castle' ? null : 'air_castle';
       }
       if (button.id === 'mode_survival') applyWorldMode('survival');
       if (button.id === 'mode_hardcore') applyWorldMode('hardcore');
@@ -467,7 +483,7 @@
         useSteamCloud(state);
         return;
       }
-      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !useSteamCloud(state)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyAirCrystal(state, input, camera) && !useNearbyAirEntrance(state) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !useSteamCloud(state)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing' && !state.hardcoreDeath) resetCurrentWorld();
@@ -643,10 +659,12 @@
     updateSpiders(state, dt);
     updateFireGuards(state, dt);
     if (updateWaterfolk) updateWaterfolk(state, dt);
+    if (updateWindfolk) updateWindfolk(state, dt);
     updateFireKing(state, dt);
     updateFriendlyFireKing(state, dt);
     if (updateKraken) updateKraken(state, dt);
     if (updateGoldenFlowerGuardian) updateGoldenFlowerGuardian(state, dt);
+    if (updateAirGuardian) updateAirGuardian(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
@@ -674,6 +692,7 @@
       let reached = false;
       if (state.pause.activeCompassTarget === 'fire_caves') reached = currentBiome === 'fire_caves';
       else if (state.pause.activeCompassTarget === 'water_caves') reached = currentBiome === 'water_caves';
+      else if (state.pause.activeCompassTarget === 'air_caves') reached = currentBiome === 'air_caves';
       else if (state.pause.activeCompassTarget === 'fire_pyramid' && state.firePyramid) {
         const dx = state.firePyramid.centerX * Game.constants.TILE - px;
         const dy = state.firePyramid.baseY * Game.constants.TILE - py;
@@ -704,6 +723,14 @@
         const dx = mainWell.centerX * Game.constants.TILE - px;
         const dy = mainWell.baseY * Game.constants.TILE - py;
         reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'air_entrance' && state.airCaves && state.airCaves.entrance) {
+        const entrance = state.airCaves.entrance;
+        reached = px >= entrance.x0 * Game.constants.TILE && px <= (entrance.x1 + 1) * Game.constants.TILE && py >= entrance.y0 * Game.constants.TILE && py <= (entrance.y1 + 1) * Game.constants.TILE;
+      } else if (state.pause.activeCompassTarget === 'air_castle' && state.airWorldMeta && state.airWorldMeta.castle) {
+        const castle = state.airWorldMeta.castle;
+        const dx = castle.centerX * Game.constants.TILE - px;
+        const dy = castle.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 12;
       }
       if (reached) {
         state.pause.activeCompassTarget = null;

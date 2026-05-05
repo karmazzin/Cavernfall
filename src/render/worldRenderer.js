@@ -204,6 +204,40 @@
       ctx.fillRect(x, y + 2, TILE, 2);
       ctx.fillStyle = 'rgba(220,248,255,0.24)';
       ctx.fillRect(x + 3, y + 6, TILE - 6, 5);
+    } else if (id === BLOCK.AIR_CRYSTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6 + x * 0.03);
+      ctx.fillStyle = '#bedff0';
+      ctx.fillRect(x + 6, y + 7, 4, 7);
+      ctx.fillStyle = '#ecfbff';
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + 2);
+      ctx.lineTo(x + 12, y + 8);
+      ctx.lineTo(x + 8, y + 14);
+      ctx.lineTo(x + 4, y + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${0.22 + pulse * 0.28})`;
+      ctx.fillRect(x + 4, y + 4, 8, 8);
+    } else if (id === BLOCK.AIR_ENTRANCE_FRAME) {
+      ctx.fillStyle = '#a6cada';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = '#f3fdff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.fillStyle = '#d4edf8';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = '#82a9bb';
+      ctx.fillRect(x + 5, y + 5, TILE - 10, TILE - 10);
+    } else if (id === BLOCK.AIR_DIMENSION_PORTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 7 + x * 0.08);
+      ctx.fillStyle = '#dff8ff';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#9ee5ff';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(255,255,255,${0.18 + pulse * 0.24})`;
+      ctx.fillRect(x + 5, y + 4, TILE - 10, TILE - 8);
+      ctx.strokeStyle = '#f6ffff';
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
     } else if (id === BLOCK.STONE) {
       ctx.fillStyle = '#999';
       ctx.fillRect(x + 3, y + 3, 3, 3);

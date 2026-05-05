@@ -23,6 +23,7 @@
     MEDICINE: 'medicine',
     MAIN_WELL_MAP: 'main_well_map',
     STEAM_AMULET: 'steam_amulet',
+    AIR_CRYSTAL: 'air_crystal',
     FRIENDSHIP_INGOT: 'friendship_ingot',
     STEAM_INGOT: 'steam_ingot',
     WHEAT: 'wheat',
@@ -85,7 +86,10 @@
     SPAWN_EGG_KRAKEN: 'spawn_egg_kraken',
     SPAWN_EGG_WATERFOLK: 'spawn_egg_waterfolk',
     SPAWN_EGG_WATERFOLK_CHIEF: 'spawn_egg_waterfolk_chief',
+    SPAWN_EGG_WINDFOLK: 'spawn_egg_windfolk',
+    SPAWN_EGG_WINDFOLK_CHIEF: 'spawn_egg_windfolk_chief',
     SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN: 'spawn_egg_golden_flower_guardian',
+    SPAWN_EGG_AIR_GUARDIAN: 'spawn_egg_air_guardian',
   };
 
   const BLOCK_LABELS = {
@@ -137,6 +141,9 @@
     [BLOCK.MAIN_WELL_FRAME]: 'Рамка главного колодца',
     [BLOCK.CLOUD]: 'Облако',
     [BLOCK.STEAM_WATER]: 'Вода амулета пара',
+    [BLOCK.AIR_CRYSTAL]: 'Воздушный кристалл',
+    [BLOCK.AIR_ENTRANCE_FRAME]: 'Рамка входа в воздушное измерение',
+    [BLOCK.AIR_DIMENSION_PORTAL]: 'Портал в воздушное измерение',
   };
 
   const ITEM_DEFS = {
@@ -159,6 +166,7 @@
     [ITEM.MEDICINE]: { id: ITEM.MEDICINE, label: 'Лекарство', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.MAIN_WELL_MAP]: { id: ITEM.MAIN_WELL_MAP, label: 'Карта к главному колодцу', kind: 'material', stackLimit: 1 },
     [ITEM.STEAM_AMULET]: { id: ITEM.STEAM_AMULET, label: 'Амулет пара', kind: 'material', stackLimit: 1 },
+    [ITEM.AIR_CRYSTAL]: { id: ITEM.AIR_CRYSTAL, label: 'Кристалл воздуха', kind: 'material', stackLimit: 1 },
     [ITEM.FRIENDSHIP_INGOT]: { id: ITEM.FRIENDSHIP_INGOT, label: 'Дружный слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.STEAM_INGOT]: { id: ITEM.STEAM_INGOT, label: 'Парный слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WHEAT]: { id: ITEM.WHEAT, label: 'Пшеница', kind: 'material', stackLimit: STACK_LIMIT },
@@ -533,7 +541,10 @@
     [ITEM.SPAWN_EGG_KRAKEN]: { id: ITEM.SPAWN_EGG_KRAKEN, label: 'Яйцо призыва кракена', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#5cb8cf', '#153a5a'] },
     [ITEM.SPAWN_EGG_WATERFOLK]: { id: ITEM.SPAWN_EGG_WATERFOLK, label: 'Яйцо призыва водяного', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#66d2ff', '#256c95'] },
     [ITEM.SPAWN_EGG_WATERFOLK_CHIEF]: { id: ITEM.SPAWN_EGG_WATERFOLK_CHIEF, label: 'Яйцо призыва вождя водяных', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#8ae8ff', '#174d8f'] },
+    [ITEM.SPAWN_EGG_WINDFOLK]: { id: ITEM.SPAWN_EGG_WINDFOLK, label: 'Яйцо призыва ветренного', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#eefcff', '#9ccfe5'] },
+    [ITEM.SPAWN_EGG_WINDFOLK_CHIEF]: { id: ITEM.SPAWN_EGG_WINDFOLK_CHIEF, label: 'Яйцо призыва воздушного короля', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#ffffff', '#7fb3cb'] },
     [ITEM.SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN]: { id: ITEM.SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN, label: 'Яйцо призыва стража золотых цветов', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#ffe47a', '#7a5a12'] },
+    [ITEM.SPAWN_EGG_AIR_GUARDIAN]: { id: ITEM.SPAWN_EGG_AIR_GUARDIAN, label: 'Яйцо призыва стража воздуха', kind: 'spawn_egg', stackLimit: STACK_LIMIT, spawnEggColors: ['#f4fdff', '#9ccfe5'] },
   };
 
   function isBlockItem(itemId) {

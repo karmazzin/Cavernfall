@@ -77,9 +77,18 @@
         if (Math.hypot(dx, dy) <= 96) {
           meta.steamAmuletGiven = true;
           if (countItem(state, ITEM.STEAM_AMULET) <= 0) addToInventory(state, ITEM.STEAM_AMULET, 1);
+          if (state.dimensions && state.dimensions.overworld && Game.generation && Game.generation.spawnAirEntrance) {
+            const overworld = state.dimensions.overworld;
+            overworld.activeDimension = 'overworld';
+            overworld.worldMeta = state.worldMeta;
+            if (Game.generation.retrofitWorldFeatures) Game.generation.retrofitWorldFeatures(overworld);
+            Game.generation.spawnAirEntrance(overworld);
+            delete overworld.activeDimension;
+            delete overworld.worldMeta;
+          }
           state.pause.activeCompassTarget = null;
-          state.ui.noticeText = 'Водяной: Прими Амулет пара.';
-          state.ui.noticeTimer = 5.5;
+          state.ui.noticeText = 'Водяной: Прими Амулет пара. В небе появилась новая тайна.';
+          state.ui.noticeTimer = 6;
         }
       }
     }
