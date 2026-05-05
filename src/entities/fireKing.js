@@ -59,6 +59,7 @@
 
   function updateFireKing(state, dt) {
     if (state.activeDimension !== 'fire' || !state.fireKing) return;
+    if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
     const king = state.fireKing;
     const playerCx = state.player.x + state.player.w / 2;
     const playerCy = state.player.y + state.player.h / 2;

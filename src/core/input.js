@@ -133,7 +133,7 @@
 
       if (event.code === 'KeyE' && !state.gameOver && !event.repeat) actions.use();
       if (event.code === 'KeyF' && !event.repeat) actions.toggleCreativeFlight();
-      if (event.code === 'KeyY' && !event.repeat) actions.toggleCrafting();
+      if (event.code === 'KeyY' && !event.repeat && !isTouchMode()) actions.toggleCrafting();
       if (event.code === 'Escape' && !event.repeat) actions.togglePause();
       if (state.gameOver && !state.hardcoreDeath && event.code === 'KeyR') actions.restart();
 
@@ -242,6 +242,7 @@
         event.preventDefault();
         actions.unlockAudio();
         if (action === 'eat') actions.eatFood();
+        if (action === 'use') actions.use();
         if (action === 'craft') actions.toggleCrafting();
         if (action === 'pause') actions.togglePause();
       });

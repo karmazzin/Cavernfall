@@ -45,6 +45,10 @@
     return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
+  function isMobileMode(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'mobile');
+  }
+
   function clearSlot(slot) {
     copySlot(slot, null);
   }
@@ -61,7 +65,7 @@
   }
 
   function openCrafting(state) {
-    if (isSpectatorMode(state)) return;
+    if (isSpectatorMode(state) || isMobileMode(state)) return;
     const crafting = ensureCraftingState(state);
     crafting.open = true;
     updateCraftingResult(state);
@@ -81,7 +85,7 @@
   }
 
   function openChest(state, tx, ty) {
-    if (isSpectatorMode(state)) return;
+    if (isSpectatorMode(state) || isMobileMode(state)) return;
     const crafting = ensureCraftingState(state);
     crafting.chestOpenKey = `${tx},${ty}`;
     crafting.tradeSettlementId = null;
@@ -91,7 +95,7 @@
   }
 
   function openTrade(state, settlementId) {
-    if (isSpectatorMode(state)) return;
+    if (isSpectatorMode(state) || isMobileMode(state)) return;
     const crafting = ensureCraftingState(state);
     crafting.tradeSettlementId = settlementId;
     crafting.tradeHumanId = null;
@@ -101,7 +105,7 @@
   }
 
   function openHumanTrade(state, humanId) {
-    if (isSpectatorMode(state)) return;
+    if (isSpectatorMode(state) || isMobileMode(state)) return;
     const crafting = ensureCraftingState(state);
     crafting.tradeHumanId = humanId;
     crafting.tradeSettlementId = null;
@@ -142,7 +146,7 @@
   }
 
   function toggleCrafting(state) {
-    if (isSpectatorMode(state)) return;
+    if (isSpectatorMode(state) || isMobileMode(state)) return;
     if (state.gameOver || (state.pause && state.pause.open)) return;
     if (ensureCraftingState(state).open) closeCrafting(state);
     else openCrafting(state);

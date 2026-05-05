@@ -15,6 +15,7 @@
   function updateKraken(state, dt) {
     const kraken = state.kraken;
     if (!kraken) return;
+    if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
     const arena = kraken.arena;
     const playerCx = state.player.x + state.player.w / 2;
     const playerCy = state.player.y + state.player.h / 2;

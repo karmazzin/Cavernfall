@@ -8,6 +8,10 @@
     return !!(state.worldMeta && state.worldMeta.mode !== 'survival');
   }
 
+  function isMobileClient(state) {
+    return !!(state.ui && state.ui.controlMode === 'touch');
+  }
+
   function isHardcoreSpectator(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'hardcore_spectator');
   }
@@ -200,7 +204,7 @@
     const compactHeight = mobile && canvas.height < 760;
     const panelWidth = mobile ? Math.min(canvas.width - 16, 340) : 360;
     const creativeExtra = hasCompassMode(state) ? 1 : 0;
-    const assistantExtra = 1;
+    const assistantExtra = isMobileClient(state) ? 0 : 1;
     const panelHeight = state.pause.confirmRestart
       ? 240
       : state.pause.showControls
@@ -242,16 +246,23 @@
       const buttonH = compactHeight ? 36 : 42;
       const startY = compactHeight ? 84 : 96;
       const gap = compactHeight ? 8 : 10;
+      const mobileClient = isMobileClient(state);
       return {
         panel,
-        buttons: [
-          { id: 'mode_survival', label: 'Выживание', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
-          { id: 'mode_hardcore', label: 'Хардкор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
-          { id: 'mode_creative', label: 'Творческий', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
-          { id: 'mode_infinite_inventory', label: 'Бесконечный инвентарь', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
-          { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 4, w: panel.w - 40, h: buttonH },
-          { id: 'mode_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: buttonH },
-        ],
+        buttons: mobileClient
+          ? [
+              { id: 'mode_mobile', label: 'Мобильный режим', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
+              { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
+              { id: 'mode_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: buttonH },
+            ]
+          : [
+              { id: 'mode_survival', label: 'Выживание', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
+              { id: 'mode_hardcore', label: 'Хардкор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
+              { id: 'mode_creative', label: 'Творческий', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH },
+              { id: 'mode_infinite_inventory', label: 'Бесконечный инвентарь', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 3, w: panel.w - 40, h: buttonH },
+              { id: 'mode_spectator', label: 'Спектатор', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 4, w: panel.w - 40, h: buttonH },
+              { id: 'mode_back', label: 'Назад', x: panel.x + 20, y: panel.y + panel.h - (compactHeight ? 48 : 62), w: panel.w - 40, h: buttonH },
+            ],
       };
     }
 
@@ -300,11 +311,11 @@
         { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
         ...(!isHardcoreSpectator(state) ? [{ id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH }] : []),
         ...(hasCompassMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (isHardcoreSpectator(state) ? 2 : 3), w: panel.w - 40, h: buttonH }] : []),
-        { id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 2 : 3) + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 3 : 4) + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 4 : 5) + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 5 : 6) + creativeExtra), w: panel.w - 40, h: buttonH },
-        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 6 : 7) + creativeExtra), w: panel.w - 40, h: buttonH },
+        ...(isMobileClient(state) ? [] : [{ id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 2 : 3) + creativeExtra), w: panel.w - 40, h: buttonH }]),
+        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 3 : 4) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
+        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 4 : 5) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
+        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 5 : 6) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
+        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 6 : 7) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
       ],
     };
   }
@@ -379,6 +390,7 @@
         survival: 'Выживание',
         hardcore: 'Хардкор',
         creative: 'Творческий',
+        mobile: 'Мобильный режим',
         infinite_inventory: 'Бесконечный инвентарь',
         spectator: 'Спектатор',
         hardcore_spectator: 'Хардкорный спектатор',

@@ -17,6 +17,7 @@
   }
 
   function updateFireGuards(state, dt) {
+    const ignorePlayer = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
     for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
       const guard = state.fireGuards[i];
       ensureMobState(guard);
@@ -29,7 +30,7 @@
       const playerDist = Math.hypot((state.player.x + state.player.w / 2) - (guard.x + guard.w / 2), (state.player.y + state.player.h / 2) - (guard.y + guard.h / 2));
       let targetDir = 0;
       const destroyer = guard.role === 'destroyer';
-      if (!destroyer && playerDist < 180) targetDir = state.player.x < guard.x ? -1 : 1;
+      if (!ignorePlayer && !destroyer && playerDist < 180) targetDir = state.player.x < guard.x ? -1 : 1;
       else {
         if (guard.patrolTimer <= 0) {
           guard.dir *= Math.random() < 0.55 ? 1 : -1;
@@ -80,7 +81,7 @@
         guard.vy = Math.min(guard.vy, 120);
       }
 
-      if (canHitPlayer(state, guard) && guard.attackCd <= 0) {
+      if (!ignorePlayer && canHitPlayer(state, guard) && guard.attackCd <= 0) {
         guard.attackCd = 0.9;
         applyPlayerDamage(state, 3, { flash: 0.25 });
       }

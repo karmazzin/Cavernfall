@@ -18,7 +18,7 @@
   };
 
   function ignoresPlayer(state) {
-    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
   function ensureColony(state) {

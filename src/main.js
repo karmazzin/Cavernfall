@@ -63,6 +63,14 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
   }
 
+  function isTouchClient() {
+    return !!(state.ui && state.ui.controlMode === 'touch');
+  }
+
+  function isMobileGameMode() {
+    return !!(state.worldMeta && state.worldMeta.mode === 'mobile');
+  }
+
   function isInfiniteInventoryMode() {
     return !!(state.worldMeta && state.worldMeta.mode === 'infinite_inventory');
   }
@@ -81,7 +89,7 @@
 
   function toggleCreativeFlight() {
     if (app.screen !== 'playing' || !isCreativeMode()) return;
-    if (state.ui && state.ui.controlMode === 'touch') return;
+    if (isTouchClient()) return;
     state.player.creativeFlight = !state.player.creativeFlight;
   }
 
@@ -153,7 +161,7 @@
     const overlayHidden = !!(playing && (state.pause.open || (state.crafting && state.crafting.open)));
     document.body.classList.toggle('ui-overlay-hidden', overlayHidden);
     document.body.classList.toggle('menu-open', !playing);
-    assistantUi.setVisible(!!((playing && state.pause.open && state.pause.showAssistant) || (!playing && app.showAssistant)));
+    assistantUi.setVisible(!isTouchClient() && !!((playing && state.pause.open && state.pause.showAssistant) || (!playing && app.showAssistant)));
   }
 
   function refreshWorldList() {
@@ -174,6 +182,9 @@
       state.player.creativeFlight = false;
     }
     input.syncUiState();
+    if (!isTouchClient() && state.worldMeta && state.worldMeta.mode === 'mobile') {
+      state.worldMeta.mode = 'survival';
+    }
     syncBodyUiState();
   }
 
@@ -212,7 +223,7 @@
       y: state.player.y,
     };
     state.player.sleepRespawnHistory = [];
-    if (meta.mode !== 'creative' && meta.mode !== 'spectator' && meta.mode !== 'hardcore_spectator' && meta.mode !== 'infinite_inventory') seedStarterInventory();
+    if (meta.mode !== 'creative' && meta.mode !== 'spectator' && meta.mode !== 'hardcore_spectator' && meta.mode !== 'infinite_inventory' && meta.mode !== 'mobile') seedStarterInventory();
   }
 
   function startNewWorld(options) {
@@ -299,6 +310,11 @@
   function applyWorldMode(mode) {
     if (!state.worldMeta) return;
     const currentMode = state.worldMeta.mode || 'survival';
+    if (mode === 'mobile' && !isTouchClient()) {
+      state.pause.statusText = 'Мобильный режим доступен только на touch-устройствах.';
+      state.pause.showModePicker = false;
+      return;
+    }
     if (currentMode === 'hardcore_spectator') {
       state.pause.statusText = 'Хардкорный спектатор не может сменить режим.';
       state.pause.showModePicker = false;
@@ -307,6 +323,7 @@
     const modeLabels = {
       survival: 'Выживание',
       hardcore: 'Хардкор',
+      mobile: 'Мобильный режим',
       creative: 'Творческий',
       infinite_inventory: 'Бесконечный инвентарь',
       spectator: 'Спектатор',
@@ -322,6 +339,11 @@
     state.worldMeta.updatedAt = Date.now();
 
     if (mode !== 'creative') state.player.creativeFlight = false;
+    if (mode === 'mobile') {
+      closeCrafting(state);
+      state.pause.showAssistant = false;
+      state.breaking = null;
+    }
 
     if (mode === 'spectator') {
       closeCrafting(state);
@@ -400,6 +422,7 @@
       }
       if (button.id === 'mode_survival') applyWorldMode('survival');
       if (button.id === 'mode_hardcore') applyWorldMode('hardcore');
+      if (button.id === 'mode_mobile') applyWorldMode('mobile');
       if (button.id === 'mode_creative') applyWorldMode('creative');
       if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
       if (button.id === 'mode_spectator') applyWorldMode('spectator');
@@ -450,12 +473,15 @@
       menu.render(app);
     },
     onAction(action, worldId) {
-      if (action === 'open-new') app.screen = 'new-world';
+      if (action === 'open-new') {
+        app.screen = 'new-world';
+        if (isTouchClient()) app.newWorld.mode = app.newWorld.mode === 'spectator' ? 'spectator' : 'mobile';
+      }
       if (action === 'open-load') {
         refreshWorldList();
         app.screen = 'load-worlds';
       }
-      if (action === 'open-assistant') {
+      if (action === 'open-assistant' && !isTouchClient()) {
         app.showAssistant = true;
         assistantUi.reset();
       }
@@ -475,7 +501,14 @@
 
   const input = setupInput(canvas, state, {
     eatFood: () => {
-      if (app.screen === 'playing' && !isSpectatorMode()) eatFood(state);
+      if (app.screen !== 'playing' || isSpectatorMode()) return;
+      if (isMobileGameMode()) {
+        state.player.satiety = 100;
+        state.ui.noticeText = 'Сытость восполнена.';
+        state.ui.noticeTimer = 1.5;
+        return;
+      }
+      eatFood(state);
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
@@ -491,7 +524,7 @@
     unlockAudio: () => Game.audio.unlock(),
     toggleCreativeFlight,
     toggleCrafting: () => {
-      if (app.screen !== 'playing' || isSpectatorMode()) return;
+      if (app.screen !== 'playing' || isSpectatorMode() || isTouchClient() || isMobileGameMode()) return;
       toggleCrafting(state);
       syncBodyUiState();
     },

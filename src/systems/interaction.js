@@ -39,6 +39,10 @@
     return !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
   }
 
+  function isMobileMode(state) {
+    return !!(state.worldMeta && state.worldMeta.mode === 'mobile');
+  }
+
   function getBlockDrop(blockId) {
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
     if (blockId === BLOCK.IRON_ORE) return { id: ITEM.RAW_IRON, count: 1 };
@@ -414,6 +418,12 @@
     }
 
     if (state.crafting && state.crafting.open) {
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (isMobileMode(state)) {
       state.breaking = null;
       input.mouse.justPressed = false;
       return;

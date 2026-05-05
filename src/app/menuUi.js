@@ -12,6 +12,7 @@
   }
 
   function modeLabel(mode) {
+    if (mode === 'mobile') return 'Мобильный режим';
     if (mode === 'creative') return 'Творческий';
     if (mode === 'infinite_inventory') return 'Бесконечный инвентарь';
     if (mode === 'spectator') return 'Спектатор';
@@ -35,6 +36,7 @@
   }
 
   function renderMain() {
+    const mobileClient = matchMedia('(pointer: coarse)').matches || Math.max(navigator.maxTouchPoints || 0, navigator.msMaxTouchPoints || 0) > 0 || window.innerWidth <= 1024;
     return `
       <div class="menu-card menu-hero">
         <h1 class="menu-logo" aria-label="Cavern Fall">
@@ -45,7 +47,7 @@
         <div class="menu-actions">
           <button class="menu-btn menu-btn-primary" data-menu-action="open-new">Создать Новый Мир</button>
           <button class="menu-btn" data-menu-action="open-load">Загрузить Сохраненные Миры</button>
-          <button class="menu-btn" data-menu-action="open-assistant">Спросить у чат-бота</button>
+          ${mobileClient ? '' : '<button class="menu-btn" data-menu-action="open-assistant">Спросить у чат-бота</button>'}
         </div>
       </div>
     `;
@@ -53,6 +55,7 @@
 
   function renderNewWorld(app) {
     const model = app.newWorld;
+    const mobileClient = matchMedia('(pointer: coarse)').matches || Math.max(navigator.maxTouchPoints || 0, navigator.msMaxTouchPoints || 0) > 0 || window.innerWidth <= 1024;
     return `
       <div class="menu-card menu-form-card">
         <div class="menu-panel-title">Создание Мира</div>
@@ -67,11 +70,18 @@
         <div class="menu-field">
           <span>Режим</span>
           <div class="menu-mode-row">
-            <button class="menu-mode-btn ${model.mode === 'survival' ? 'is-active' : ''}" data-menu-mode="survival">Выживание</button>
-            <button class="menu-mode-btn ${model.mode === 'creative' ? 'is-active' : ''}" data-menu-mode="creative">Творческий</button>
-            <button class="menu-mode-btn ${model.mode === 'infinite_inventory' ? 'is-active' : ''}" data-menu-mode="infinite_inventory">Бесконечный инвентарь</button>
-            <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
-            <button class="menu-mode-btn ${model.mode === 'hardcore' ? 'is-active' : ''}" data-menu-mode="hardcore">Хардкор</button>
+            ${mobileClient
+              ? `
+                <button class="menu-mode-btn ${model.mode === 'mobile' ? 'is-active' : ''}" data-menu-mode="mobile">Мобильный режим</button>
+                <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
+              `
+              : `
+                <button class="menu-mode-btn ${model.mode === 'survival' ? 'is-active' : ''}" data-menu-mode="survival">Выживание</button>
+                <button class="menu-mode-btn ${model.mode === 'creative' ? 'is-active' : ''}" data-menu-mode="creative">Творческий</button>
+                <button class="menu-mode-btn ${model.mode === 'infinite_inventory' ? 'is-active' : ''}" data-menu-mode="infinite_inventory">Бесконечный инвентарь</button>
+                <button class="menu-mode-btn ${model.mode === 'spectator' ? 'is-active' : ''}" data-menu-mode="spectator">Спектатор</button>
+                <button class="menu-mode-btn ${model.mode === 'hardcore' ? 'is-active' : ''}" data-menu-mode="hardcore">Хардкор</button>
+              `}
           </div>
         </div>
         <div class="menu-field">
@@ -92,6 +102,8 @@
         ` : ''}
         <div class="menu-hint">${model.mode === 'spectator'
               ? 'В режиме спектатора игрок проходит сквозь блоки, не получает урон, не видит HUD и не может ни с чем взаимодействовать.'
+          : model.mode === 'mobile'
+            ? 'Мобильный режим доступен только на touch-устройствах. В нём нет инвентаря, нельзя добывать и строить, а hostile-мобы игнорируют игрока как в творческом.'
           : model.mode === 'infinite_inventory'
             ? 'Это выживание с бесконечным творческим каталогом предметов. При смерти игрок возрождается на месте без экрана поражения.'
             : model.mode === 'creative'

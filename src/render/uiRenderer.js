@@ -22,6 +22,7 @@
   }
 
   function drawHotbar(ctx, canvas, state) {
+    if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
     const layout = getHotbarLayout(canvas, state);
 
     for (let i = 0; i < HOTBAR_SIZE; i += 1) {
@@ -264,6 +265,7 @@
   function drawUI(ctx, canvas, state, phase) {
     const mobile = isMobileUi(canvas, state);
     const creative = !!(state.worldMeta && state.worldMeta.mode === 'creative');
+    const mobileMode = !!(state.worldMeta && state.worldMeta.mode === 'mobile');
     const spectator = !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
     if (spectator) return;
     const panelW = mobile ? Math.min(canvas.width - 24, 252) : 280;
@@ -295,8 +297,8 @@
     ctx.font = `${mobile ? 11 : 16}px Arial`;
     ctx.fillText(`Биом: ${biome}`, infoX, infoY1);
     ctx.fillText(`Фаза: ${phaseLabel(phase.phase)}`, infoX, infoY2);
-    if (!creative) ctx.fillText(`Броня: ${getArmorValue(state)}`, infoX, infoY3);
-    if (!mobile && !creative) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, infoY3);
+    if (!creative && !mobileMode) ctx.fillText(`Броня: ${getArmorValue(state)}`, infoX, infoY3);
+    if (!mobile && !creative && !mobileMode) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, infoY3);
 
     if (!creative) {
       const barW = mobile ? panelW - 24 : 240;
