@@ -139,6 +139,24 @@
         y: castle.baseY * TILE,
       };
     }
+    if (key === 'great_tree_garden') {
+      const garden = state.undergroundWorldMeta && state.undergroundWorldMeta.garden;
+      if (!garden) return null;
+      return {
+        label: 'Сад великих древ',
+        x: garden.centerX * TILE,
+        y: garden.groundY * TILE,
+      };
+    }
+    if (key === 'underground_castle') {
+      const castle = state.undergroundWorldMeta && state.undergroundWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок подземного короля',
+        x: castle.centerX * TILE,
+        y: castle.baseY * TILE,
+      };
+    }
     return null;
   }
 
@@ -148,6 +166,8 @@
     if (countItem(state, ITEM.MAIN_WELL_MAP) > 0) keys.push('main_well');
     if (state.airCaves && state.airCaves.entrance && state.airCaves.entrance.spawned) keys.push('air_entrance');
     if (state.airWorldMeta && state.airWorldMeta.castle) keys.push('air_castle');
+    if (state.undergroundWorldMeta && state.undergroundWorldMeta.garden) keys.push('great_tree_garden');
+    if (state.undergroundWorldMeta && state.undergroundWorldMeta.castle) keys.push('underground_castle');
     return keys.map((key) => ({
       key,
       target: getCompassTarget(state, key),
@@ -172,6 +192,10 @@
                       ? 'Вход в воздушное измерение'
                       : key === 'air_castle'
                         ? 'Замок воздушного короля'
+                        : key === 'great_tree_garden'
+                          ? 'Сад великих древ'
+                          : key === 'underground_castle'
+                            ? 'Замок подземного короля'
                   : 'Водный колодец',
     }));
   }

@@ -7,6 +7,7 @@
   const { moveEntity } = Game.physics;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
   const { applyPlayerDamage } = Game.combat;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   const MAX_DWARVES = 24;
   const DWARF_STATE = {
@@ -18,7 +19,7 @@
   };
 
   function ignoresPlayer(state) {
-    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) || !!(isPlayerUndetectable && isPlayerUndetectable(state));
   }
 
   function ensureColony(state) {

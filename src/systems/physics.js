@@ -5,10 +5,10 @@
 
   function collidesAt(state, ent, x, y) {
     return (
-      isSolidAtPixel(state, x + 1, y + 1) ||
-      isSolidAtPixel(state, x + ent.w - 1, y + 1) ||
-      isSolidAtPixel(state, x + 1, y + ent.h - 1) ||
-      isSolidAtPixel(state, x + ent.w - 1, y + ent.h - 1)
+      isSolidAtPixel(state, x + 1, y + 1, ent) ||
+      isSolidAtPixel(state, x + ent.w - 1, y + 1, ent) ||
+      isSolidAtPixel(state, x + 1, y + ent.h - 1, ent) ||
+      isSolidAtPixel(state, x + ent.w - 1, y + ent.h - 1, ent)
     );
   }
 
@@ -34,13 +34,13 @@
     ent.x += dx;
 
     if (dx > 0) {
-      if (isSolidAtPixel(state, ent.x + ent.w, ent.y + 1) || isSolidAtPixel(state, ent.x + ent.w, ent.y + ent.h - 1)) {
+      if (isSolidAtPixel(state, ent.x + ent.w, ent.y + 1, ent) || isSolidAtPixel(state, ent.x + ent.w, ent.y + ent.h - 1, ent)) {
         if (!tryStepUp(state, ent, ent.x)) {
           ent.x = Math.floor((ent.x + ent.w) / TILE) * TILE - ent.w - 0.01;
           ent.vx = 0;
         }
       }
-    } else if (isSolidAtPixel(state, ent.x, ent.y + 1) || isSolidAtPixel(state, ent.x, ent.y + ent.h - 1)) {
+    } else if (isSolidAtPixel(state, ent.x, ent.y + 1, ent) || isSolidAtPixel(state, ent.x, ent.y + ent.h - 1, ent)) {
       if (!tryStepUp(state, ent, ent.x)) {
         ent.x = Math.floor(ent.x / TILE + 1) * TILE + 0.01;
         ent.vx = 0;
@@ -53,12 +53,12 @@
 
     ent.y += dy;
     if (dy > 0) {
-      if (isSolidAtPixel(state, ent.x + 1, ent.y + ent.h) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y + ent.h)) {
+      if (isSolidAtPixel(state, ent.x + 1, ent.y + ent.h, ent) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y + ent.h, ent)) {
         ent.y = Math.floor((ent.y + ent.h) / TILE) * TILE - ent.h - 0.01;
         ent.vy = 0;
         ent.onGround = true;
       }
-    } else if (isSolidAtPixel(state, ent.x + 1, ent.y) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y)) {
+    } else if (isSolidAtPixel(state, ent.x + 1, ent.y, ent) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y, ent)) {
       ent.y = Math.floor(ent.y / TILE + 1) * TILE + 0.01;
       ent.vy = 0;
     }

@@ -26,6 +26,7 @@
 
   function preservedCloudItem(itemId) {
     return itemId === ITEM.STEAM_AMULET ||
+      itemId === ITEM.FOUR_ELEMENTS_ARTIFACT ||
       itemId === ITEM.STEAM_PICKAXE ||
       itemId === ITEM.STEAM_AXE ||
       itemId === ITEM.STEAM_SHOVEL ||

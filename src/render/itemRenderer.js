@@ -19,8 +19,9 @@
   function drawArmorItem(ctx, def, x, y, size) {
     const friendship = typeof def.id === 'string' && def.id.startsWith('friendship_');
     const steam = typeof def.id === 'string' && def.id.startsWith('steam_');
-    ctx.fillStyle = friendship ? '#8ef0c1' : steam ? '#b8e5ef' : '#b8c1ca';
-    ctx.strokeStyle = friendship ? '#2f8f63' : steam ? '#517e8c' : '#6f7b88';
+    const invisible = typeof def.id === 'string' && def.id.startsWith('invisible_');
+    ctx.fillStyle = friendship ? '#8ef0c1' : steam ? '#b8e5ef' : invisible ? 'rgba(214,236,255,0.72)' : '#b8c1ca';
+    ctx.strokeStyle = friendship ? '#2f8f63' : steam ? '#517e8c' : invisible ? '#98b8cf' : '#6f7b88';
     ctx.lineWidth = Math.max(1, size * 0.04);
     if (def.armorSlot === 'head') {
       ctx.beginPath();
@@ -35,7 +36,7 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      if (friendship || steam) {
+      if (friendship || steam || invisible) {
         ctx.fillStyle = '#d9fff0';
         ctx.fillRect(x + size * 0.43, y + size * 0.34, size * 0.14, size * 0.10);
       }
@@ -44,7 +45,7 @@
       ctx.fillRect(x + size * 0.14, y + size * 0.26, size * 0.12, size * 0.28);
       ctx.fillRect(x + size * 0.74, y + size * 0.26, size * 0.12, size * 0.28);
       ctx.strokeRect(x + size * 0.24, y + size * 0.22, size * 0.52, size * 0.50);
-      if (friendship || steam) {
+      if (friendship || steam || invisible) {
         ctx.fillStyle = '#d9fff0';
         ctx.fillRect(x + size * 0.45, y + size * 0.36, size * 0.10, size * 0.20);
       }
@@ -54,7 +55,7 @@
       ctx.fillRect(x + size * 0.28, y + size * 0.20, size * 0.44, size * 0.16);
       ctx.strokeRect(x + size * 0.28, y + size * 0.20, size * 0.18, size * 0.54);
       ctx.strokeRect(x + size * 0.54, y + size * 0.20, size * 0.18, size * 0.54);
-      if (friendship || steam) {
+      if (friendship || steam || invisible) {
         ctx.fillStyle = '#d9fff0';
         ctx.fillRect(x + size * 0.44, y + size * 0.24, size * 0.12, size * 0.10);
       }
@@ -63,7 +64,7 @@
       ctx.fillRect(x + size * 0.56, y + size * 0.48, size * 0.20, size * 0.18);
       ctx.fillRect(x + size * 0.22, y + size * 0.62, size * 0.28, size * 0.08);
       ctx.fillRect(x + size * 0.56, y + size * 0.62, size * 0.28, size * 0.08);
-      if (friendship || steam) {
+      if (friendship || steam || invisible) {
         ctx.fillStyle = '#d9fff0';
         ctx.fillRect(x + size * 0.30, y + size * 0.52, size * 0.10, size * 0.06);
         ctx.fillRect(x + size * 0.64, y + size * 0.52, size * 0.10, size * 0.06);
@@ -211,6 +212,89 @@
       ctx.fill();
       ctx.fillStyle = `rgba(255,255,255,${0.24 + pulse * 0.28})`;
       ctx.fillRect(x + size * 0.36, y + size * 0.24, size * 0.28, size * 0.18);
+      return;
+    }
+
+    if (itemId === ITEM.AIR_THIEF_MAGNET) {
+      ctx.fillStyle = '#a7d4f0';
+      ctx.fillRect(x + size * 0.24, y + size * 0.18, size * 0.18, size * 0.44);
+      ctx.fillRect(x + size * 0.58, y + size * 0.18, size * 0.18, size * 0.44);
+      ctx.fillStyle = '#e8f7ff';
+      ctx.fillRect(x + size * 0.24, y + size * 0.18, size * 0.52, size * 0.14);
+      ctx.fillStyle = '#ffd989';
+      ctx.fillRect(x + size * 0.24, y + size * 0.56, size * 0.16, size * 0.08);
+      ctx.fillRect(x + size * 0.60, y + size * 0.56, size * 0.16, size * 0.08);
+      return;
+    }
+
+    if (itemId === ITEM.LOST_WIND) {
+      ctx.fillStyle = 'rgba(242,250,255,0.96)';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.38, y + size * 0.58, size * 0.16, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.56, y + size * 0.42, size * 0.18, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.72, y + size * 0.58, size * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#b7dbef';
+      ctx.fillRect(x + size * 0.32, y + size * 0.58, size * 0.44, size * 0.10);
+      return;
+    }
+
+    if (itemId === ITEM.INVISIBILITY_AMULET) {
+      ctx.strokeStyle = '#d7e9f4';
+      ctx.lineWidth = Math.max(1, size * 0.06);
+      ctx.beginPath();
+      ctx.arc(x + size * 0.5, y + size * 0.46, size * 0.18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(222,245,255,0.45)';
+      ctx.fillRect(x + size * 0.39, y + size * 0.50, size * 0.22, size * 0.20);
+      ctx.fillStyle = '#9ac0d6';
+      ctx.fillRect(x + size * 0.46, y + size * 0.22, size * 0.08, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.GREAT_TREE_SAPLING) {
+      ctx.fillStyle = '#6d4f31';
+      ctx.fillRect(x + size * 0.47, y + size * 0.34, size * 0.06, size * 0.40);
+      ctx.fillStyle = '#5f9f4f';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.40, y + size * 0.36, size * 0.12, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.58, y + size * 0.30, size * 0.14, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.64, y + size * 0.46, size * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    if (itemId === ITEM.FINAL_AMULET) {
+      ctx.strokeStyle = '#e5d48b';
+      ctx.lineWidth = Math.max(1, size * 0.06);
+      ctx.beginPath();
+      ctx.arc(x + size * 0.50, y + size * 0.42, size * 0.18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#d8b44e';
+      ctx.fillRect(x + size * 0.40, y + size * 0.50, size * 0.20, size * 0.22);
+      ctx.fillStyle = '#8f6d1c';
+      ctx.fillRect(x + size * 0.46, y + size * 0.18, size * 0.08, size * 0.10);
+      ctx.fillStyle = 'rgba(255,244,190,0.42)';
+      ctx.fillRect(x + size * 0.45, y + size * 0.54, size * 0.10, size * 0.12);
+      return;
+    }
+
+    if (itemId === ITEM.FOUR_ELEMENTS_ARTIFACT) {
+      ctx.strokeStyle = '#f4e8b0';
+      ctx.lineWidth = Math.max(1, size * 0.06);
+      ctx.beginPath();
+      ctx.arc(x + size * 0.5, y + size * 0.44, size * 0.19, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#ff7a2e';
+      ctx.fillRect(x + size * 0.47, y + size * 0.18, size * 0.06, size * 0.10);
+      ctx.fillStyle = '#4aa8ff';
+      ctx.fillRect(x + size * 0.61, y + size * 0.41, size * 0.10, size * 0.06);
+      ctx.fillStyle = '#6bbf54';
+      ctx.fillRect(x + size * 0.47, y + size * 0.62, size * 0.06, size * 0.10);
+      ctx.fillStyle = '#8c6a43';
+      ctx.fillRect(x + size * 0.29, y + size * 0.41, size * 0.10, size * 0.06);
+      ctx.fillStyle = '#fff4cc';
+      ctx.fillRect(x + size * 0.44, y + size * 0.38, size * 0.12, size * 0.12);
       return;
     }
 

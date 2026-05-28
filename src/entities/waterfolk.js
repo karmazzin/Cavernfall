@@ -3,6 +3,7 @@
   const { phaseInfo } = Game.dayCycle;
   const { addToInventory, countItem } = Game.inventory;
   const { ITEM } = Game.items;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function isNightTime(state) {
     return phaseInfo(state).phase === 'night';
@@ -13,6 +14,7 @@
     const meta = state.waterWorldMeta || {};
     const castle = meta.castle || null;
     const night = isNightTime(state);
+    const playerHidden = !!(isPlayerUndetectable && isPlayerUndetectable(state));
     if (meta.questGiven && !meta.medicinePromptShown && countItem(state, ITEM.MEDICINE) > 0) {
       meta.medicinePromptShown = true;
       state.pause.activeCompassTarget = 'water_castle';
@@ -44,7 +46,7 @@
       if (waterfolk.x < anchorX - 36) waterfolk.dir = 1;
       if (waterfolk.x > anchorX + 36) waterfolk.dir = -1;
 
-      if (waterfolk.chief && castle && meta.domeReleased && !meta.questGiven) {
+      if (waterfolk.chief && castle && meta.domeReleased && !meta.questGiven && !playerHidden) {
         const dx = (waterfolk.x + waterfolk.w / 2) - (state.player.x + state.player.w / 2);
         const dy = (waterfolk.y + waterfolk.h / 2) - (state.player.y + state.player.h / 2);
         if (Math.hypot(dx, dy) <= 96) {
@@ -57,7 +59,7 @@
         continue;
       }
 
-      if (waterfolk.chief && castle && meta.questGiven && !meta.medicineDelivered && countItem(state, ITEM.MEDICINE) > 0) {
+      if (waterfolk.chief && castle && meta.questGiven && !meta.medicineDelivered && countItem(state, ITEM.MEDICINE) > 0 && !playerHidden) {
         const dx = (waterfolk.x + waterfolk.w / 2) - (state.player.x + state.player.w / 2);
         const dy = (waterfolk.y + waterfolk.h / 2) - (state.player.y + state.player.h / 2);
         if (Math.hypot(dx, dy) <= 96) {
@@ -71,7 +73,7 @@
         continue;
       }
 
-      if (waterfolk.chief && castle && meta.mainWell && meta.mainWell.completed && !meta.steamAmuletGiven) {
+      if (waterfolk.chief && castle && meta.mainWell && meta.mainWell.completed && !meta.steamAmuletGiven && !playerHidden) {
         const dx = (waterfolk.x + waterfolk.w / 2) - (state.player.x + state.player.w / 2);
         const dy = (waterfolk.y + waterfolk.h / 2) - (state.player.y + state.player.h / 2);
         if (Math.hypot(dx, dy) <= 96) {

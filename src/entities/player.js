@@ -65,8 +65,12 @@
     const moveSpeed = PLAYER_SPEED * sprintMultiplier;
     const flightSpeed = SWIM_SPEED * sprintMultiplier;
 
-    player.inWater = blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER;
-    player.underwater = blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER;
+    player.inWater =
+      blockCenter === BLOCK.WATER || blockHead === BLOCK.WATER || blockFeet === BLOCK.WATER ||
+      blockCenter === BLOCK.LAVA || blockHead === BLOCK.LAVA || blockFeet === BLOCK.LAVA;
+    player.underwater =
+      (blockHead === BLOCK.WATER && blockCenter === BLOCK.WATER) ||
+      (blockHead === BLOCK.LAVA && blockCenter === BLOCK.LAVA);
     player.onLadder = onLadder;
     player.sprinting = !!(sprintKey && (left || right) && !player.inWater && !onLadder && !creativeFlight && !spectator);
 
@@ -160,7 +164,7 @@
       const supportTy = Math.floor((player.y + player.h) / TILE);
       const cushioned = !!(Game.steamQuestSystem && Game.steamQuestSystem.softenFallWithSteam(state, footTx, supportTy));
       const damage = cushioned ? 0 : Math.ceil((preMoveVy - 700) / 180);
-      if (damage > 0) applyPlayerDamage(state, damage, { flash: 0.18 });
+      if (damage > 0) applyPlayerDamage(state, damage, { flash: 0.18, allowInvisibleDamage: true, elementalKind: 'air' });
     }
 
     const footTx = Math.floor((player.x + player.w / 2) / TILE);
@@ -170,7 +174,7 @@
 
     const lavaImmune = hasFullFriendshipArmor(state) || hasFriendshipAmuletAura(state, true);
     if (!creative && !spectator && !player.steamForm && (under === BLOCK.LAVA || inBody === BLOCK.LAVA) && !lavaImmune) {
-      applyPlayerDamage(state, dt * 2, { flash: 0.2 });
+      applyPlayerDamage(state, dt * 2, { flash: 0.2, allowInvisibleDamage: true, elementalKind: 'fire' });
       player.lavaSoundTimer -= dt;
       if (player.lavaSoundTimer <= 0) {
         audio.playBurn();
@@ -181,8 +185,8 @@
     }
 
     if (!creative && !spectator && player.steamForm) {
-      if (under === BLOCK.WATER || inBody === BLOCK.WATER) applyPlayerDamage(state, dt * 2.4, { flash: 0.12, ignoreArmor: true, allowSteamDamage: true });
-      if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) applyPlayerDamage(state, dt * 5.5, { flash: 0.24, ignoreArmor: true, allowSteamDamage: true });
+      if (under === BLOCK.WATER || inBody === BLOCK.WATER) applyPlayerDamage(state, dt * 2.4, { flash: 0.12, ignoreArmor: true, allowSteamDamage: true, allowInvisibleDamage: true, elementalKind: 'water' });
+      if (under === BLOCK.LAVA || inBody === BLOCK.LAVA) applyPlayerDamage(state, dt * 5.5, { flash: 0.24, ignoreArmor: true, allowSteamDamage: true, allowInvisibleDamage: true, elementalKind: 'fire' });
     }
 
     if (player.inWater) player.vx *= 0.7;
@@ -272,6 +276,21 @@
           state.ui.noticeTimer = 3.5;
           start.warningTimer = 2.6;
         }
+      }
+    }
+
+    if (state.activeDimension === 'air' && state.airWorldMeta && state.airWorldMeta.castleLocked && state.airWorldMeta.castle) {
+      const castle = state.airWorldMeta.castle;
+      const playerCx = player.x + player.w / 2;
+      const playerCy = player.y + player.h / 2;
+      const insideCastle = playerCx >= (castle.x0 + 1) * TILE && playerCx <= castle.x1 * TILE && playerCy >= castle.topY * TILE && playerCy <= (castle.baseY + 1) * TILE;
+      if (!insideCastle) {
+        player.x = castle.throneX * TILE - player.w / 2;
+        player.y = (castle.throneY - 2) * TILE;
+        player.vx = 0;
+        player.vy = 0;
+        state.ui.noticeText = 'Путь из замка закрылся.';
+        state.ui.noticeTimer = 2.6;
       }
     }
 

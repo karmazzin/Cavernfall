@@ -9,6 +9,7 @@
   const { applyPlayerDamage } = Game.combat;
   const { getAttackDamage } = Game.tools;
   const { selectedToolId } = Game.inventory;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function spawnGuardNearKing(state, king, offsetTiles) {
     const tx = Math.floor((king.x + king.w / 2) / TILE) + offsetTiles;
@@ -60,6 +61,7 @@
   function updateFireKing(state, dt) {
     if (state.activeDimension !== 'fire' || !state.fireKing) return;
     if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
+    if (isPlayerUndetectable && isPlayerUndetectable(state)) return;
     const king = state.fireKing;
     const playerCx = state.player.x + state.player.w / 2;
     const playerCy = state.player.y + state.player.h / 2;

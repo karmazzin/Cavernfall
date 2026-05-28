@@ -285,6 +285,40 @@
       result: { id: ITEM.STEAM_BOOTS, count: 1 },
     },
     {
+      name: 'Шлем невидимости',
+      pattern: [
+        [BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+      ],
+      result: { id: ITEM.INVISIBLE_HELMET, count: 1 },
+    },
+    {
+      name: 'Нагрудник невидимости',
+      pattern: [
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE],
+      ],
+      result: { id: ITEM.INVISIBLE_CHESTPLATE, count: 1 },
+    },
+    {
+      name: 'Поножи невидимости',
+      pattern: [
+        [BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+      ],
+      result: { id: ITEM.INVISIBLE_LEGGINGS, count: 1 },
+    },
+    {
+      name: 'Ботинки невидимости',
+      pattern: [
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+        [BLOCK.INVISIBLE_ORE, null, BLOCK.INVISIBLE_ORE],
+      ],
+      result: { id: ITEM.INVISIBLE_BOOTS, count: 1 },
+    },
+    {
       name: 'Большой алмаз',
       pattern: [
         [ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND, ITEM.SMALL_DIAMOND],

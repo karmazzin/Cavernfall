@@ -51,7 +51,7 @@
       state.regenTick = 0;
       if (state.starvationTick >= 2.5) {
         state.starvationTick = 0;
-        applyPlayerDamage(state, 1, { flash: 0.18, ignoreArmor: true });
+        applyPlayerDamage(state, 1, { flash: 0.18, ignoreArmor: true, allowInvisibleDamage: true });
       }
     } else {
       state.starvationTick = 0;
@@ -82,7 +82,7 @@
     if (state.player.underwater) {
       state.player.breath = Math.max(0, state.player.breath - dt);
       if (state.player.breath <= 0) {
-        applyPlayerDamage(state, dt / BREATH_CELL_SECONDS, { flash: 0.08, ignoreArmor: true });
+        applyPlayerDamage(state, dt / BREATH_CELL_SECONDS, { flash: 0.08, ignoreArmor: true, allowInvisibleDamage: true, elementalKind: 'water' });
       }
     } else {
       state.player.breath = Math.min(BREATH_TOTAL, state.player.breath + dt * 3);

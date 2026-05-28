@@ -107,17 +107,22 @@
       waterWell: state.waterWell,
       goldenFlowerGuardian: state.goldenFlowerGuardian,
       airGuardian: state.airGuardian,
+      airThief: state.airThief,
+      evilTrunk: state.evilTrunk,
       kraken: state.kraken,
       quake: state.quake,
       fireWorldMeta: state.fireWorldMeta,
       waterWorldMeta: state.waterWorldMeta,
       airWorldMeta: state.airWorldMeta,
+      undergroundWorldMeta: state.undergroundWorldMeta,
+      endWorldMeta: state.endWorldMeta,
       dimensions: state.dimensions,
       activeDimension: state.activeDimension,
       portalLinks: state.portalLinks,
       player: state.player,
       gameOver: state.gameOver,
       hardcoreDeath: state.hardcoreDeath,
+      endingScene: state.endingScene,
       cycleTime: state.cycleTime,
       satietyTick: state.satietyTick,
       starvationTick: state.starvationTick,
@@ -131,6 +136,9 @@
       weather: state.weather,
       friendshipAmuletTick: state.friendshipAmuletTick,
       steamEffects: state.steamEffects,
+      invisibilityBlocks: state.invisibilityBlocks,
+      invisibilityGroupSeed: state.invisibilityGroupSeed,
+      temporaryEarthBlocks: state.temporaryEarthBlocks,
       achievements: state.achievements,
     };
   }
@@ -300,6 +308,12 @@
       state.airGuardian = data.airGuardian && typeof data.airGuardian === 'object'
         ? data.airGuardian
         : state.airGuardian;
+      state.airThief = data.airThief && typeof data.airThief === 'object'
+        ? data.airThief
+        : state.airThief;
+      state.evilTrunk = data.evilTrunk && typeof data.evilTrunk === 'object'
+        ? data.evilTrunk
+        : state.evilTrunk;
       state.kraken = data.kraken && typeof data.kraken === 'object'
         ? data.kraken
         : state.kraken;
@@ -315,12 +329,20 @@
       state.airWorldMeta = data.airWorldMeta && typeof data.airWorldMeta === 'object'
         ? data.airWorldMeta
         : state.airWorldMeta;
+      state.undergroundWorldMeta = data.undergroundWorldMeta && typeof data.undergroundWorldMeta === 'object'
+        ? data.undergroundWorldMeta
+        : state.undergroundWorldMeta;
+      state.endWorldMeta = data.endWorldMeta && typeof data.endWorldMeta === 'object'
+        ? data.endWorldMeta
+        : state.endWorldMeta;
       state.dimensions = data.dimensions && typeof data.dimensions === 'object'
         ? {
             overworld: data.dimensions.overworld || null,
             fire: data.dimensions.fire || null,
             water: data.dimensions.water || null,
             air: data.dimensions.air || null,
+            underground: data.dimensions.underground || null,
+            end: data.dimensions.end || null,
           }
         : state.dimensions;
       state.activeDimension = typeof data.activeDimension === 'string' ? data.activeDimension : 'overworld';
@@ -329,10 +351,14 @@
             fireGate: data.portalLinks.fireGate || null,
             waterGate: data.portalLinks.waterGate || null,
             airGate: data.portalLinks.airGate || null,
+            undergroundGate: data.portalLinks.undergroundGate || null,
+            undergroundGates: data.portalLinks.undergroundGates && typeof data.portalLinks.undergroundGates === 'object' ? data.portalLinks.undergroundGates : {},
+            endGate: data.portalLinks.endGate || null,
           }
-        : { fireGate: null, waterGate: null, airGate: null };
+        : { fireGate: null, waterGate: null, airGate: null, undergroundGate: null, undergroundGates: {}, endGate: null };
       state.gameOver = !!data.gameOver;
       state.hardcoreDeath = data.hardcoreDeath && typeof data.hardcoreDeath === 'object' ? data.hardcoreDeath : null;
+      state.endingScene = data.endingScene && typeof data.endingScene === 'object' ? data.endingScene : null;
       state.cycleTime = Number.isFinite(data.cycleTime) ? data.cycleTime : state.cycleTime;
       state.satietyTick = Number.isFinite(data.satietyTick) ? data.satietyTick : state.satietyTick;
       state.starvationTick = Number.isFinite(data.starvationTick) ? data.starvationTick : state.starvationTick;
@@ -355,6 +381,9 @@
         : state.weather;
       state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
       state.steamEffects = Array.isArray(data.steamEffects) ? data.steamEffects : [];
+      state.invisibilityBlocks = Array.isArray(data.invisibilityBlocks) ? data.invisibilityBlocks : state.invisibilityBlocks;
+      state.invisibilityGroupSeed = Number.isFinite(data.invisibilityGroupSeed) ? data.invisibilityGroupSeed : state.invisibilityGroupSeed;
+      state.temporaryEarthBlocks = Array.isArray(data.temporaryEarthBlocks) ? data.temporaryEarthBlocks : state.temporaryEarthBlocks;
       state.achievements = data.achievements && typeof data.achievements === 'object'
         ? {
             unlocked: data.achievements.unlocked && typeof data.achievements.unlocked === 'object' ? data.achievements.unlocked : {},

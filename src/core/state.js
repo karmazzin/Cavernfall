@@ -34,17 +34,25 @@
     'waterWell',
     'goldenFlowerGuardian',
     'airGuardian',
+    'airThief',
+    'evilTrunk',
+    'greatTrees',
     'kraken',
     'quake',
     'fireWorldMeta',
     'waterWorldMeta',
     'airWorldMeta',
+    'undergroundWorldMeta',
+    'endWorldMeta',
     'zombieSpawnTick',
     'zombieCaveSpawnTick',
     'spiderSpawnTick',
     'spiderCaveSpawnTick',
     'fluidTick',
     'weather',
+    'invisibilityBlocks',
+    'invisibilityGroupSeed',
+    'temporaryEarthBlocks',
   ];
 
   function createPlayer() {
@@ -84,6 +92,7 @@
       sleepRespawnHistory: [],
       steamCloudCooldown: 0,
       steamForm: false,
+      invisibilityTimer: 0,
     };
   }
 
@@ -145,26 +154,37 @@
       waterWell: null,
       goldenFlowerGuardian: null,
       airGuardian: null,
+      airThief: null,
+      evilTrunk: null,
+      greatTrees: [],
       kraken: null,
       quake: null,
       fireWorldMeta: null,
       waterWorldMeta: null,
       airWorldMeta: null,
+      undergroundWorldMeta: null,
+      endWorldMeta: null,
       dimensions: {
         overworld: null,
         fire: null,
         water: null,
         air: null,
+        underground: null,
+        end: null,
       },
       activeDimension: 'overworld',
       portalLinks: {
         fireGate: null,
         waterGate: null,
         airGate: null,
+        undergroundGate: null,
+        undergroundGates: {},
+        endGate: null,
       },
       player: createPlayer(),
       gameOver: false,
       hardcoreDeath: null,
+      endingScene: null,
       cycleTime: 0,
       satietyTick: 0,
       starvationTick: 0,
@@ -185,6 +205,9 @@
       },
       friendshipAmuletTick: 0,
       steamEffects: [],
+      invisibilityBlocks: [],
+      invisibilityGroupSeed: 1,
+      temporaryEarthBlocks: [],
       autosaveTick: 0,
       breaking: null,
       crafting: {
@@ -239,14 +262,17 @@
 
   function ensureDimensions(state) {
     if (!state.dimensions || typeof state.dimensions !== 'object') {
-      state.dimensions = { overworld: null, fire: null, water: null, air: null };
+      state.dimensions = { overworld: null, fire: null, water: null, air: null, underground: null, end: null };
     }
     if (!state.dimensions.overworld) state.dimensions.overworld = captureDimensionState(state);
     if (!state.activeDimension) state.activeDimension = 'overworld';
-    if (!state.portalLinks || typeof state.portalLinks !== 'object') state.portalLinks = { fireGate: null, waterGate: null, airGate: null };
+    if (!state.portalLinks || typeof state.portalLinks !== 'object') state.portalLinks = { fireGate: null, waterGate: null, airGate: null, undergroundGate: null, undergroundGates: {}, endGate: null };
     if (!('fireGate' in state.portalLinks)) state.portalLinks.fireGate = null;
     if (!('waterGate' in state.portalLinks)) state.portalLinks.waterGate = null;
     if (!('airGate' in state.portalLinks)) state.portalLinks.airGate = null;
+    if (!('undergroundGate' in state.portalLinks)) state.portalLinks.undergroundGate = null;
+    if (!('undergroundGates' in state.portalLinks) || !state.portalLinks.undergroundGates || typeof state.portalLinks.undergroundGates !== 'object') state.portalLinks.undergroundGates = {};
+    if (!('endGate' in state.portalLinks)) state.portalLinks.endGate = null;
   }
 
   function syncActiveDimension(state) {

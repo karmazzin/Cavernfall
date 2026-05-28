@@ -1,9 +1,15 @@
 (() => {
   const Game = window.MC2D;
   const { phaseInfo } = Game.dayCycle;
+  const { TILE } = Game.constants;
+  const { BLOCK } = Game.blocks;
   const { ITEM } = Game.items;
-  const { countItem } = Game.inventory;
+  const { addToInventory, countItem, removeItem } = Game.inventory;
+  const { setBlock, getBlock } = Game.world;
   const { getChestAt } = Game.chestSystem;
+  const { hasFullInvisibilityArmor } = Game.combat;
+  const { revealAirThiefApartments, hideAirThiefApartments, retrofitAirThiefQuest } = Game.generation || {};
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function isNightTime(state) {
     return phaseInfo(state).phase === 'night';
@@ -12,8 +18,13 @@
   function updateWindfolk(state, dt) {
     if (state.activeDimension !== 'air' || !Array.isArray(state.windfolk)) return;
     const meta = state.airWorldMeta || {};
+    retrofitAirThiefQuest && retrofitAirThiefQuest(state);
     const castle = meta.castle || null;
     const night = isNightTime(state);
+    const hasMagnet = countItem(state, ITEM.AIR_THIEF_MAGNET) > 0;
+    const playerHidden = !!(isPlayerUndetectable && isPlayerUndetectable(state));
+    if (hasMagnet) revealAirThiefApartments && revealAirThiefApartments(state);
+    else hideAirThiefApartments && hideAirThiefApartments(state);
     for (const windy of state.windfolk) {
       if (windy.sleeping && !night) windy.sleeping = false;
       if (!windy.chief && night && Number.isFinite(windy.sleepBlockX) && Number.isFinite(windy.sleepBlockY)) {
@@ -57,15 +68,64 @@
       if (windy.x < anchorX - 34) windy.dir = 1;
       if (windy.x > anchorX + 34) windy.dir = -1;
 
-      if (windy.chief && castle && !meta.questGiven) {
+      if (windy.chief && castle && !meta.questGiven && !playerHidden) {
         const dx = (windy.x + windy.w / 2) - (state.player.x + state.player.w / 2);
         const dy = (windy.y + windy.h / 2) - (state.player.y + state.player.h / 2);
         if (Math.hypot(dx, dy) <= 96) {
           meta.questGiven = true;
-          state.ui.noticeText = 'Воздушный король: Помоги мне собрать все потерянные ветра, и я тебе помогу.';
+          meta.thiefMagnetGiven = true;
+          if (countItem(state, ITEM.AIR_THIEF_MAGNET) <= 0) addToInventory(state, ITEM.AIR_THIEF_MAGNET, 1);
+          revealAirThiefApartments && revealAirThiefApartments(state);
+          state.ui.noticeText = 'Воздушный король: Помоги мне собрать все потерянные ветра. Возьми магнит воздушных воров.';
           state.ui.noticeTimer = 6;
         }
       }
+
+      if (windy.chief && castle && meta.thiefBossDefeated && !meta.lostWindsDelivered && countItem(state, ITEM.LOST_WIND) >= 5 && !playerHidden) {
+        const dx = (windy.x + windy.w / 2) - (state.player.x + state.player.w / 2);
+        const dy = (windy.y + windy.h / 2) - (state.player.y + state.player.h / 2);
+        if (Math.hypot(dx, dy) <= 96) {
+          meta.lostWindsDelivered = true;
+          meta.invisibilityAmuletGiven = true;
+          removeItem(state, ITEM.LOST_WIND, 5);
+          if (countItem(state, ITEM.INVISIBILITY_AMULET) <= 0) addToInventory(state, ITEM.INVISIBILITY_AMULET, 1);
+          state.ui.noticeText = 'Воздушный король: Ты вернул потерянные ветра. Прими Амулет невидимости.';
+          state.ui.noticeTimer = 6;
+        }
+      }
+
+      if (windy.chief && castle && meta.invisibilityArmorCalled && !meta.homePortalSpawned && !playerHidden) {
+        const dx = (windy.x + windy.w / 2) - (state.player.x + state.player.w / 2);
+        const dy = (windy.y + windy.h / 2) - (state.player.y + state.player.h / 2);
+        if (Math.hypot(dx, dy) <= 96) {
+          meta.homePortalSpawned = true;
+          meta.castleLocked = true;
+          const portalCandidates = [
+            { tx: castle.throneX + 6, ty: castle.throneY },
+            { tx: castle.throneX - 6, ty: castle.throneY },
+            { tx: castle.throneX + 4, ty: castle.throneY - 1 },
+          ];
+          let placed = null;
+          for (const candidate of portalCandidates) {
+            if (getBlock(state, candidate.tx, candidate.ty) === BLOCK.AIR && getBlock(state, candidate.tx, candidate.ty + 1) === BLOCK.CLOUD) {
+              placed = candidate;
+              break;
+            }
+          }
+          if (!placed) placed = { tx: castle.throneX + 6, ty: castle.throneY };
+          setBlock(state, placed.tx, placed.ty, BLOCK.AIR_HOME_PORTAL);
+          meta.homePortal = placed;
+          state.ui.noticeText = 'Воздушный король: Теперь ты с бронёй невидимости. Возвращайся домой.';
+          state.ui.noticeTimer = 6;
+        }
+      }
+    }
+
+    if (!meta.invisibilityArmorCalled && meta.invisibilityAmuletGiven && hasFullInvisibilityArmor(state) && !playerHidden && (state.activeDimension === 'air' || state.activeDimension === 'overworld')) {
+      meta.invisibilityArmorCalled = true;
+      state.pause.activeCompassTarget = 'air_castle';
+      state.ui.noticeText = 'Воздушный король зовёт тебя в замок.';
+      state.ui.noticeTimer = 5;
     }
 
     if (meta.startIsland && meta.startIsland.unlocked && !meta.startIsland.guideShown) {

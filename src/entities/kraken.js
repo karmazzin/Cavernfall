@@ -5,6 +5,7 @@
   const { applyPlayerDamage } = Game.combat;
   const { addToInventory, selectedToolId } = Game.inventory;
   const { getAttackDamage } = Game.tools;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function hitKraken(state) {
     if (!state.kraken) return false;
@@ -16,6 +17,7 @@
     const kraken = state.kraken;
     if (!kraken) return;
     if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
+    if (isPlayerUndetectable && isPlayerUndetectable(state)) return;
     const arena = kraken.arena;
     const playerCx = state.player.x + state.player.w / 2;
     const playerCy = state.player.y + state.player.h / 2;

@@ -10,7 +10,7 @@
   const { getWeatherState, WEATHER } = Game.weatherSystem;
   const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawGoldenFlowerGuardian, drawAirGuardian, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -370,6 +370,34 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, portal.sx + TILE / 2, boxY + boxH / 2 + 0.5);
+    ctx.restore();
+  }
+
+  function drawEndingScene(ctx, canvas, state) {
+    const ending = state.endingScene;
+    if (!ending || !ending.active) return;
+    const progress = Math.max(0, ending.timer || 0);
+    const lineSeconds = Math.max(0.8, ending.lineSeconds || 2);
+    const visibleLines = Math.min(ending.lines.length, Math.floor(progress / lineSeconds) + 1);
+    const touchMode = !!(state.ui && state.ui.controlMode === 'touch');
+    const maxVisible = Math.max(8, Math.floor((canvas.height * 0.62) / (touchMode ? 24 : 30)));
+    const startIndex = Math.max(0, visibleLines - maxVisible);
+    const lines = ending.lines.slice(startIndex, visibleLines);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.92)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f3ecd4';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${touchMode ? 18 : 24}px Georgia, serif`;
+    const lineHeight = touchMode ? 24 : 30;
+    const startY = Math.max(92, canvas.height * 0.18);
+    for (let i = 0; i < lines.length; i += 1) {
+      ctx.fillText(lines[i], canvas.width / 2, startY + i * lineHeight);
+    }
+    ctx.font = `${touchMode ? 14 : 16}px Arial`;
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText(touchMode ? 'Тап или E, чтобы пропустить' : 'Клик или E, чтобы пропустить', canvas.width / 2, canvas.height - 42);
     ctx.restore();
   }
 
@@ -780,6 +808,10 @@
         ctx.fillRect(food.x - renderCamera.x + 2, food.y - renderCamera.y + 2, 4, 4);
       }
     }
+    if (state.undergroundWorldMeta && state.undergroundWorldMeta.finalAmuletFall) {
+      const fall = state.undergroundWorldMeta.finalAmuletFall;
+      drawItem(ctx, ITEM.FINAL_AMULET, fall.x - renderCamera.x, fall.y - renderCamera.y, 18);
+    }
 
     for (const animal of state.animals) drawSheep(ctx, animal, renderCamera, time);
     for (const zombie of state.zombies) drawZombie(ctx, zombie, renderCamera, time);
@@ -789,6 +821,9 @@
     for (const windy of state.windfolk || []) drawWindfolk(ctx, windy, renderCamera, time);
     for (const human of state.humans || []) drawHuman(ctx, human, renderCamera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, renderCamera, time);
+    if (state.activeDimension === 'underground' && state.undergroundWorldMeta && state.undergroundWorldMeta.king) {
+      drawUndergroundKing(ctx, state.undergroundWorldMeta.king, renderCamera, time);
+    }
     if (state.friendlyFireKing) drawFriendlyFireKing(ctx, state.friendlyFireKing, renderCamera, time);
     if (state.fireBoss) drawFireBoss(ctx, state.fireBoss, renderCamera, time);
     if (state.fireBoss) drawBossHealthBar(ctx, state.fireBoss, renderCamera);
@@ -800,6 +835,10 @@
     if (state.goldenFlowerGuardian) drawBossHealthBar(ctx, state.goldenFlowerGuardian, renderCamera);
     if (state.airGuardian) drawAirGuardian(ctx, state.airGuardian, renderCamera, time);
     if (state.airGuardian) drawBossHealthBar(ctx, state.airGuardian, renderCamera);
+    if (state.airThief) drawAirThief(ctx, state.airThief, renderCamera, time);
+    if (state.airThief) drawBossHealthBar(ctx, state.airThief, renderCamera);
+    if (state.evilTrunk) drawEvilTrunk(ctx, state.evilTrunk, renderCamera, time);
+    if (state.evilTrunk) drawBossHealthBar(ctx, state.evilTrunk, renderCamera);
 
     drawPlayer(ctx, state, renderCamera, time);
 
@@ -853,6 +892,7 @@
     drawFireDungeonGuide(ctx, canvas, state);
     drawCraftingOverlay(ctx, canvas, state, input);
     drawPauseOverlay(ctx, canvas, state);
+    drawEndingScene(ctx, canvas, state);
 
     if (state.gameOver && state.hardcoreDeath) {
       const layout = getHardcoreDeathLayout(canvas);

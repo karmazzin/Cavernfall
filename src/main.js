@@ -18,12 +18,17 @@
   const { updateKraken } = Game.krakenEntity || {};
   const { updateGoldenFlowerGuardian } = Game.goldenFlowerGuardianEntity || {};
   const { updateAirGuardian } = Game.airGuardianEntity || {};
+  const { updateAirThief } = Game.airThiefEntity || {};
+  const { updateEvilTrunk } = Game.evilTrunkEntity || {};
   const { updateHumans } = Game.humansEntity;
   const { updateDwarves } = Game.dwarvesEntity;
   const { updateFood } = Game.foodEntity;
   const { updateFirePyramid } = Game.firePyramidSystem;
   const { updateWaterWell } = Game.waterWellSystem;
   const { updateSteamQuest, useSteamCloud } = Game.steamQuestSystem;
+  const { updateInvisibility, useInvisibilityAmulet } = Game.invisibilitySystem || {};
+  const { updateUndergroundQuest } = Game.undergroundQuestSystem || {};
+  const { updateEndQuest, skipEndingScene } = Game.endQuestSystem || {};
   const { updatePortals, useNearbyPortal } = Game.portalSystem;
   const { useNearbyWaterDome } = Game.waterDimensionSystem;
   const { updateFurnaces } = Game.furnaceSystem;
@@ -33,7 +38,7 @@
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
   const { ITEM } = Game.items;
-  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal, useNearbyAirCrystal, useNearbyAirEntrance } = Game.interaction;
+  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal, useNearbyAirCrystal, useNearbyAirEntrance, useNearbyAirThiefPortal } = Game.interaction;
   const { getLocationInfo } = Game.world;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
@@ -420,6 +425,12 @@
       if (button.id === 'compass_track_air_castle') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'air_castle' ? null : 'air_castle';
       }
+      if (button.id === 'compass_track_great_tree_garden') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'great_tree_garden' ? null : 'great_tree_garden';
+      }
+      if (button.id === 'compass_track_underground_castle') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'underground_castle' ? null : 'underground_castle';
+      }
       if (button.id === 'mode_survival') applyWorldMode('survival');
       if (button.id === 'mode_hardcore') applyWorldMode('hardcore');
       if (button.id === 'mode_mobile') applyWorldMode('mobile');
@@ -512,11 +523,11 @@
     },
     use: () => {
       if (app.screen !== 'playing' || isSpectatorMode()) return;
-      if (state.player && state.player.steamForm) {
-        useSteamCloud(state);
+      if (state.endingScene && state.endingScene.active) {
+        if (skipEndingScene) skipEndingScene(state);
         return;
       }
-      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyAirCrystal(state, input, camera) && !useNearbyAirEntrance(state) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !useSteamCloud(state)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyAirCrystal(state, input, camera) && !useNearbyAirEntrance(state) && !useNearbyAirThiefPortal(state) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !(useInvisibilityAmulet && useInvisibilityAmulet(state)) && !useSteamCloud(state)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing' && !state.hardcoreDeath) resetCurrentWorld();
@@ -585,8 +596,10 @@
     ensureDimensions(state);
     const point = findRespawnPoint();
     if (point.dimension && point.dimension !== state.activeDimension) switchDimension(state, point.dimension);
+    const mode = state.worldMeta && state.worldMeta.mode;
     state.player.health = getMaxHealth(state);
     state.player.breath = Game.constants.BREATH_TOTAL;
+    if (mode === 'survival' || mode === 'infinite_inventory') state.player.satiety = 100;
     state.player.x = point.x;
     state.player.y = point.y;
     state.player.vx = 0;
@@ -676,6 +689,11 @@
     if (app.screen !== 'playing') return;
     if (state.pause.open || state.gameOver) return;
 
+    if (state.endingScene && state.endingScene.active) {
+      if (updateEndQuest) updateEndQuest(state, dt);
+      return;
+    }
+
     clampPlayerHealthToMax(state);
 
     if (!state.crafting.open) state.cycleTime += dt;
@@ -698,12 +716,17 @@
     if (updateKraken) updateKraken(state, dt);
     if (updateGoldenFlowerGuardian) updateGoldenFlowerGuardian(state, dt);
     if (updateAirGuardian) updateAirGuardian(state, dt);
+    if (updateAirThief) updateAirThief(state, dt);
+    if (updateEvilTrunk) updateEvilTrunk(state, dt);
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
     updateFirePyramid(state, dt);
     if (updateWaterWell) updateWaterWell(state, dt);
     if (updateSteamQuest) updateSteamQuest(state, dt);
+    if (updateInvisibility) updateInvisibility(state, dt);
+    if (updateUndergroundQuest) updateUndergroundQuest(state, dt);
+    if (updateEndQuest) updateEndQuest(state, dt);
     updatePortals(state, dt);
     tryFireRoofWarp();
     updateFurnaces(state, dt);
@@ -761,6 +784,14 @@
         reached = px >= entrance.x0 * Game.constants.TILE && px <= (entrance.x1 + 1) * Game.constants.TILE && py >= entrance.y0 * Game.constants.TILE && py <= (entrance.y1 + 1) * Game.constants.TILE;
       } else if (state.pause.activeCompassTarget === 'air_castle' && state.airWorldMeta && state.airWorldMeta.castle) {
         const castle = state.airWorldMeta.castle;
+        const dx = castle.centerX * Game.constants.TILE - px;
+        const dy = castle.baseY * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 12;
+      } else if (state.pause.activeCompassTarget === 'great_tree_garden' && state.undergroundWorldMeta && state.undergroundWorldMeta.garden) {
+        const garden = state.undergroundWorldMeta.garden;
+        reached = px >= garden.x0 * Game.constants.TILE && px <= (garden.x1 + 1) * Game.constants.TILE;
+      } else if (state.pause.activeCompassTarget === 'underground_castle' && state.undergroundWorldMeta && state.undergroundWorldMeta.castle) {
+        const castle = state.undergroundWorldMeta.castle;
         const dx = castle.centerX * Game.constants.TILE - px;
         const dy = castle.baseY * Game.constants.TILE - py;
         reached = Math.hypot(dx, dy) <= Game.constants.TILE * 12;
@@ -875,6 +906,11 @@
     } else if (state.crafting.open) {
       handleCraftingPointer(state, input, canvas);
       syncBodyUiState();
+    } else if (state.endingScene && state.endingScene.active) {
+      if (input.mouse.justPressed && skipEndingScene) {
+        skipEndingScene(state);
+        input.mouse.justPressed = false;
+      }
     } else {
       handleMouse(state, input, camera, dt);
     }

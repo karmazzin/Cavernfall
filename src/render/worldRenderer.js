@@ -93,6 +93,14 @@
     } else if (id === BLOCK.WOOD) {
       ctx.fillStyle = '#5e3717';
       ctx.fillRect(x + 6, y, 4, TILE);
+    } else if (id === BLOCK.GREAT_TREE_WOOD) {
+      ctx.fillStyle = '#4d2e1d';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#755136';
+      ctx.fillRect(x + 4, y, 3, TILE);
+      ctx.fillRect(x + 9, y, 3, TILE);
+      ctx.fillStyle = '#2c170d';
+      ctx.fillRect(x + 7, y + 2, 2, TILE - 4);
     } else if (id === BLOCK.SPRUCE_WOOD) {
       ctx.fillStyle = '#533a2c';
       ctx.fillRect(x + 5, y, 6, TILE);
@@ -197,6 +205,15 @@
       ctx.fill();
       ctx.fillStyle = 'rgba(198,225,240,0.65)';
       ctx.fillRect(x + 4, y + 10, 8, 3);
+    } else if (id === BLOCK.MOSS) {
+      ctx.fillStyle = '#5f8a45';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#79aa58';
+      ctx.fillRect(x, y, TILE, 5);
+      ctx.fillRect(x + 2, y + 6, 4, 3);
+      ctx.fillRect(x + 9, y + 8, 3, 3);
+      ctx.fillStyle = '#406031';
+      ctx.fillRect(x + 5, y + 11, 6, 3);
     } else if (id === BLOCK.STEAM_WATER) {
       ctx.fillStyle = 'rgba(178,238,255,0.72)';
       ctx.fillRect(x, y + 1, TILE, TILE - 1);
@@ -237,6 +254,62 @@
       ctx.fillStyle = `rgba(255,255,255,${0.18 + pulse * 0.24})`;
       ctx.fillRect(x + 5, y + 4, TILE - 10, TILE - 8);
       ctx.strokeStyle = '#f6ffff';
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+    } else if (id === BLOCK.AIR_THIEF_PORTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 6 + x * 0.07);
+      ctx.fillStyle = '#fff2cf';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#ffd98a';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(255,255,255,${0.12 + pulse * 0.3})`;
+      ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+      ctx.strokeStyle = '#fff9e5';
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+    } else if (id === BLOCK.INVISIBLE_BLOCK) {
+      ctx.fillStyle = 'rgba(214,234,248,0.28)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = 'rgba(244,252,255,0.55)';
+      ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+    } else if (id === BLOCK.INVISIBLE_ORE) {
+      ctx.fillStyle = '#6f678f';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#d2c9ff';
+      ctx.fillRect(x + 3, y + 4, 4, 4);
+      ctx.fillRect(x + 9, y + 3, 3, 3);
+      ctx.fillRect(x + 6, y + 10, 5, 3);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fillRect(x + 4, y + 5, 2, 1);
+    } else if (id === BLOCK.AIR_HOME_PORTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5.4 + x * 0.06);
+      ctx.fillStyle = '#dfd6ff';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#b7a5ff';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(255,255,255,${0.16 + pulse * 0.28})`;
+      ctx.fillRect(x + 5, y + 4, TILE - 10, TILE - 8);
+      ctx.strokeStyle = '#f5efff';
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+    } else if (id === BLOCK.END_GATE) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5.2 + x * 0.07);
+      ctx.fillStyle = '#d7f1c5';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#8fcf73';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(255,255,255,${0.14 + pulse * 0.24})`;
+      ctx.fillRect(x + 5, y + 4, TILE - 10, TILE - 8);
+      ctx.strokeStyle = '#f2ffe9';
+      ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
+    } else if (id === BLOCK.ELEMENTAL_RETURN_PORTAL) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5.8 + x * 0.05);
+      ctx.fillStyle = '#fff4c4';
+      ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = '#e5c96f';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+      ctx.fillStyle = `rgba(255,255,255,${0.16 + pulse * 0.28})`;
+      ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+      ctx.strokeStyle = '#fffcec';
       ctx.strokeRect(x + 2.5, y + 2.5, TILE - 5, TILE - 5);
     } else if (id === BLOCK.STONE) {
       ctx.fillStyle = '#999';

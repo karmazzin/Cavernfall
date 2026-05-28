@@ -26,6 +26,7 @@
   const { removeFromSlot } = Game.inventory;
   const { phaseInfo } = Game.dayCycle;
   const audio = Game.audio;
+  const INVISIBLE_BLOCK_BREAK_FACTOR = 0.4;
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -150,7 +151,7 @@
   function canPlaceBlock(state, tx, ty, id) {
     if (!PLACEABLE.has(id) && !(hasCreativePlacement(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
     const targetBlock = getBlock(state, tx, ty);
-    if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER) return false;
+    if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER && targetBlock !== BLOCK.LAVA) return false;
     if (id === BLOCK.GOLDEN_FLOWER) {
       const below = getBlock(state, tx, ty + 1);
       if (below !== BLOCK.GRASS && below !== BLOCK.DIRT) return false;
@@ -404,6 +405,70 @@
     return true;
   }
 
+  function findUsableAirThiefPortal(state) {
+    if (isSpectator(state) || state.activeDimension !== 'air' || !state.airWorldMeta) return null;
+    const meta = state.airWorldMeta;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const apartment = meta.thiefPortalApartment || null;
+    const refuge = meta.thiefRefuge || null;
+    if (apartment && meta.hiddenApartmentsVisible && Number.isFinite(apartment.portalX) && Number.isFinite(apartment.portalY)) {
+      const dist = Math.hypot(apartment.portalX * TILE + TILE / 2 - playerCx, apartment.portalY * TILE + TILE / 2 - playerCy);
+      if (dist <= 92 && getBlock(state, apartment.portalX, apartment.portalY) === BLOCK.AIR_THIEF_PORTAL) {
+        return { type: 'to_refuge', apartment, refuge };
+      }
+    }
+    if (refuge && Number.isFinite(refuge.portalX) && Number.isFinite(refuge.portalY)) {
+      const dist = Math.hypot(refuge.portalX * TILE + TILE / 2 - playerCx, refuge.portalY * TILE + TILE / 2 - playerCy);
+      if (dist <= 92 && getBlock(state, refuge.portalX, refuge.portalY) === BLOCK.AIR_THIEF_PORTAL) {
+        return { type: 'from_refuge', apartment, refuge };
+      }
+    }
+    return null;
+  }
+
+  function useNearbyAirThiefPortal(state) {
+    const target = findUsableAirThiefPortal(state);
+    if (!target) return false;
+    if (target.type === 'to_refuge') {
+      if (!target.refuge) return false;
+      state.player.x = target.refuge.portalX * TILE + 6;
+      state.player.y = (target.refuge.portalY - 2) * TILE;
+      state.player.vx = 0;
+      state.player.vy = 0;
+      if (!state.airThief && Game.airThiefEntity && Game.airThiefEntity.createAirThief) {
+        state.airThief = Game.airThiefEntity.createAirThief(target.refuge.thiefX, target.refuge.thiefY, {
+          x0: (target.refuge.x0 + 1) * TILE,
+          x1: target.refuge.x1 * TILE,
+          y0: (target.refuge.y0 + 1) * TILE,
+          y1: target.refuge.y1 * TILE,
+        });
+      }
+      state.ui.noticeText = 'Ты вошёл в укрытие вора.';
+      state.ui.noticeTimer = 3.5;
+      return true;
+    }
+    if (!target.refuge || !target.refuge.cleared) {
+      state.ui.noticeText = 'Пока вор жив, выбраться нельзя.';
+      state.ui.noticeTimer = 3;
+      return true;
+    }
+    if (target.apartment) {
+      state.player.x = target.apartment.centerX * TILE;
+      state.player.y = (target.apartment.roomY1 - 2) * TILE;
+    } else if (state.airWorldMeta && state.airWorldMeta.castle) {
+      state.player.x = state.airWorldMeta.castle.centerX * TILE;
+      state.player.y = (state.airWorldMeta.castle.baseY - 3) * TILE;
+    } else {
+      return false;
+    }
+    state.player.vx = 0;
+    state.player.vy = 0;
+    state.ui.noticeText = 'Портал вернул тебя на облако.';
+    state.ui.noticeTimer = 3;
+    return true;
+  }
+
   function handleMouse(state, input, camera, dt) {
     if (isSpectator(state)) {
       state.breaking = null;
@@ -483,6 +548,24 @@
 
     if (state.airGuardian && wx >= state.airGuardian.x && wx <= state.airGuardian.x + state.airGuardian.w && wy >= state.airGuardian.y && wy <= state.airGuardian.y + state.airGuardian.h) {
       if (!rightClick && input.mouse.justPressed && Game.airGuardianEntity && Game.airGuardianEntity.hitAirGuardian(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (state.airThief && wx >= state.airThief.x && wx <= state.airThief.x + state.airThief.w && wy >= state.airThief.y && wy <= state.airThief.y + state.airThief.h) {
+      if (!rightClick && input.mouse.justPressed && Game.airThiefEntity && Game.airThiefEntity.hitAirThief(state)) {
+        audio.playHit();
+        useSelectedTool(state);
+      }
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (state.evilTrunk && wx >= state.evilTrunk.x && wx <= state.evilTrunk.x + state.evilTrunk.w && wy >= state.evilTrunk.y && wy <= state.evilTrunk.y + state.evilTrunk.h) {
+      if (!rightClick && input.mouse.justPressed && Game.evilTrunkEntity && Game.evilTrunkEntity.hitEvilTrunk(state)) {
         audio.playHit();
         useSelectedTool(state);
       }
@@ -665,8 +748,16 @@
       return;
     }
 
-    if (block === BLOCK.AIR || block === BLOCK.WATER) {
+    if (block === BLOCK.AIR || block === BLOCK.WATER || block === BLOCK.LAVA) {
       if (input.mouse.justPressed) {
+        if (block === BLOCK.AIR && Game.undergroundQuestSystem && Game.undergroundQuestSystem.tryUseFinalAmulet(state, tx, ty)) {
+          input.mouse.justPressed = false;
+          return;
+        }
+        if (block === BLOCK.AIR && Game.undergroundQuestSystem && Game.undergroundQuestSystem.tryPlantGreatTreeSapling(state, tx, ty)) {
+          input.mouse.justPressed = false;
+          return;
+        }
         if (Game.spawnEggSystem && Game.spawnEggSystem.tryUseSelectedSpawnEgg(state, tx, ty)) {
           input.mouse.justPressed = false;
           return;
@@ -717,8 +808,20 @@
       return;
     }
 
+    const invisibilityMining = !!(Game.invisibilitySystem && Game.invisibilitySystem.isInvisibilityAmuletSelected(state));
+    const invisibleBreakNeed = Number.isFinite(Game.blocks.BREAK_TIME[block])
+      ? Math.max(0.25, Game.blocks.BREAK_TIME[block] * INVISIBLE_BLOCK_BREAK_FACTOR)
+      : Infinity;
+
     if (!state.breaking || state.breaking.tx !== tx || state.breaking.ty !== ty) {
-      state.breaking = { tx, ty, progress: 0, need: getBreakTime(block, selectedToolId(state)), blockId: block };
+      state.breaking = {
+        tx,
+        ty,
+        progress: 0,
+        need: invisibilityMining ? invisibleBreakNeed : getBreakTime(block, selectedToolId(state)),
+        blockId: block,
+        invisibilityMining,
+      };
       audio.playDig();
     }
 
@@ -730,6 +833,12 @@
     state.breaking.progress += dt;
     if (state.breaking.progress >= state.breaking.need) {
       audio.playDig();
+      if (state.breaking.invisibilityMining && Game.invisibilitySystem) {
+        Game.invisibilitySystem.hideBlockWithAmulet(state, tx, ty, block);
+        state.breaking = null;
+        input.mouse.justPressed = false;
+        return;
+      }
       const drop = getBlockDrop(block);
       addToInventory(state, drop.id, drop.count);
       if (block === BLOCK.GOLDEN_FLOWER && state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
@@ -775,6 +884,7 @@
     useNearbyAirCrystal,
     findUsableAirCrystal,
     useNearbyAirEntrance,
+    useNearbyAirThiefPortal,
     useNearbyDungeonSeal,
     findUsableDungeonSeal,
     handleMouse,

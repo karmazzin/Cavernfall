@@ -19,6 +19,12 @@
     legs: ITEM.STEAM_LEGGINGS,
     feet: ITEM.STEAM_BOOTS,
   };
+  const INVISIBLE_ARMOR_BY_SLOT = {
+    head: ITEM.INVISIBLE_HELMET,
+    chest: ITEM.INVISIBLE_CHESTPLATE,
+    legs: ITEM.INVISIBLE_LEGGINGS,
+    feet: ITEM.INVISIBLE_BOOTS,
+  };
 
   function createArmorSlots() {
     return {
@@ -85,6 +91,15 @@
     return true;
   }
 
+  function hasFullInvisibilityArmor(state) {
+    const armor = ensureArmorSlots(state.player);
+    for (const slotId of ARMOR_SLOT_ORDER) {
+      const slot = armor[slotId];
+      if (!slot || slot.count <= 0 || slot.id !== INVISIBLE_ARMOR_BY_SLOT[slotId]) return false;
+    }
+    return true;
+  }
+
   function hasFriendshipAmuletAura(state, requireNearbyLava = false) {
     const centerTx = Math.floor((state.player.x + state.player.w / 2) / TILE);
     const centerTy = Math.floor((state.player.y + state.player.h / 2) / TILE);
@@ -111,13 +126,22 @@
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     if ((state.player.respawnInvuln || 0) > 0) return 0;
     if (state.player.steamForm && !options.allowSteamDamage) return 0;
+    if ((state.player.invisibilityTimer || 0) > 0 && !options.allowInvisibleDamage) return 0;
     const noDamage = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
     if (noDamage) return 0;
     const infiniteInventory = !!(state.worldMeta && state.worldMeta.mode === 'infinite_inventory');
 
     const ignoreArmor = !!options.ignoreArmor;
     const flash = options.flash ?? 0.18;
-    const actual = ignoreArmor ? amount : amount * getDamageMultiplier(state);
+    let actual = ignoreArmor ? amount : amount * getDamageMultiplier(state);
+    if (
+      Game.endQuestSystem &&
+      Game.endQuestSystem.hasFourElementsArtifact &&
+      Game.endQuestSystem.hasFourElementsArtifact(state) &&
+      (options.elementalKind === 'fire' || options.elementalKind === 'water' || options.elementalKind === 'air' || options.elementalKind === 'earth')
+    ) {
+      actual *= 0.5;
+    }
     state.player.health = Math.max(0, state.player.health - actual);
     if (flash > 0) state.attackFlash = Math.max(state.attackFlash || 0, flash);
     if (state.player.health <= 0) {
@@ -143,6 +167,7 @@
     clampPlayerHealthToMax,
     hasFullFriendshipArmor,
     hasFullSteamArmor,
+    hasFullInvisibilityArmor,
     hasFriendshipAmuletAura,
     getDamageMultiplier,
     applyPlayerDamage,

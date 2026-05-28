@@ -7,6 +7,7 @@
   const { BLOCK } = Game.blocks;
   const { ensureMobState, updateMobMediumState } = Game.mobUtils;
   const { applyPlayerDamage } = Game.combat;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function breakableForGuard(id) {
     return id === BLOCK.BLACKSTONE || id === BLOCK.BASALT || id === BLOCK.RED_EARTH;
@@ -17,7 +18,7 @@
   }
 
   function updateFireGuards(state, dt) {
-    const ignorePlayer = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    const ignorePlayer = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) || !!(isPlayerUndetectable && isPlayerUndetectable(state));
     for (let i = state.fireGuards.length - 1; i >= 0; i -= 1) {
       const guard = state.fireGuards[i];
       ensureMobState(guard);

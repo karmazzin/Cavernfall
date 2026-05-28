@@ -8,9 +8,10 @@
   const { getBlock, blockSolid, getLocationInfo, isLitAt } = Game.world;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
   const { applyPlayerDamage } = Game.combat;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function ignoresPlayer(state) {
-    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) || !!(isPlayerUndetectable && isPlayerUndetectable(state));
   }
 
   function canHitPlayer(state, zombie) {

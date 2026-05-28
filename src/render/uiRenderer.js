@@ -82,11 +82,15 @@
     if (biomeKey === 'fire_caves') return 'Огненные пещеры';
     if (biomeKey === 'water_caves') return 'Водные пещеры';
     if (biomeKey === 'air_caves') return 'Воздушные пещеры';
+    if (biomeKey === 'air_plains') return 'Воздушная равнина';
+    if (biomeKey === 'underground_plains') return 'Подземная равнина';
+    if (biomeKey === 'great_tree_garden') return 'Сад великих древ';
+    if (biomeKey === 'end_great_tree') return 'Великое Древо';
     if (biomeKey === 'water_surface') return 'Водная гладь';
     if (biomeKey === 'water_floor') return 'Дно';
     if (biomeKey === 'golden_garden') return 'Сад золотых цветков';
     if (biomeKey === 'void') return 'Пустота';
-    if (biomeKey === 'red_land') return 'Красная земля';
+    if (biomeKey === 'red_land') return 'Красные земли';
     if (biomeKey === 'lava_lake') return 'Лавовое озеро';
     if (biomeKey === 'mountains') return 'Горы';
     if (biomeKey === 'snow_plains') return 'Снежная равнина';
@@ -204,6 +208,24 @@
         y: castle.baseY * TILE,
       };
     }
+    if (key === 'great_tree_garden') {
+      const garden = state.undergroundWorldMeta && state.undergroundWorldMeta.garden;
+      if (!garden) return null;
+      return {
+        label: 'Сад великих древ',
+        x: garden.centerX * TILE,
+        y: garden.groundY * TILE,
+      };
+    }
+    if (key === 'underground_castle') {
+      const castle = state.undergroundWorldMeta && state.undergroundWorldMeta.castle;
+      if (!castle) return null;
+      return {
+        label: 'Замок подземного короля',
+        x: castle.centerX * TILE,
+        y: castle.baseY * TILE,
+      };
+    }
     return null;
   }
 
@@ -282,6 +304,11 @@
     if (!creative) {
       ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/${maxHealth}`, panelX + 12, panelY + 20);
       ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, panelX + 12, panelY + 38);
+      if ((state.player.invisibilityTimer || 0) > 0) {
+        ctx.fillStyle = '#dff6ff';
+        ctx.fillText(`Невидимость: ${Math.ceil(state.player.invisibilityTimer)}с`, panelX + 12, panelY + 56);
+        ctx.fillStyle = '#fff';
+      }
     } else {
       const flight = (mobile || state.player.creativeFlight) ? 'вкл' : 'выкл';
       ctx.fillText(`Творческий • Полет: ${flight}`, panelX + 12, panelY + 26);

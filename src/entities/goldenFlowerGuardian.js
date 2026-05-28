@@ -4,6 +4,7 @@
   const { applyPlayerDamage } = Game.combat;
   const { selectedToolId } = Game.inventory;
   const { getAttackDamage } = Game.tools;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   function hitGoldenFlowerGuardian(state) {
     if (!state.goldenFlowerGuardian) return false;
@@ -15,6 +16,7 @@
     const guardian = state.goldenFlowerGuardian;
     if (!guardian) return;
     if (state.worldMeta && state.worldMeta.mode === 'mobile') return;
+    if (isPlayerUndetectable && isPlayerUndetectable(state)) return;
     const arena = guardian.arena;
     const playerCx = state.player.x + state.player.w / 2;
     const playerCy = state.player.y + state.player.h / 2;

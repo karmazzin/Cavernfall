@@ -366,6 +366,28 @@
     }
   }
 
+  function drawUndergroundKing(ctx, king, camera, time) {
+    const x = king.x - camera.x;
+    const y = king.y - camera.y;
+    const drift = Math.sin(time * 2.2) * 0.8;
+    ctx.fillStyle = '#4c3326';
+    ctx.fillRect(x + 2, y + 9 + drift * 0.2, 12, 11);
+    ctx.fillStyle = '#d5b38e';
+    ctx.fillRect(x + 3, y + 2 + drift * 0.1, 10, 8);
+    ctx.fillStyle = '#2c231f';
+    ctx.fillRect(x + 4, y + 7 + drift * 0.1, 8, 4);
+    ctx.fillStyle = '#7a5a46';
+    ctx.fillRect(x + 3, y + 20, 4, 4);
+    ctx.fillRect(x + 9, y + 20, 4, 4);
+    ctx.fillStyle = '#2a2a2d';
+    ctx.fillRect(x + 8, y + 5 + drift * 0.1, 2, 2);
+    ctx.fillStyle = '#d2b356';
+    ctx.fillRect(x + 4, y + 1, 8, 2);
+    ctx.fillRect(x + 5, y, 1, 2);
+    ctx.fillRect(x + 8, y - 1, 1, 3);
+    ctx.fillRect(x + 10, y, 1, 2);
+  }
+
   function drawGoldenFlowerGuardian(ctx, guardian, camera, time) {
     const x = guardian.x - camera.x;
     const y = guardian.y - camera.y;
@@ -423,6 +445,49 @@
     ctx.beginPath();
     ctx.arc(x + 18, y + 18, 18, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  function drawAirThief(ctx, thief, camera, time) {
+    const x = thief.x - camera.x;
+    const y = thief.y - camera.y;
+    const drift = Math.sin(time * 2.4 + thief.x * 0.01) * 2.2;
+    ctx.fillStyle = '#d2ecff';
+    ctx.fillRect(x + 4, y + 16 + drift * 0.2, 20, 16);
+    ctx.fillStyle = '#f7fdff';
+    ctx.fillRect(x + 6, y + 4 + drift * 0.12, 16, 12);
+    ctx.fillStyle = '#79a6c8';
+    ctx.fillRect(x + (thief.dir > 0 ? 16 : 10), y + 10 + drift * 0.12, 3, 3);
+    ctx.fillStyle = '#b8dcf2';
+    ctx.fillRect(x + 7, y + 32, 6, 8);
+    ctx.fillRect(x + 15, y + 32, 6, 8);
+    ctx.fillStyle = 'rgba(244,251,255,0.38)';
+    ctx.beginPath();
+    ctx.arc(x + 14, y + 20, 20, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawEvilTrunk(ctx, trunk, camera, time) {
+    const x = trunk.x - camera.x;
+    const y = trunk.y - camera.y;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 5.5 + trunk.x * 0.01);
+    const sway = Math.sin(time * 2.2) * 1.4;
+    ctx.fillStyle = '#5f4227';
+    ctx.fillRect(x + 8, y + 10 + sway, 20, 34);
+    ctx.fillRect(x + 4, y + 20 + sway, 6, 20);
+    ctx.fillRect(x + 26, y + 20 + sway, 6, 20);
+    ctx.fillStyle = '#7d5832';
+    ctx.fillRect(x + 10, y + 4 + sway * 0.6, 16, 12);
+    ctx.fillRect(x + 12, y + 26 + sway, 12, 18);
+    ctx.fillStyle = '#3c2818';
+    ctx.fillRect(x + 11, y + 8 + sway * 0.6, 3, 3);
+    ctx.fillRect(x + 22, y + 8 + sway * 0.6, 3, 3);
+    ctx.fillStyle = `rgba(186,255,124,${0.26 + pulse * 0.28})`;
+    ctx.fillRect(x + 10, y + 7 + sway * 0.6, 5, 5);
+    ctx.fillRect(x + 21, y + 7 + sway * 0.6, 5, 5);
+    ctx.fillStyle = '#9db471';
+    ctx.fillRect(x + 6, y + 1, 24, 4);
+    ctx.fillRect(x + 3, y + 4, 6, 4);
+    ctx.fillRect(x + 27, y + 4, 6, 4);
   }
 
   function drawDwarf(ctx, state, dwarf, camera, time) {
@@ -708,5 +773,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawGoldenFlowerGuardian, drawAirGuardian, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar };
 })();

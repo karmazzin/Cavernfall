@@ -8,11 +8,12 @@
   const { phaseInfo } = Game.dayCycle;
   const { ensureMobState, updateMobMediumState, getWaterEscapeDir, applyMobEnvironmentDamage } = Game.mobUtils;
   const { applyPlayerDamage } = Game.combat;
+  const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   const MAX_SPIDERS = 14;
 
   function ignoresPlayer(state) {
-    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) || !!(isPlayerUndetectable && isPlayerUndetectable(state));
   }
 
   function canHitPlayer(state, spider) {

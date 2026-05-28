@@ -14,14 +14,18 @@
     deep: 'Глубины',
     fire_caves: 'Огненные пещеры',
     water_caves: 'Водные пещеры',
-    red_land: 'Красная земля',
+    red_land: 'Красные земли',
     lava_lake: 'Лавовое озеро',
     water_surface: 'Водная гладь',
     water_floor: 'Дно',
     golden_garden: 'Сад золотых цветков',
     air_caves: 'Воздушные пещеры',
+    air_plains: 'Воздушная равнина',
     air_isles: 'Облачные острова',
     air_void: 'Небесная пустота',
+    underground_plains: 'Подземная равнина',
+    great_tree_garden: 'Сад великих древ',
+    end_great_tree: 'Великое Древо',
     lake: 'Озеро',
     void: 'Пустота',
   };
@@ -29,6 +33,7 @@
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
+  const SINGLE_BIOME_AIR_SET = new Set(['air_plains', 'air_isles', 'air_void']);
 
   function biomeLabel(biome) {
     return BIOME_LABELS[biome] || biome;
@@ -62,6 +67,9 @@
       id !== BLOCK.WATER_DIMENSION_PORTAL &&
       id !== BLOCK.AIR_CRYSTAL &&
       id !== BLOCK.AIR_DIMENSION_PORTAL &&
+      id !== BLOCK.AIR_HOME_PORTAL &&
+      id !== BLOCK.END_GATE &&
+      id !== BLOCK.ELEMENTAL_RETURN_PORTAL &&
       id !== BLOCK.FRIENDSHIP_AMULET &&
       id !== BLOCK.WATER_CRYSTAL &&
       id !== BLOCK.GOLDEN_GARDEN_SHELL &&
@@ -90,11 +98,12 @@
     state.world[ty][tx] = id;
   }
 
-  function isSolidAtPixel(state, px, py) {
+  function isSolidAtPixel(state, px, py, ent = null) {
     const tx = Math.floor(px / TILE);
     const ty = Math.floor(py / TILE);
     const block = getBlock(state, tx, ty);
     if (block === BLOCK.DOOR) return !isOpenDoorAt(state, tx, ty);
+    if (block === BLOCK.INVISIBLE_BLOCK && ent === state.player && Game.invisibilitySystem && Game.invisibilitySystem.canPhaseInvisibleBlocks(state)) return false;
     return blockSolid(block);
   }
 
@@ -123,6 +132,14 @@
       };
     }
     if (singleBiome && SINGLE_BIOME_WATER_SET.has(singleBiome)) {
+      return {
+        biome: state.biomeAt[safeTx] || singleBiome,
+        climate: 'any',
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (singleBiome && SINGLE_BIOME_AIR_SET.has(singleBiome)) {
       return {
         biome: state.biomeAt[safeTx] || singleBiome,
         climate: 'any',
@@ -173,10 +190,25 @@
       };
     }
     if (state.activeDimension === 'air') {
-      const airMeta = state.airWorldMeta || {};
-      const voidStart = Number.isFinite(airMeta.voidStart) ? airMeta.voidStart : Math.floor(WORLD_H * 0.58);
       return {
-        biome: ty >= voidStart ? 'air_void' : (state.biomeAt[safeTx] || 'air_isles'),
+        biome: state.biomeAt[safeTx] || 'air_plains',
+        climate: 'any',
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (state.activeDimension === 'underground') {
+      const biome = state.biomeAt[safeTx] || 'underground_plains';
+      return {
+        biome,
+        climate: 'any',
+        inCave: biome !== 'great_tree_garden',
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (state.activeDimension === 'end') {
+      return {
+        biome: state.biomeAt[safeTx] || 'end_great_tree',
         climate: 'any',
         inCave: false,
         surfaceY: state.surfaceAt[safeTx] || 0,

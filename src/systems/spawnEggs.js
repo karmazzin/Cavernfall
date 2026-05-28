@@ -167,6 +167,44 @@
     };
   }
 
+  function createAirThief(tx, ty) {
+    return {
+      x: tx * TILE - 14,
+      y: ty * TILE - 28,
+      w: 28,
+      h: 40,
+      hp: 550,
+      maxHp: 550,
+      vx: 0,
+      vy: 0,
+      dir: 1,
+      phaseTimer: 0,
+      attackCooldown: 0,
+      isBoss: true,
+      name: 'Воздушный вор',
+      arena: { x0: Math.max(0, (tx - 14) * TILE), x1: (tx + 14) * TILE, y0: Math.max(0, (ty - 10) * TILE), y1: (ty + 10) * TILE },
+    };
+  }
+
+  function createEvilTrunk(tx, ty) {
+    return {
+      x: tx * TILE - 18,
+      y: ty * TILE - 24,
+      w: 36,
+      h: 52,
+      hp: 550,
+      maxHp: 550,
+      vx: 0,
+      vy: 0,
+      dir: 1,
+      phaseTimer: 0,
+      attackCooldown: 0,
+      isBoss: true,
+      name: 'Злой ствол',
+      arena: { x0: Math.max(0, (tx - 10) * TILE), x1: (tx + 10) * TILE, y0: Math.max(0, (ty - 10) * TILE), y1: (ty + 12) * TILE },
+    };
+  }
+
   const EGG_DEFS = [
     { id: ITEM.SPAWN_EGG_SHEEP, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.animals.push(createAnimal(tx, ty)); } },
     { id: ITEM.SPAWN_EGG_ZOMBIE, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.zombies.push(createZombie(tx, ty)); } },
@@ -191,6 +229,8 @@
     { id: ITEM.SPAWN_EGG_WINDFOLK_CHIEF, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { if (!Array.isArray(state.windfolk)) state.windfolk = []; state.windfolk.push(createWindfolk(tx, ty, true)); } },
     { id: ITEM.SPAWN_EGG_GOLDEN_FLOWER_GUARDIAN, wTiles: 3, hTiles: 4, spawn(state, tx, ty) { state.goldenFlowerGuardian = createGoldenFlowerGuardian(tx, ty); } },
     { id: ITEM.SPAWN_EGG_AIR_GUARDIAN, wTiles: 3, hTiles: 3, spawn(state, tx, ty) { state.airGuardian = createAirGuardian(tx, ty); } },
+    { id: ITEM.SPAWN_EGG_AIR_THIEF, wTiles: 3, hTiles: 4, spawn(state, tx, ty) { state.airThief = createAirThief(tx, ty); } },
+    { id: ITEM.SPAWN_EGG_EVIL_TRUNK, wTiles: 3, hTiles: 4, spawn(state, tx, ty) { state.evilTrunk = createEvilTrunk(tx, ty); } },
   ];
 
   const EGG_MAP = Object.fromEntries(EGG_DEFS.map((entry) => [entry.id, entry]));
