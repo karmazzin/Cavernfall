@@ -34,11 +34,20 @@
     lake: 'Озеро',
     void: 'Пустота',
   };
-  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void']);
+  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree']);
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
   const SINGLE_BIOME_AIR_SET = new Set(['air_plains', 'air_isles', 'air_void']);
+  const SINGLE_BIOME_UNDERGROUND_SET = new Set([
+    'underground_plains',
+    'underground_lakes',
+    'lava_fissures',
+    'crystal_vaults',
+    'great_roots',
+    'great_tree_garden',
+    'mushroom_halls',
+  ]);
 
   function biomeLabel(biome) {
     return BIOME_LABELS[biome] || biome;
@@ -152,6 +161,15 @@
         biome: state.biomeAt[safeTx] || singleBiome,
         climate: 'any',
         inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
+    if (singleBiome && SINGLE_BIOME_UNDERGROUND_SET.has(singleBiome)) {
+      const biome = state.biomeAt[safeTx] || singleBiome;
+      return {
+        biome,
+        climate: 'any',
+        inCave: biome !== 'great_tree_garden',
         surfaceY: state.surfaceAt[safeTx] || 0,
       };
     }

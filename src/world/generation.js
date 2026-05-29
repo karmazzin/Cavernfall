@@ -49,6 +49,15 @@
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
   const SINGLE_BIOME_AIR_SET = new Set(['air_plains', 'air_isles', 'air_void']);
+  const SINGLE_BIOME_UNDERGROUND_SET = new Set([
+    'underground_plains',
+    'underground_lakes',
+    'lava_fissures',
+    'crystal_vaults',
+    'great_roots',
+    'great_tree_garden',
+    'mushroom_halls',
+  ]);
 
   function clearChestSlots(chest) {
     for (let i = 0; i < chest.slots.length; i += 1) chest.slots[i] = { id: null, count: 0, durability: null };
@@ -2804,6 +2813,233 @@
     state.player.y = (spawnIsland.topY - 3) * TILE;
   }
 
+  function resetUndergroundSingleBiomeState(state) {
+    state.world = createGrid();
+    state.biomeAt = Array(WORLD_W).fill('underground_plains');
+    state.climateAt = Array(WORLD_W).fill(CLIMATE.ANY);
+    state.surfaceAt = Array(WORLD_W).fill(10);
+    state.animals = [];
+    state.zombies = [];
+    state.spiders = [];
+    state.fireGuards = [];
+    state.waterfolk = [];
+    state.windfolk = [];
+    state.humans = [];
+    state.dwarves = [];
+    state.humanSettlements = { villages: [], nodes: [], edges: [] };
+    state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
+    state.foods = [];
+    state.chests = {};
+    state.furnaces = {};
+    state.doors = {};
+    state.fireCaves = { region: null, shrine: null };
+    state.firePyramid = null;
+    state.fireBoss = null;
+    state.fireKing = null;
+    state.fireDungeon = null;
+    state.friendlyFireKing = null;
+    state.waterCaves = null;
+    state.airCaves = null;
+    state.waterWell = null;
+    state.goldenFlowerGuardian = null;
+    state.airGuardian = null;
+    state.airThief = null;
+    state.kraken = null;
+    state.quake = null;
+    state.fireWorldMeta = null;
+    state.waterWorldMeta = null;
+    state.airWorldMeta = null;
+    state.undergroundWorldMeta = null;
+    state.temporaryEarthBlocks = [];
+    state.zombieSpawnTick = 0;
+    state.zombieCaveSpawnTick = 0;
+    state.spiderSpawnTick = 0;
+    state.spiderCaveSpawnTick = 0;
+    state.fluidTick = 0;
+  }
+
+  function generateSingleBiomeUndergroundWorld(state, biome) {
+    resetUndergroundSingleBiomeState(state);
+    const baseY = 48;
+    const spawnX = Math.floor(WORLD_W * 0.18);
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      const terrainTop = Math.round(
+        baseY
+        + Math.sin(tx / 27) * 2
+        + Math.sin(tx / 9) * 0.8
+        + (biome === 'underground_lakes' ? 2.2 + Math.sin(tx / 4.5) * 1.3 : 0)
+        + (biome === 'lava_fissures' ? 1.4 + Math.cos(tx / 6) * 1.1 : 0)
+        + (biome === 'great_roots' ? Math.sin(tx / 5.5) * 0.9 : 0)
+        + (biome === 'crystal_vaults' ? Math.sin(tx / 12) * 0.4 : 0)
+        + (biome === 'mushroom_halls' ? -1.3 + Math.sin(tx / 8) * 0.8 : 0)
+      );
+      state.surfaceAt[tx] = terrainTop;
+      state.biomeAt[tx] = biome;
+
+      if (biome !== 'great_tree_garden') {
+        const vaultTop = Math.max(
+          3,
+          Math.round(
+            8
+            + Math.sin(tx / 21) * 2
+            + Math.sin(tx / 7) * 1.5
+            + (biome === 'crystal_vaults' ? -1 : 0)
+            + (biome === 'mushroom_halls' ? -2 : 0)
+            + (biome === 'underground_lakes' ? 1 : 0)
+          )
+        );
+        for (let ty = 0; ty <= vaultTop; ty += 1) {
+          const ceilingBlock = biome === 'lava_fissures'
+            ? BLOCK.BASALT
+            : biome === 'crystal_vaults' && ty >= vaultTop - 1
+              ? BLOCK.BLACKSTONE
+              : BLOCK.DEEPSTONE;
+          setBlock(state, tx, ty, ceilingBlock);
+        }
+        if (biome === 'crystal_vaults') {
+          const spikeLen = 2 + Math.abs(Math.round(Math.sin(tx / 4))) + (tx % 3 === 0 ? 1 : 0);
+          for (let step = 1; step <= spikeLen; step += 1) {
+            const ore = step === spikeLen || (step > 1 && tx % 2 === 0) ? BLOCK.DIAMOND_ORE : BLOCK.DEEP_ORE;
+            setBlock(state, tx, vaultTop + step, ore);
+          }
+        }
+        if (biome === 'lava_fissures') {
+          const fissureDepth = 3 + Math.abs(Math.round(Math.sin(tx / 5) * 3));
+          for (let step = 0; step <= fissureDepth; step += 1) {
+            const yy = terrainTop - step;
+            if (yy <= vaultTop + 2) break;
+            setBlock(state, tx, yy, step >= fissureDepth - 1 ? BLOCK.LAVA : BLOCK.BASALT);
+          }
+          if (tx % 6 === 0) {
+            for (let step = 1; step <= 3; step += 1) {
+              const yy = vaultTop + step;
+              if (yy >= terrainTop - 2) break;
+              setBlock(state, tx, yy, BLOCK.BASALT);
+            }
+          }
+        }
+        if (biome === 'great_roots') {
+          const rootStart = vaultTop + 1;
+          const rootLen = 6 + Math.abs(Math.round(Math.sin(tx / 6) * 5));
+          for (let step = 0; step < rootLen; step += 1) {
+            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+            if (step > 2 && step % 3 === 0) setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+          }
+        }
+      }
+
+      for (let ty = terrainTop; ty < WORLD_H; ty += 1) {
+        if (ty === terrainTop) {
+          setBlock(
+            state,
+            tx,
+            ty,
+            biome === 'great_tree_garden'
+              ? BLOCK.GRASS
+              : biome === 'mushroom_halls'
+                ? BLOCK.MUSHROOM_SOIL
+                : biome === 'lava_fissures'
+                  ? BLOCK.BASALT
+                  : BLOCK.BLACKSTONE
+          );
+        } else if (ty <= terrainTop + 2) {
+          setBlock(
+            state,
+            tx,
+            ty,
+            biome === 'great_tree_garden'
+              ? BLOCK.DIRT
+              : biome === 'mushroom_halls'
+                ? BLOCK.MUSHROOM_SOIL
+                : biome === 'lava_fissures'
+                  ? BLOCK.BASALT
+                  : BLOCK.STONE
+          );
+        } else {
+          setBlock(state, tx, ty, biome === 'lava_fissures' ? BLOCK.DEEPSTONE : BLOCK.STONE);
+        }
+      }
+
+      if (biome === 'underground_lakes') {
+        const lakeDepth = 3 + Math.abs(Math.round(Math.sin(tx / 7) * 2));
+        for (let step = 0; step <= lakeDepth; step += 1) {
+          const yy = terrainTop - step;
+          if (yy <= 2) break;
+          setBlock(state, tx, yy, step <= lakeDepth - 1 ? BLOCK.WATER : BLOCK.BLACKSTONE);
+        }
+        if (tx % 9 === 0) setBlock(state, tx, Math.max(1, terrainTop - lakeDepth - 1), BLOCK.TORCH);
+      }
+
+      if (biome === 'crystal_vaults') {
+        const floorSpikeLen = 2 + Math.abs(Math.round(Math.cos(tx / 5) * 2));
+        for (let step = 1; step <= floorSpikeLen; step += 1) {
+          const yy = terrainTop - step;
+          if (yy <= 2) break;
+          setBlock(state, tx, yy, step === floorSpikeLen ? BLOCK.DIAMOND_ORE : BLOCK.DEEP_ORE);
+        }
+      }
+
+      if (biome === 'mushroom_halls') {
+        if (tx % 17 === 0) {
+          buildRoundMushroom(state, tx, terrainTop, BLOCK.WHITE_MUSHROOM_STEM, BLOCK.WHITE_MUSHROOM_CAP, 5 + Math.abs(Math.round(Math.sin(tx / 10) * 2)), 4);
+        } else if (tx % 19 === 0) {
+          buildBellMushroom(state, tx, terrainTop, BLOCK.FLY_AGARIC_STEM, BLOCK.FLY_AGARIC_CAP, 6 + Math.abs(Math.round(Math.cos(tx / 8) * 2)), 4);
+        } else if (tx % 23 === 0) {
+          buildRoundMushroom(state, tx, terrainTop, BLOCK.GLOW_MUSHROOM_STEM, BLOCK.GLOW_MUSHROOM_CAP, 4 + Math.abs(Math.round(Math.sin(tx / 7) * 2)), 3);
+        } else if (tx % 7 === 0) {
+          buildMushroomCluster(state, tx, terrainTop);
+        }
+      }
+
+      if (biome === 'great_tree_garden' && tx % 18 === 0) {
+        const trunkTop = terrainTop - 8;
+        for (let ty = trunkTop; ty < terrainTop; ty += 1) setBlock(state, tx, ty, BLOCK.WOOD);
+        for (let lx = tx - 2; lx <= tx + 2; lx += 1) {
+          for (let ly = trunkTop - 3; ly <= trunkTop; ly += 1) {
+            if (Math.abs(lx - tx) + Math.abs(ly - (trunkTop - 1)) <= 3) setBlock(state, lx, ly, BLOCK.LEAF);
+          }
+        }
+      }
+    }
+
+    if (biome === 'great_tree_garden') {
+      for (let tx = 2; tx < WORLD_W - 2; tx += 1) {
+        if (Math.abs(tx - spawnX) > 18 && tx % 6 === 0) {
+          const rootLen = 5 + Math.abs(Math.round(Math.sin(tx / 8) * 6));
+          for (let step = 0; step < rootLen; step += 1) {
+            const yy = state.surfaceAt[tx] + 2 + step;
+            if (yy >= WORLD_H) break;
+            setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD);
+            if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD);
+          }
+        }
+      }
+    }
+
+    const spawnTop = state.surfaceAt[spawnX];
+    for (let tx = spawnX - 4; tx <= spawnX + 4; tx += 1) {
+      for (let ty = spawnTop - 4; ty <= spawnTop + 2; ty += 1) {
+        if (ty < 0 || ty >= WORLD_H) continue;
+        if (ty < spawnTop) setBlock(state, tx, ty, BLOCK.AIR);
+      }
+      setBlock(
+        state,
+        tx,
+        spawnTop,
+        biome === 'great_tree_garden'
+          ? BLOCK.GRASS
+          : biome === 'mushroom_halls'
+            ? BLOCK.MUSHROOM_SOIL
+            : biome === 'lava_fissures'
+              ? BLOCK.BASALT
+              : BLOCK.BLACKSTONE
+      );
+      if (biome === 'great_tree_garden') setBlock(state, tx, spawnTop + 1, BLOCK.DIRT);
+    }
+    state.player.x = spawnX * TILE;
+    state.player.y = (spawnTop - 3) * TILE;
+  }
+
   function generateFlatWorld(state) {
     state.biomeAt = Array(WORLD_W).fill('plains');
     state.climateAt = Array(WORLD_W).fill(CLIMATE.TEMPERATE);
@@ -2825,6 +3061,10 @@
     if (SINGLE_BIOME_CAVE_SET.has(biome)) {
       generateCavernWorld(state, biome);
       state.worldMeta.worldType = 'single_biome';
+      return;
+    }
+    if (SINGLE_BIOME_UNDERGROUND_SET.has(biome)) {
+      generateSingleBiomeUndergroundWorld(state, biome);
       return;
     }
     if (SINGLE_BIOME_FIRE_SET.has(biome)) {
