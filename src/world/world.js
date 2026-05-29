@@ -5,6 +5,7 @@
   const BIOME_LABELS = {
     plains: 'Равнина',
     forest: 'Лес',
+    forest_clearing: 'Лесная поляна',
     mountains: 'Горы',
     snow_plains: 'Снежная равнина',
     desert: 'Пустыня',
@@ -34,7 +35,7 @@
     lake: 'Озеро',
     void: 'Пустота',
   };
-  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree']);
+  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing']);
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
@@ -88,6 +89,9 @@
       id !== BLOCK.WATER_CRYSTAL &&
       id !== BLOCK.GOLDEN_GARDEN_SHELL &&
       id !== BLOCK.STEAM_WATER &&
+      id !== BLOCK.WHITE_MUSHROOM_STEM &&
+      id !== BLOCK.FLY_AGARIC_STEM &&
+      id !== BLOCK.GLOW_MUSHROOM_STEM &&
       id !== BLOCK.SMALL_WHITE_MUSHROOM &&
       id !== BLOCK.SMALL_FLY_AGARIC &&
       id !== BLOCK.SMALL_GLOW_MUSHROOM
@@ -126,6 +130,28 @@
 
   function layerOffset(tx) {
     return Math.round(Math.sin(tx / 37) * 2 + Math.sin(tx / 13) * 1.2);
+  }
+
+  function columnHasForestTree(state, tx) {
+    if (tx < 0 || tx >= WORLD_W) return false;
+    const surfaceY = state.surfaceAt[tx];
+    if (!Number.isFinite(surfaceY)) return false;
+    for (let ty = Math.max(0, surfaceY - 8); ty < surfaceY; ty += 1) {
+      const block = getBlock(state, tx, ty);
+      if (block === BLOCK.WOOD || block === BLOCK.LEAF) return true;
+    }
+    return false;
+  }
+
+  function isForestClearingAt(state, tx) {
+    const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
+    if ((state.biomeAt[safeTx] || '') !== 'forest') return false;
+    if (columnHasForestTree(state, safeTx)) return false;
+    let x0 = safeTx;
+    while (x0 > 0 && state.biomeAt[x0 - 1] === 'forest' && !columnHasForestTree(state, x0 - 1)) x0 -= 1;
+    let x1 = safeTx;
+    while (x1 < WORLD_W - 1 && state.biomeAt[x1 + 1] === 'forest' && !columnHasForestTree(state, x1 + 1)) x1 += 1;
+    return x1 - x0 + 1 > 3;
   }
 
   function getLocationInfo(state, tx, ty) {
@@ -257,7 +283,15 @@
     const inAirCaves = !!(airRegion && tx >= airRegion.x0 && tx <= airRegion.x1 && ty >= airRegion.y0 && ty <= airRegion.y1);
     const surfaceBiome = state.biomeAt[safeTx];
     const surfaceClimate = state.climateAt && state.climateAt[safeTx] ? state.climateAt[safeTx] : 'temperate';
-    const biome = inAirCaves ? 'air_caves' : inWaterCaves ? 'water_caves' : inFireCaves ? 'fire_caves' : inCave ? caveBiome : surfaceBiome;
+    const biome = inAirCaves
+      ? 'air_caves'
+      : inWaterCaves
+        ? 'water_caves'
+        : inFireCaves
+          ? 'fire_caves'
+          : inCave
+            ? caveBiome
+            : (surfaceBiome === 'forest' && isForestClearingAt(state, safeTx) ? 'forest_clearing' : surfaceBiome);
     const climate = inFireCaves ? 'warm' : inAirCaves || inWaterCaves || inCave || surfaceBiome === 'lake' ? 'any' : surfaceClimate;
     return {
       biome,

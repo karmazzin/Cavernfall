@@ -1787,10 +1787,29 @@
   }
 
   function plantTrees(state, surfaceFluidColumns) {
+    function tryPlantOakTreeAt(tx) {
+      if (tx < 4 || tx >= WORLD_W - 4 || surfaceFluidColumns.has(tx)) return false;
+      const biome = state.biomeAt[tx];
+      if (biome !== 'forest' && biome !== 'plains') return false;
+      const s = state.surfaceAt[tx];
+      const surfaceBlock = getBlock(state, tx, s);
+      if (surfaceBlock !== BLOCK.GRASS || getBlock(state, tx, s - 1) !== BLOCK.AIR) return false;
+      if (Math.abs(state.surfaceAt[tx - 1] - s) > 1 || Math.abs(state.surfaceAt[tx + 1] - s) > 1) return false;
+      const height = Math.floor(rand(3, 6));
+      for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
+      const topY = s - height;
+      for (let yy = -2; yy <= 1; yy += 1) {
+        for (let xx = -2; xx <= 2; xx += 1) {
+          if (Math.abs(xx) + Math.abs(yy) < 4 && getBlock(state, tx + xx, topY + yy) === BLOCK.AIR) setBlock(state, tx + xx, topY + yy, BLOCK.LEAF);
+        }
+      }
+      return true;
+    }
+
     for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
       const biome = state.biomeAt[tx];
       if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || biome === 'desert' || surfaceFluidColumns.has(tx)) continue;
-      const treeChance = biome === 'forest' ? 0.09 : biome === 'snow_plains' ? 0.045 : 0.01;
+      const treeChance = biome === 'forest' ? 0.22 : biome === 'snow_plains' ? 0.045 : 0.01;
       if (Math.random() >= treeChance) continue;
       const s = state.surfaceAt[tx];
       const surfaceBlock = getBlock(state, tx, s);
@@ -1801,12 +1820,10 @@
         plantSpruceTree(state, tx, s);
         continue;
       }
-      const height = Math.floor(rand(3, 6));
-      for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
-      const topY = s - height;
-      for (let yy = -2; yy <= 1; yy += 1) {
-        for (let xx = -2; xx <= 2; xx += 1) {
-          if (Math.abs(xx) + Math.abs(yy) < 4 && getBlock(state, tx + xx, topY + yy) === BLOCK.AIR) setBlock(state, tx + xx, topY + yy, BLOCK.LEAF);
+      if (!tryPlantOakTreeAt(tx)) continue;
+      if (biome === 'forest') {
+        for (const offset of [-3, -2, 2, 3]) {
+          if (Math.random() < 0.42) tryPlantOakTreeAt(tx + offset);
         }
       }
     }

@@ -75,6 +75,7 @@
 
   function biomeLabel(biomeKey) {
     if (biomeKey === 'forest') return 'Лес';
+    if (biomeKey === 'forest_clearing') return 'Лесная поляна';
     if (biomeKey === 'lake') return 'Озеро';
     if (biomeKey === 'cave') return 'Пещера';
     if (biomeKey === 'dwarf_caves') return 'Пещеры гномов';

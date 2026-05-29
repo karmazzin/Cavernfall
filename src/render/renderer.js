@@ -166,6 +166,54 @@
     return i % 2 === 0 ? -1 : 1;
   }
 
+  function pseudoStar(seed) {
+    const x = Math.sin(seed * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  function drawNightStars(ctx, canvas, phase, weather, time) {
+    const nightAmount = phase.phase === 'night'
+      ? 1
+      : phase.phase === 'sunset' || phase.phase === 'sunrise'
+        ? 0.38
+        : 0;
+    if (nightAmount <= 0) return;
+    const weatherFade = weatherCelestialAlpha(weather.type, weather.intensity);
+    const alphaBase = nightAmount * weatherFade;
+    if (alphaBase <= 0.03) return;
+    const starCount = 130;
+    ctx.save();
+    for (let i = 0; i < starCount; i += 1) {
+      const nx = pseudoStar(i * 17.17 + 1.4);
+      const ny = pseudoStar(i * 29.73 + 8.2);
+      const px = 16 + nx * (canvas.width - 32);
+      const py = 14 + ny * Math.max(80, canvas.height * 0.42);
+      const sizeRoll = pseudoStar(i * 7.91 + 3.6);
+      const twinkle = 0.72 + 0.28 * Math.sin(time * 1.3 + i * 0.9);
+      const alpha = (0.18 + pseudoStar(i * 23.11 + 5.7) * 0.68) * alphaBase * twinkle;
+      const radius = sizeRoll > 0.9 ? 1.7 : sizeRoll > 0.62 ? 1.2 : 0.8;
+      ctx.fillStyle = `rgba(245,248,255,${alpha})`;
+      if (radius <= 0.85) {
+        ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+      } else {
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (sizeRoll > 0.94) {
+        ctx.strokeStyle = `rgba(235,242,255,${alpha * 0.65})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px - 2.5, py);
+        ctx.lineTo(px + 2.5, py);
+        ctx.moveTo(px, py - 2.5);
+        ctx.lineTo(px, py + 2.5);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   function drawWeatherOverlay(ctx, canvas, weather, time) {
     const intensity = clamp(weather.intensity, 0, 1);
     if (intensity <= 0.02 || weather.type === WEATHER.CLEAR) return;
@@ -758,6 +806,7 @@
     gradient.addColorStop(1, skyBottom);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (!inFireDimension) drawNightStars(ctx, canvas, phase, weather, time);
 
     const tint = weatherTint(weather.type, weather.intensity);
     if (tint) {
