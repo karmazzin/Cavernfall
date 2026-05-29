@@ -388,6 +388,50 @@
     ctx.fillRect(x + 10, y, 1, 2);
   }
 
+  function drawUndergroundKeeper(ctx, keeper, camera, time) {
+    const x = keeper.x - camera.x;
+    const y = keeper.y - camera.y;
+    const drift = Math.sin(time * 2.4 + (keeper.anchorPhase || 0)) * 0.8;
+    const crystal = keeper.kind === 'crystal';
+    const lake = keeper.kind === 'lake';
+    const mushroom = keeper.kind === 'mushroom';
+    ctx.fillStyle = crystal ? '#4d3b66' : '#5a402f';
+    ctx.fillRect(x + 2, y + 9 + drift * 0.2, 10, 10);
+    ctx.fillStyle = crystal ? '#d4c5f7' : lake ? '#b9d7df' : mushroom ? '#d8c89b' : '#c7b193';
+    ctx.fillRect(x + 3, y + 2 + drift * 0.12, 8, 8);
+    ctx.fillStyle = crystal ? '#8c78d8' : lake ? '#4d92b1' : mushroom ? '#8f6f48' : '#7a5d43';
+    ctx.fillRect(x + 3, y + 20, 3, 4);
+    ctx.fillRect(x + 8, y + 20, 3, 4);
+    ctx.fillStyle = '#24242a';
+    ctx.fillRect(x + (keeper.dir > 0 ? 7 : 4), y + 5, 2, 2);
+    if (crystal) {
+      ctx.fillStyle = '#d7f0ff';
+      ctx.fillRect(x + 1, y + 8, 2, 6);
+      ctx.fillRect(x + 11, y + 6, 2, 5);
+      ctx.fillStyle = 'rgba(230,250,255,0.45)';
+      ctx.fillRect(x + 10, y + 4, 2, 2);
+    } else if (lake) {
+      ctx.fillStyle = '#79c7df';
+      ctx.fillRect(x + 1, y + 11, 2, 5);
+      ctx.fillRect(x + 11, y + 9, 2, 6);
+      ctx.fillStyle = '#d7f7ff';
+      ctx.fillRect(x + 4, y + 1, 4, 1);
+    } else if (mushroom) {
+      ctx.fillStyle = '#6b4f2d';
+      ctx.fillRect(x + 1, y + 10, 2, 7);
+      ctx.fillRect(x + 11, y + 10, 2, 7);
+      ctx.fillStyle = '#78a255';
+      ctx.fillRect(x + 3, y + 1, 7, 2);
+      ctx.fillRect(x + 5, y, 3, 1);
+    } else {
+      ctx.fillStyle = '#6e4b33';
+      ctx.fillRect(x + 1, y + 10, 2, 7);
+      ctx.fillRect(x + 11, y + 8, 2, 7);
+      ctx.fillStyle = '#4f7d39';
+      ctx.fillRect(x + 10, y + 6, 2, 2);
+    }
+  }
+
   function drawGoldenFlowerGuardian(ctx, guardian, camera, time) {
     const x = guardian.x - camera.x;
     const y = guardian.y - camera.y;
@@ -773,5 +817,5 @@
     ctx.restore();
   }
 
-  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar };
+  Game.entityRenderer = { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawUndergroundKeeper, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar };
 })();

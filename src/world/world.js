@@ -24,7 +24,12 @@
     air_isles: 'Облачные острова',
     air_void: 'Небесная пустота',
     underground_plains: 'Подземная равнина',
+    underground_lakes: 'Подземные озёра',
+    lava_fissures: 'Лавовые трещины',
+    crystal_vaults: 'Кристальные своды',
+    great_roots: 'Корни великих древ',
     great_tree_garden: 'Сад великих древ',
+    mushroom_halls: 'Грибные залы',
     end_great_tree: 'Великое Древо',
     lake: 'Озеро',
     void: 'Пустота',
@@ -73,7 +78,10 @@
       id !== BLOCK.FRIENDSHIP_AMULET &&
       id !== BLOCK.WATER_CRYSTAL &&
       id !== BLOCK.GOLDEN_GARDEN_SHELL &&
-      id !== BLOCK.STEAM_WATER
+      id !== BLOCK.STEAM_WATER &&
+      id !== BLOCK.SMALL_WHITE_MUSHROOM &&
+      id !== BLOCK.SMALL_FLY_AGARIC &&
+      id !== BLOCK.SMALL_GLOW_MUSHROOM
     );
   }
 

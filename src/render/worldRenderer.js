@@ -214,6 +214,150 @@
       ctx.fillRect(x + 9, y + 8, 3, 3);
       ctx.fillStyle = '#406031';
       ctx.fillRect(x + 5, y + 11, 6, 3);
+    } else if (id === BLOCK.MUSHROOM_SOIL) {
+      ctx.fillStyle = '#665747';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7d6d58';
+      ctx.fillRect(x, y, TILE, 4);
+      ctx.fillStyle = '#56493c';
+      ctx.fillRect(x + 2, y + 6, 5, 3);
+      ctx.fillRect(x + 9, y + 10, 3, 2);
+    } else if (id === BLOCK.WHITE_MUSHROOM_STEM) {
+      ctx.fillStyle = '#d8ceb7';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#efe7d4';
+      ctx.fillRect(x + 5, y, 6, TILE);
+      ctx.fillStyle = '#b9af9c';
+      ctx.fillRect(x + 6, y + 1, 1, TILE - 2);
+      ctx.fillRect(x + 9, y + 1, 1, TILE - 2);
+    } else if (id === BLOCK.WHITE_MUSHROOM_CAP) {
+      ctx.fillStyle = '#6f5537';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#8c6a45';
+      ctx.fillRect(x + 1, y + 2, TILE - 2, 8);
+      ctx.fillStyle = '#a68458';
+      ctx.fillRect(x + 3, y + 3, TILE - 6, 4);
+      ctx.fillStyle = '#d7cfbd';
+      ctx.fillRect(x + 2, y + 10, TILE - 4, 3);
+    } else if (id === BLOCK.FLY_AGARIC_STEM) {
+      ctx.fillStyle = '#e8dfd5';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#f3ece4';
+      ctx.fillRect(x + 5, y, 6, TILE);
+      ctx.fillStyle = '#c6beb5';
+      ctx.fillRect(x + 7, y + 2, 1, 3);
+      ctx.fillRect(x + 8, y + 8, 1, 2);
+    } else if (id === BLOCK.FLY_AGARIC_CAP) {
+      ctx.fillStyle = '#a53b35';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#cb4d44';
+      ctx.fillRect(x + 1, y + 2, TILE - 2, 8);
+      ctx.fillStyle = '#efebe1';
+      ctx.fillRect(x + 4, y + 4, 2, 2);
+      ctx.fillRect(x + 8, y + 3, 2, 2);
+      ctx.fillRect(x + 10, y + 6, 2, 2);
+      ctx.fillRect(x + 2, y + 7, 2, 2);
+      ctx.fillStyle = '#f3e7d9';
+      ctx.fillRect(x + 2, y + 10, TILE - 4, 3);
+    } else if (id === BLOCK.GLOW_MUSHROOM_STEM) {
+      ctx.fillStyle = '#cad9c5';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#ddebd6';
+      ctx.fillRect(x + 5, y, 6, TILE);
+      ctx.fillStyle = '#aac2a1';
+      ctx.fillRect(x + 6, y + 1, 1, TILE - 2);
+      ctx.fillRect(x + 9, y + 1, 1, TILE - 2);
+    } else if (id === BLOCK.GLOW_MUSHROOM_CAP) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 4 + x * 0.05);
+      ctx.fillStyle = '#6fb08d';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#97dcb6';
+      ctx.fillRect(x + 1, y + 2, TILE - 2, 8);
+      ctx.fillStyle = `rgba(231,255,239,${0.28 + pulse * 0.25})`;
+      ctx.fillRect(x + 3, y + 4, TILE - 6, 4);
+      ctx.fillStyle = '#d6f3dc';
+      ctx.fillRect(x + 2, y + 10, TILE - 4, 3);
+    } else if (id === BLOCK.SMALL_WHITE_MUSHROOM) {
+      ctx.fillStyle = '#ddd4c6';
+      ctx.fillRect(x + 7, y + 9, 2, 5);
+      ctx.fillStyle = '#8d704f';
+      ctx.fillRect(x + 4, y + 7, 8, 3);
+    } else if (id === BLOCK.SMALL_FLY_AGARIC) {
+      ctx.fillStyle = '#efe8de';
+      ctx.fillRect(x + 7, y + 9, 2, 5);
+      ctx.fillStyle = '#cb4d44';
+      ctx.fillRect(x + 4, y + 7, 8, 3);
+      ctx.fillStyle = '#f5f1ea';
+      ctx.fillRect(x + 6, y + 8, 1, 1);
+      ctx.fillRect(x + 9, y + 7, 1, 1);
+    } else if (id === BLOCK.SMALL_GLOW_MUSHROOM) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 5 + x * 0.04);
+      ctx.fillStyle = '#dfead8';
+      ctx.fillRect(x + 7, y + 9, 2, 5);
+      ctx.fillStyle = '#9de0bb';
+      ctx.fillRect(x + 4, y + 7, 8, 3);
+      ctx.fillStyle = `rgba(240,255,243,${0.25 + pulse * 0.25})`;
+      ctx.fillRect(x + 5, y + 7, 6, 2);
+    } else if (id === BLOCK.ECHO_CORE) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 4.8 + x * 0.06);
+      ctx.fillStyle = '#514c7d';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#a79fe8';
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + 2);
+      ctx.lineTo(x + 13, y + 8);
+      ctx.lineTo(x + 8, y + 14);
+      ctx.lineTo(x + 3, y + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = `rgba(241,239,255,${0.18 + pulse * 0.24})`;
+      ctx.fillRect(x + 4, y + 4, 8, 8);
+    } else if (id === BLOCK.ECHO_SHARD_PEDESTAL) {
+      ctx.fillStyle = '#5c6386';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#858eba';
+      ctx.fillRect(x + 4, y + 3, 8, 3);
+      ctx.fillRect(x + 5, y + 6, 6, 6);
+      ctx.fillStyle = '#d9defc';
+      ctx.fillRect(x + 6, y + 1, 4, 2);
+    } else if (id === BLOCK.ROOT_NODE) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 3.6 + x * 0.04);
+      ctx.fillStyle = '#4e3424';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7a5537';
+      ctx.fillRect(x + 6, y + 1, 4, 14);
+      ctx.fillRect(x + 3, y + 6, 10, 3);
+      ctx.fillStyle = `rgba(154,210,102,${0.12 + pulse * 0.18})`;
+      ctx.fillRect(x + 5, y + 5, 6, 4);
+    } else if (id === BLOCK.ROOT_CORE) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 3.4 + x * 0.05);
+      ctx.fillStyle = '#5d4028';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#8e6a43';
+      ctx.beginPath();
+      ctx.arc(x + 8, y + 8, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(179,235,122,${0.14 + pulse * 0.2})`;
+      ctx.fillRect(x + 4, y + 4, 8, 8);
+    } else if (id === BLOCK.ROOT_STONE) {
+      ctx.fillStyle = '#544a3f';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#6d6154';
+      ctx.fillRect(x + 2, y + 3, 5, 4);
+      ctx.fillRect(x + 9, y + 5, 4, 3);
+      ctx.fillStyle = '#3d352e';
+      ctx.fillRect(x + 5, y + 10, 6, 3);
+    } else if (id === BLOCK.ROOT_PLATFORM) {
+      ctx.fillStyle = '#5f462b';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7d5d39';
+      ctx.fillRect(x + 1, y + 4, TILE - 2, 8);
+      ctx.fillStyle = '#8f6d43';
+      ctx.fillRect(x + 3, y + 2, 3, 12);
+      ctx.fillRect(x + 8, y + 1, 2, 13);
+      ctx.fillRect(x + 11, y + 5, 2, 7);
+      ctx.fillStyle = '#3f2c1d';
+      ctx.fillRect(x + 6, y + 3, 1, 10);
     } else if (id === BLOCK.STEAM_WATER) {
       ctx.fillStyle = 'rgba(178,238,255,0.72)';
       ctx.fillRect(x, y + 1, TILE, TILE - 1);

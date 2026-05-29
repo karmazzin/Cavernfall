@@ -26,6 +26,11 @@
     feet: ITEM.INVISIBLE_BOOTS,
   };
 
+  function getRootHeartDamageFactor(state) {
+    if (!state || !state.player || (state.player.rootHeartTimer || 0) <= 0) return 1;
+    return state.activeDimension === 'underground' ? 0.6 : 0.75;
+  }
+
   function createArmorSlots() {
     return {
       head: createSlot(),
@@ -142,6 +147,7 @@
     ) {
       actual *= 0.5;
     }
+    actual *= getRootHeartDamageFactor(state);
     state.player.health = Math.max(0, state.player.health - actual);
     if (flash > 0) state.attackFlash = Math.max(state.attackFlash || 0, flash);
     if (state.player.health <= 0) {

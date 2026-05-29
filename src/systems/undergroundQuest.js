@@ -3,11 +3,34 @@
   const { TILE, WORLD_W, WORLD_H } = Game.constants;
   const { BLOCK } = Game.blocks;
   const { ITEM } = Game.items;
+  const { getItemDefinition } = Game.items;
   const { getBlock, setBlock, blockSolid } = Game.world;
-  const { addToInventory, countItem, selectedItemId } = Game.inventory;
+  const { addToInventory, countItem, selectedItemId, removeItem } = Game.inventory;
   const { removeFromSlot } = Game.inventory;
   const { isPlayerUndetectable } = Game.invisibilitySystem || {};
-  const { applyPlayerDamage } = Game.combat;
+  const { applyPlayerDamage, getMaxHealth } = Game.combat;
+  const ECHO_PULSE_DURATION = 7;
+  const ECHO_PULSE_COOLDOWN = 14;
+  const ECHO_SCAN_RADIUS = 14;
+  const ECHO_STRUCTURE_RADIUS = 40;
+  const ECHO_MAX_ORES = 18;
+  const ECHO_MAX_PASSAGES = 16;
+  const ROOT_HEART_DURATION = 10;
+  const ROOT_HEART_COOLDOWN = 18;
+  const ROOT_HEART_NATURAL_BLOCKS = new Set([
+    BLOCK.GRASS,
+    BLOCK.DIRT,
+    BLOCK.MOSS,
+    BLOCK.MUSHROOM_SOIL,
+    BLOCK.GREAT_TREE_WOOD,
+  ]);
+  const ECHO_ORE_BLOCKS = new Set([
+    BLOCK.DIAMOND_ORE,
+    BLOCK.DEEP_ORE,
+    BLOCK.FRIENDSHIP_ORE,
+    BLOCK.STEAM_ORE,
+    BLOCK.INVISIBLE_ORE,
+  ]);
 
   function ensureGardenMeta(state, meta) {
     if (meta.garden && Number.isFinite(meta.garden.x0) && Number.isFinite(meta.garden.x1)) return meta.garden;
@@ -30,9 +53,37 @@
     return meta.garden;
   }
 
+  function ensureEchoPulseState(state) {
+    if (!state.echoPulse || typeof state.echoPulse !== 'object') {
+      state.echoPulse = {
+        timer: 0,
+        cooldown: 0,
+        ores: [],
+        passages: [],
+        structures: [],
+      };
+      return state.echoPulse;
+    }
+    state.echoPulse.timer = Number.isFinite(state.echoPulse.timer) ? state.echoPulse.timer : 0;
+    state.echoPulse.cooldown = Number.isFinite(state.echoPulse.cooldown) ? state.echoPulse.cooldown : 0;
+    if (!Array.isArray(state.echoPulse.ores)) state.echoPulse.ores = [];
+    if (!Array.isArray(state.echoPulse.passages)) state.echoPulse.passages = [];
+    if (!Array.isArray(state.echoPulse.structures)) state.echoPulse.structures = [];
+    return state.echoPulse;
+  }
+
+  function ensureRootHeartState(state) {
+    if (!state.player) return;
+    state.player.rootHeartTimer = Number.isFinite(state.player.rootHeartTimer) ? Math.max(0, state.player.rootHeartTimer) : 0;
+    state.player.rootHeartCooldown = Number.isFinite(state.player.rootHeartCooldown) ? Math.max(0, state.player.rootHeartCooldown) : 0;
+    state.player.rootHeartRegenTick = Number.isFinite(state.player.rootHeartRegenTick) ? Math.max(0, state.player.rootHeartRegenTick) : 0;
+  }
+
   function ensureUndergroundMeta(state) {
     const meta = state.undergroundWorldMeta;
     if (!meta || !meta.castle) return null;
+    ensureEchoPulseState(state);
+    ensureRootHeartState(state);
     ensureGardenMeta(state, meta);
     if (!meta.king) {
       meta.king = {
@@ -43,8 +94,54 @@
         dir: -1,
       };
     }
+    if (!Array.isArray(meta.keepers) || meta.keepers.length === 0) {
+      const lakes = meta.undergroundLakes || null;
+      const crystal = meta.crystalVaults || null;
+      const roots = meta.rootGrove || null;
+      const mushroom = meta.mushroomHalls || null;
+      const keepers = [];
+      if (lakes) {
+        keepers.push(
+          { x: lakes.centerX * TILE - 8, y: (state.surfaceAt[lakes.centerX] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'lake', anchorPhase: 0.3 }
+        );
+      }
+      if (crystal) {
+        keepers.push(
+          { x: crystal.centerX * TILE - 8, y: (state.surfaceAt[crystal.centerX] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'crystal', anchorPhase: 0.6 },
+          { x: (crystal.x0 + 12) * TILE - 8, y: (state.surfaceAt[Math.min(WORLD_W - 1, crystal.x0 + 12)] - 2) * TILE, w: 16, h: 24, dir: -1, kind: 'crystal', anchorPhase: 1.7 }
+        );
+      }
+      if (roots) {
+        keepers.push(
+          { x: (roots.x0 + 8) * TILE - 8, y: (state.surfaceAt[Math.min(WORLD_W - 1, roots.x0 + 8)] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'roots', anchorPhase: 2.4 },
+          { x: (roots.x1 - 6) * TILE - 8, y: (state.surfaceAt[Math.max(0, roots.x1 - 6)] - 2) * TILE, w: 16, h: 24, dir: -1, kind: 'roots', anchorPhase: 3.1 }
+        );
+      }
+      if (mushroom) {
+        keepers.push(
+          { x: (mushroom.x0 + 9) * TILE - 8, y: (state.surfaceAt[Math.min(WORLD_W - 1, mushroom.x0 + 9)] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'mushroom', anchorPhase: 4.2 }
+        );
+      }
+      meta.keepers = keepers.map((keeper) => ({
+        ...keeper,
+        anchorX: keeper.x,
+        anchorY: keeper.y,
+        dirTimer: 1.2 + Math.random() * 1.6,
+        timer: Math.random() * 2,
+      }));
+    }
     if (!Array.isArray(state.temporaryEarthBlocks)) state.temporaryEarthBlocks = [];
     if (!Array.isArray(state.greatTrees)) state.greatTrees = [];
+    if (meta.echoTemple && !meta.echoTemple.inserted) {
+      meta.echoTemple.inserted = {
+        [ITEM.DEPTH_CRYSTAL]: false,
+        [ITEM.LAKE_CRYSTAL]: false,
+        [ITEM.RIFT_CRYSTAL]: false,
+      };
+      meta.echoTemple.rewardGiven = !!meta.echoTemple.rewardGiven;
+    }
+    if (!Array.isArray(meta.echoShards)) meta.echoShards = [];
+    if (meta.rootShrine && !Array.isArray(meta.rootShrine.activated)) meta.rootShrine.activated = [false, false, false];
     if (meta.greatTree && !state.greatTrees.some((tree) => tree && tree.x === meta.greatTree.x && tree.baseY === meta.greatTree.baseY)) {
       state.greatTrees.push({
         ...meta.greatTree,
@@ -233,6 +330,123 @@
     }
   }
 
+  function updateUndergroundKeepers(state, dt) {
+    if (state.activeDimension !== 'underground') return;
+    const meta = ensureUndergroundMeta(state);
+    if (!meta || !Array.isArray(meta.keepers)) return;
+    for (const keeper of meta.keepers) {
+      keeper.timer = (keeper.timer || 0) + dt;
+      keeper.dirTimer = Math.max(0, (keeper.dirTimer || 0) - dt);
+      if (keeper.dirTimer <= 0) {
+        keeper.dir = Math.random() < 0.5 ? -1 : 1;
+        keeper.dirTimer = 1.2 + Math.random() * 2;
+      }
+      const speed = keeper.kind === 'crystal' ? 12 : keeper.kind === 'lake' ? 8 : keeper.kind === 'mushroom' ? 7 : 9;
+      const drift = keeper.kind === 'crystal' ? 5 : keeper.kind === 'lake' ? 4 : keeper.kind === 'mushroom' ? 2 : 3;
+      const anchorX = Number.isFinite(keeper.anchorX) ? keeper.anchorX : keeper.x;
+      const anchorY = Number.isFinite(keeper.anchorY) ? keeper.anchorY : keeper.y;
+      keeper.x += keeper.dir * speed * dt;
+      const wave = keeper.kind === 'crystal' ? 1.9 : keeper.kind === 'lake' ? 1.2 : keeper.kind === 'mushroom' ? 0.9 : 1.4;
+      keeper.y = anchorY + Math.sin(keeper.timer * wave + (keeper.anchorPhase || 0)) * drift;
+      if (keeper.x < anchorX - 28) keeper.dir = 1;
+      if (keeper.x > anchorX + 28) keeper.dir = -1;
+    }
+  }
+
+  function useNearbyEchoTemple(state) {
+    if (state.activeDimension !== 'underground') return false;
+    const meta = ensureUndergroundMeta(state);
+    if (!meta || !meta.echoTemple) return false;
+    const temple = meta.echoTemple;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    const dist = Math.hypot(temple.coreX * TILE + TILE / 2 - playerCx, temple.coreY * TILE + TILE / 2 - playerCy);
+    if (dist > 110) return false;
+    const needed = [ITEM.DEPTH_CRYSTAL, ITEM.LAKE_CRYSTAL, ITEM.RIFT_CRYSTAL];
+    for (const itemId of needed) {
+      if (temple.inserted[itemId]) continue;
+      if (countItem(state, itemId) > 0) {
+        removeItem(state, itemId, 1);
+        temple.inserted[itemId] = true;
+        state.ui.noticeText = `Ядро эха приняло ${getItemDefinition(itemId).label}.`;
+        state.ui.noticeTimer = 3.5;
+        return true;
+      }
+    }
+    const ready = needed.every((itemId) => temple.inserted[itemId]);
+    if (ready && !temple.rewardGiven) {
+      temple.rewardGiven = true;
+      addToInventory(state, ITEM.ECHO_CRYSTAL, 1);
+      state.ui.noticeText = 'Ядро эха пробудилось. Ты получил Кристалл эха.';
+      state.ui.noticeTimer = 5;
+      return true;
+    }
+    if (!ready) {
+      state.ui.noticeText = 'Ядру эха нужны Кристалл глубины, Кристалл озера и Кристалл разлома.';
+      state.ui.noticeTimer = 4;
+      return true;
+    }
+    return false;
+  }
+
+  function useNearbyEchoShard(state) {
+    if (state.activeDimension !== 'underground') return false;
+    const meta = ensureUndergroundMeta(state);
+    if (!meta || !Array.isArray(meta.echoShards)) return false;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    for (const shard of meta.echoShards) {
+      if (shard.taken) continue;
+      const dist = Math.hypot(shard.tx * TILE + TILE / 2 - playerCx, shard.ty * TILE + TILE / 2 - playerCy);
+      if (dist > 110) continue;
+      if (!addToInventory(state, shard.itemId, 1)) {
+        state.ui.noticeText = `Освободи слот для ${getItemDefinition(shard.itemId).label}.`;
+        state.ui.noticeTimer = 3.5;
+        return true;
+      }
+      shard.taken = true;
+      setBlock(state, shard.tx, shard.ty, BLOCK.AIR);
+      state.ui.noticeText = `${getItemDefinition(shard.itemId).label} получен.`;
+      state.ui.noticeTimer = 3.5;
+      return true;
+    }
+    return false;
+  }
+
+  function useNearbyRootShrine(state) {
+    if (state.activeDimension !== 'underground') return false;
+    const meta = ensureUndergroundMeta(state);
+    if (!meta || !meta.rootShrine) return false;
+    const shrine = meta.rootShrine;
+    const playerCx = state.player.x + state.player.w / 2;
+    const playerCy = state.player.y + state.player.h / 2;
+    for (let i = 0; i < shrine.nodes.length; i += 1) {
+      const node = shrine.nodes[i];
+      const dist = Math.hypot(node.tx * TILE + TILE / 2 - playerCx, node.ty * TILE + TILE / 2 - playerCy);
+      if (dist <= 96 && !shrine.activated[i]) {
+        shrine.activated[i] = true;
+        state.ui.noticeText = `Корневой узел ${i + 1}/3 пробуждён.`;
+        state.ui.noticeTimer = 3.5;
+        return true;
+      }
+    }
+    const coreDist = Math.hypot(shrine.coreX * TILE + TILE / 2 - playerCx, shrine.coreY * TILE + TILE / 2 - playerCy);
+    if (coreDist > 100) return false;
+    if (shrine.activated.every(Boolean) && !shrine.rewardGiven) {
+      shrine.rewardGiven = true;
+      addToInventory(state, ITEM.ROOT_HEART, 1);
+      state.ui.noticeText = 'Сердце святилища открылось. Ты получил Сердце корней.';
+      state.ui.noticeTimer = 5;
+      return true;
+    }
+    if (!shrine.activated.every(Boolean)) {
+      state.ui.noticeText = 'Святилище ждёт пробуждения трёх корневых узлов.';
+      state.ui.noticeTimer = 4;
+      return true;
+    }
+    return false;
+  }
+
   function updateGreatTree(state, dt) {
     const meta = ensureUndergroundMeta(state);
     const trees = ensureGreatTrees(state);
@@ -299,9 +513,12 @@
 
   function updateUndergroundQuest(state, dt) {
     resolveTemporaryEarthBlocks(state, dt);
+    updateUndergroundKeepers(state, dt);
     updateKingQuest(state);
     updateGreatTree(state, dt);
     updateFinalAmuletFall(state, dt);
+    updateEchoPulse(state, dt);
+    updateRootHeart(state, dt);
   }
 
   function tryPlantGreatTreeSapling(state, tx, ty) {
@@ -354,6 +571,151 @@
     return true;
   }
 
+  function collectEchoStructures(state, radius) {
+    const px = state.player.x + state.player.w / 2;
+    const py = state.player.y + state.player.h / 2;
+    const structures = [];
+    function maybePush(label, tx, ty) {
+      if (!Number.isFinite(tx) || !Number.isFinite(ty)) return;
+      const dx = tx * TILE - px;
+      const dy = ty * TILE - py;
+      if (Math.hypot(dx, dy) > radius * TILE) return;
+      structures.push({ label, tx, ty });
+    }
+    if (state.activeDimension === 'underground' && state.undergroundWorldMeta) {
+      const meta = state.undergroundWorldMeta;
+      if (meta.echoTemple) maybePush('Храм кристального эха', meta.echoTemple.coreX, meta.echoTemple.coreY);
+      if (meta.rootShrine) maybePush('Святилище корней', meta.rootShrine.coreX, meta.rootShrine.coreY);
+      if (meta.garden) maybePush('Сад великих древ', meta.garden.centerX, meta.garden.groundY);
+      if (meta.castle) maybePush('Замок подземного короля', meta.castle.centerX, meta.castle.baseY);
+    }
+    return structures;
+  }
+
+  function collectEchoOres(state, radius) {
+    const cx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const cy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    const ores = [];
+    for (let ty = Math.max(0, cy - radius); ty <= Math.min(WORLD_H - 1, cy + radius); ty += 1) {
+      for (let tx = Math.max(0, cx - radius); tx <= Math.min(WORLD_W - 1, cx + radius); tx += 1) {
+        const id = getBlock(state, tx, ty);
+        if (!ECHO_ORE_BLOCKS.has(id)) continue;
+        ores.push({ tx, ty, id });
+        if (ores.length >= ECHO_MAX_ORES) return ores;
+      }
+    }
+    return ores;
+  }
+
+  function collectEchoPassages(state, radius) {
+    const cx = Math.floor((state.player.x + state.player.w / 2) / TILE);
+    const cy = Math.floor((state.player.y + state.player.h / 2) / TILE);
+    const passages = [];
+    for (let ty = Math.max(1, cy - radius); ty <= Math.min(WORLD_H - 2, cy + radius); ty += 1) {
+      for (let tx = Math.max(1, cx - radius); tx <= Math.min(WORLD_W - 2, cx + radius); tx += 1) {
+        const id = getBlock(state, tx, ty);
+        if (!blockSolid(id)) continue;
+        const leftAir = getBlock(state, tx - 1, ty) === BLOCK.AIR;
+        const rightAir = getBlock(state, tx + 1, ty) === BLOCK.AIR;
+        const upAir = getBlock(state, tx, ty - 1) === BLOCK.AIR;
+        const downAir = getBlock(state, tx, ty + 1) === BLOCK.AIR;
+        if (!((leftAir && rightAir) || (upAir && downAir))) continue;
+        passages.push({ tx, ty });
+        if (passages.length >= ECHO_MAX_PASSAGES) return passages;
+      }
+    }
+    return passages;
+  }
+
+  function hasRootHeart(state) {
+    return countItem(state, ITEM.ROOT_HEART) > 0;
+  }
+
+  function isNaturalRootHealingBlock(id) {
+    return ROOT_HEART_NATURAL_BLOCKS.has(id);
+  }
+
+  function playerStandingOnNaturalBlock(state) {
+    const leftTx = Math.floor((state.player.x + 1) / TILE);
+    const rightTx = Math.floor((state.player.x + state.player.w - 2) / TILE);
+    const footTy = Math.floor((state.player.y + state.player.h + 1) / TILE);
+    return isNaturalRootHealingBlock(getBlock(state, leftTx, footTy)) || isNaturalRootHealingBlock(getBlock(state, rightTx, footTy));
+  }
+
+  function updateRootHeart(state, dt) {
+    ensureRootHeartState(state);
+    if (state.player.rootHeartCooldown > 0) state.player.rootHeartCooldown = Math.max(0, state.player.rootHeartCooldown - dt);
+    if (state.player.rootHeartTimer > 0) state.player.rootHeartTimer = Math.max(0, state.player.rootHeartTimer - dt);
+    const nonSurvival = !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
+    if (nonSurvival || state.gameOver || state.player.health <= 0 || !hasRootHeart(state) || !playerStandingOnNaturalBlock(state)) {
+      state.player.rootHeartRegenTick = 0;
+      return;
+    }
+    const maxHealth = getMaxHealth(state);
+    if (state.player.health >= maxHealth) {
+      state.player.rootHeartRegenTick = 0;
+      return;
+    }
+    const regenInterval = state.activeDimension === 'underground' ? 2 : 2.5;
+    state.player.rootHeartRegenTick += dt;
+    if (state.player.rootHeartRegenTick < regenInterval) return;
+    state.player.rootHeartRegenTick = 0;
+    state.player.health = Math.min(maxHealth, state.player.health + 1);
+  }
+
+  function useRootHeart(state) {
+    ensureRootHeartState(state);
+    if (selectedItemId(state) !== ITEM.ROOT_HEART) return false;
+    if (!hasRootHeart(state)) return false;
+    if (state.player.rootHeartCooldown > 0) {
+      state.ui.noticeText = `Сердце корней восстанавливается: ${Math.ceil(state.player.rootHeartCooldown)} с.`;
+      state.ui.noticeTimer = 2.2;
+      return true;
+    }
+    state.player.rootHeartTimer = ROOT_HEART_DURATION;
+    state.player.rootHeartCooldown = ROOT_HEART_COOLDOWN;
+    state.player.rootHeartRegenTick = 0;
+    state.ui.noticeText = 'Сердце корней укрепило тебя живой силой земли.';
+    state.ui.noticeTimer = 4;
+    return true;
+  }
+
+  function useEchoCrystal(state) {
+    if (selectedItemId(state) !== ITEM.ECHO_CRYSTAL) return false;
+    if (countItem(state, ITEM.ECHO_CRYSTAL) <= 0) return false;
+    const pulse = ensureEchoPulseState(state);
+    if (pulse.cooldown > 0) {
+      state.ui.noticeText = `Кристалл эха перезаряжается: ${Math.ceil(pulse.cooldown)} с.`;
+      state.ui.noticeTimer = 2.2;
+      return true;
+    }
+    pulse.ores = collectEchoOres(state, ECHO_SCAN_RADIUS);
+    pulse.passages = collectEchoPassages(state, ECHO_SCAN_RADIUS);
+    pulse.structures = collectEchoStructures(state, ECHO_STRUCTURE_RADIUS);
+    pulse.timer = ECHO_PULSE_DURATION;
+    pulse.cooldown = ECHO_PULSE_COOLDOWN;
+    const parts = [];
+    if (pulse.ores.length) parts.push(`руд: ${pulse.ores.length}`);
+    if (pulse.passages.length) parts.push(`слабых стен: ${pulse.passages.length}`);
+    if (pulse.structures.length) parts.push(`мест силы: ${pulse.structures.length}`);
+    state.ui.noticeText = parts.length
+      ? `Эхо открыло рядом ${parts.join(', ')}.`
+      : 'Эхо разошлось, но рядом ничего не отозвалось.';
+    state.ui.noticeTimer = 4.5;
+    return true;
+  }
+
+  function updateEchoPulse(state, dt) {
+    const pulse = ensureEchoPulseState(state);
+    if (pulse.cooldown > 0) pulse.cooldown = Math.max(0, pulse.cooldown - dt);
+    if (pulse.timer <= 0) return;
+    pulse.timer = Math.max(0, pulse.timer - dt);
+    if (pulse.timer > 0) return;
+    pulse.ores = [];
+    pulse.passages = [];
+    pulse.structures = [];
+  }
+
   function pushPlayerOutOfReturningEarth(state) {
     const px = state.player.x + state.player.w / 2;
     const py = state.player.y + state.player.h / 2;
@@ -374,5 +736,10 @@
     tryUseFinalAmulet,
     pushPlayerOutOfReturningEarth,
     ensureUndergroundMeta,
+    useNearbyEchoTemple,
+    useNearbyEchoShard,
+    useNearbyRootShrine,
+    useEchoCrystal,
+    useRootHeart,
   };
 })();

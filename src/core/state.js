@@ -93,6 +93,9 @@
       steamCloudCooldown: 0,
       steamForm: false,
       invisibilityTimer: 0,
+      rootHeartTimer: 0,
+      rootHeartCooldown: 0,
+      rootHeartRegenTick: 0,
     };
   }
 
@@ -205,6 +208,13 @@
       },
       friendshipAmuletTick: 0,
       steamEffects: [],
+      echoPulse: {
+        timer: 0,
+        cooldown: 0,
+        ores: [],
+        passages: [],
+        structures: [],
+      },
       invisibilityBlocks: [],
       invisibilityGroupSeed: 1,
       temporaryEarthBlocks: [],

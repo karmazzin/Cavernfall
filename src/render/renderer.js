@@ -10,7 +10,7 @@
   const { getWeatherState, WEATHER } = Game.weatherSystem;
   const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
-  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar } = Game.entityRenderer;
+  const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawUndergroundKeeper, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
@@ -373,6 +373,47 @@
     ctx.restore();
   }
 
+  function drawEchoPulseOverlay(ctx, state, renderCamera, time) {
+    const pulse = state.echoPulse;
+    if (!pulse || pulse.timer <= 0) return;
+    const pulsePhase = 0.5 + 0.5 * Math.sin(time * 7);
+    ctx.save();
+    for (const ore of pulse.ores || []) {
+      const sx = ore.tx * TILE - renderCamera.x;
+      const sy = ore.ty * TILE - renderCamera.y;
+      ctx.strokeStyle = `rgba(120,255,245,${0.55 + pulsePhase * 0.3})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+      ctx.fillStyle = `rgba(90,220,255,${0.12 + pulsePhase * 0.1})`;
+      ctx.fillRect(sx + 2, sy + 2, TILE - 4, TILE - 4);
+    }
+    for (const wall of pulse.passages || []) {
+      const sx = wall.tx * TILE - renderCamera.x;
+      const sy = wall.ty * TILE - renderCamera.y;
+      ctx.strokeStyle = `rgba(255,220,120,${0.45 + pulsePhase * 0.25})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx + 3, sy + 3, TILE - 6, TILE - 6);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    for (const target of pulse.structures || []) {
+      const sx = target.tx * TILE - renderCamera.x + TILE / 2;
+      const sy = target.ty * TILE - renderCamera.y + TILE / 2;
+      const ring = 8 + pulsePhase * 5;
+      ctx.strokeStyle = `rgba(175,255,210,${0.5 + pulsePhase * 0.25})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, ring, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#e6fff1';
+      ctx.fillText(target.label, sx, sy - 12);
+    }
+    ctx.restore();
+  }
+
   function drawEndingScene(ctx, canvas, state) {
     const ending = state.endingScene;
     if (!ending || !ending.active) return;
@@ -510,7 +551,8 @@
     ctx.fillStyle = '#fff2cf';
     ctx.font = '10px Arial';
     ctx.textAlign = 'left';
-    ctx.fillText(canPreviewPlacement ? 'Тап ещё раз' : 'Цель', sx - 2, sy - 7);
+    const previewLabel = canPreviewPlacement ? 'Тап ещё раз' : 'Цель';
+    ctx.fillText(previewLabel, sx - 2, sy - 7);
     ctx.restore();
   }
 
@@ -786,6 +828,7 @@
       sw: (dome.x1 - dome.x0 + 1) * TILE,
       sh: (dome.y1 - dome.y0 + 1) * TILE,
     }, Game.combat.hasFullFriendshipArmor(state));
+    drawEchoPulseOverlay(ctx, state, renderCamera, time);
     drawTouchTarget(ctx, state, renderCamera, input, time);
 
     if (state.breaking) {
@@ -822,6 +865,7 @@
     for (const human of state.humans || []) drawHuman(ctx, human, renderCamera, time);
     for (const dwarf of state.dwarves || []) drawDwarf(ctx, state, dwarf, renderCamera, time);
     if (state.activeDimension === 'underground' && state.undergroundWorldMeta && state.undergroundWorldMeta.king) {
+      for (const keeper of state.undergroundWorldMeta.keepers || []) drawUndergroundKeeper(ctx, keeper, renderCamera, time);
       drawUndergroundKing(ctx, state.undergroundWorldMeta.king, renderCamera, time);
     }
     if (state.friendlyFireKing) drawFriendlyFireKing(ctx, state.friendlyFireKing, renderCamera, time);

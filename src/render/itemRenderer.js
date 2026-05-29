@@ -298,6 +298,43 @@
       return;
     }
 
+    if (itemId === ITEM.DEPTH_CRYSTAL || itemId === ITEM.LAKE_CRYSTAL || itemId === ITEM.RIFT_CRYSTAL || itemId === ITEM.ECHO_CRYSTAL) {
+      const palette = itemId === ITEM.DEPTH_CRYSTAL
+        ? ['#7b5ac9', '#efe7ff']
+        : itemId === ITEM.LAKE_CRYSTAL
+          ? ['#5fbbe9', '#eefcff']
+          : itemId === ITEM.RIFT_CRYSTAL
+            ? ['#ff9a4a', '#fff1d8']
+            : ['#a79fe8', '#f2efff'];
+      ctx.fillStyle = palette[0];
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.50, y + size * 0.12);
+      ctx.lineTo(x + size * 0.72, y + size * 0.34);
+      ctx.lineTo(x + size * 0.62, y + size * 0.74);
+      ctx.lineTo(x + size * 0.38, y + size * 0.74);
+      ctx.lineTo(x + size * 0.28, y + size * 0.34);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(x + size * 0.46, y + size * 0.24, size * 0.08, size * 0.18);
+      ctx.fillStyle = palette[1];
+      ctx.fillRect(x + size * 0.42, y + size * 0.42, size * 0.04, size * 0.06);
+      return;
+    }
+
+    if (itemId === ITEM.ROOT_HEART) {
+      ctx.fillStyle = '#7b5638';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.38, y + size * 0.36, size * 0.14, 0, Math.PI * 2);
+      ctx.arc(x + size * 0.62, y + size * 0.36, size * 0.14, 0, Math.PI * 2);
+      ctx.lineTo(x + size * 0.50, y + size * 0.78);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#9bd26a';
+      ctx.fillRect(x + size * 0.43, y + size * 0.34, size * 0.14, size * 0.16);
+      return;
+    }
+
     if (itemId === ITEM.RAW_GOLD) {
       ctx.fillStyle = '#c59c3c';
       ctx.beginPath();

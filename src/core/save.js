@@ -136,6 +136,7 @@
       weather: state.weather,
       friendshipAmuletTick: state.friendshipAmuletTick,
       steamEffects: state.steamEffects,
+      echoPulse: state.echoPulse,
       invisibilityBlocks: state.invisibilityBlocks,
       invisibilityGroupSeed: state.invisibilityGroupSeed,
       temporaryEarthBlocks: state.temporaryEarthBlocks,
@@ -381,6 +382,15 @@
         : state.weather;
       state.friendshipAmuletTick = Number.isFinite(data.friendshipAmuletTick) ? data.friendshipAmuletTick : 0;
       state.steamEffects = Array.isArray(data.steamEffects) ? data.steamEffects : [];
+      state.echoPulse = data.echoPulse && typeof data.echoPulse === 'object'
+        ? {
+            timer: Number.isFinite(data.echoPulse.timer) ? data.echoPulse.timer : 0,
+            cooldown: Number.isFinite(data.echoPulse.cooldown) ? data.echoPulse.cooldown : 0,
+            ores: Array.isArray(data.echoPulse.ores) ? data.echoPulse.ores : [],
+            passages: Array.isArray(data.echoPulse.passages) ? data.echoPulse.passages : [],
+            structures: Array.isArray(data.echoPulse.structures) ? data.echoPulse.structures : [],
+          }
+        : state.echoPulse;
       state.invisibilityBlocks = Array.isArray(data.invisibilityBlocks) ? data.invisibilityBlocks : state.invisibilityBlocks;
       state.invisibilityGroupSeed = Number.isFinite(data.invisibilityGroupSeed) ? data.invisibilityGroupSeed : state.invisibilityGroupSeed;
       state.temporaryEarthBlocks = Array.isArray(data.temporaryEarthBlocks) ? data.temporaryEarthBlocks : state.temporaryEarthBlocks;

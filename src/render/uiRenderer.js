@@ -84,7 +84,12 @@
     if (biomeKey === 'air_caves') return 'Воздушные пещеры';
     if (biomeKey === 'air_plains') return 'Воздушная равнина';
     if (biomeKey === 'underground_plains') return 'Подземная равнина';
+    if (biomeKey === 'underground_lakes') return 'Подземные озёра';
+    if (biomeKey === 'lava_fissures') return 'Лавовые трещины';
+    if (biomeKey === 'crystal_vaults') return 'Кристальные своды';
+    if (biomeKey === 'great_roots') return 'Корни великих древ';
     if (biomeKey === 'great_tree_garden') return 'Сад великих древ';
+    if (biomeKey === 'mushroom_halls') return 'Грибные залы';
     if (biomeKey === 'end_great_tree') return 'Великое Древо';
     if (biomeKey === 'water_surface') return 'Водная гладь';
     if (biomeKey === 'water_floor') return 'Дно';
@@ -290,8 +295,12 @@
     const mobileMode = !!(state.worldMeta && state.worldMeta.mode === 'mobile');
     const spectator = !!(state.worldMeta && (state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator'));
     if (spectator) return;
+    const showInvisibility = !creative && (state.player.invisibilityTimer || 0) > 0;
+    const showRootActive = !creative && (state.player.rootHeartTimer || 0) > 0;
+    const showRootCooldown = !creative && !showRootActive && (state.player.rootHeartCooldown || 0) > 0;
+    const extraStatusLines = (showInvisibility ? 1 : 0) + (showRootActive || showRootCooldown ? 1 : 0);
     const panelW = mobile ? Math.min(canvas.width - 24, 252) : 280;
-    const panelH = creative ? (mobile ? 54 : 72) : mobile ? 82 : 110;
+    const panelH = creative ? (mobile ? 54 : 72) : (mobile ? 82 : 110) + extraStatusLines * (mobile ? 14 : 18);
     const panelX = 12;
     const panelY = mobile ? 12 : 12;
 
@@ -304,9 +313,20 @@
     if (!creative) {
       ctx.fillText(`Жизни: ${Math.ceil(state.player.health)}/${maxHealth}`, panelX + 12, panelY + 20);
       ctx.fillText(`Сытость: ${Math.ceil(state.player.satiety)}/100`, panelX + 12, panelY + 38);
-      if ((state.player.invisibilityTimer || 0) > 0) {
+      let statusY = panelY + 56;
+      if (showInvisibility) {
         ctx.fillStyle = '#dff6ff';
-        ctx.fillText(`Невидимость: ${Math.ceil(state.player.invisibilityTimer)}с`, panelX + 12, panelY + 56);
+        ctx.fillText(`Невидимость: ${Math.ceil(state.player.invisibilityTimer)}с`, panelX + 12, statusY);
+        statusY += mobile ? 14 : 18;
+        ctx.fillStyle = '#fff';
+      }
+      if (showRootActive) {
+        ctx.fillStyle = '#d8ffd7';
+        ctx.fillText(`Сила корней: ${Math.ceil(state.player.rootHeartTimer)}с`, panelX + 12, statusY);
+        ctx.fillStyle = '#fff';
+      } else if (showRootCooldown) {
+        ctx.fillStyle = '#c7e7b6';
+        ctx.fillText(`Сердце корней: ${Math.ceil(state.player.rootHeartCooldown)}с`, panelX + 12, statusY);
         ctx.fillStyle = '#fff';
       }
     } else {

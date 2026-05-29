@@ -27,6 +27,7 @@
   const { phaseInfo } = Game.dayCycle;
   const audio = Game.audio;
   const INVISIBLE_BLOCK_BREAK_FACTOR = 0.4;
+  const undergroundQuestSystem = Game.undergroundQuestSystem || {};
 
   function isCreative(state) {
     return !!(state.worldMeta && state.worldMeta.mode === 'creative');
@@ -888,5 +889,8 @@
     useNearbyDungeonSeal,
     findUsableDungeonSeal,
     handleMouse,
+    useNearbyEchoTemple: undergroundQuestSystem.useNearbyEchoTemple,
+    useNearbyEchoShard: undergroundQuestSystem.useNearbyEchoShard,
+    useNearbyRootShrine: undergroundQuestSystem.useNearbyRootShrine,
   };
 })();

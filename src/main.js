@@ -27,7 +27,7 @@
   const { updateWaterWell } = Game.waterWellSystem;
   const { updateSteamQuest, useSteamCloud } = Game.steamQuestSystem;
   const { updateInvisibility, useInvisibilityAmulet } = Game.invisibilitySystem || {};
-  const { updateUndergroundQuest } = Game.undergroundQuestSystem || {};
+  const { updateUndergroundQuest, useEchoCrystal, useRootHeart } = Game.undergroundQuestSystem || {};
   const { updateEndQuest, skipEndingScene } = Game.endQuestSystem || {};
   const { updatePortals, useNearbyPortal } = Game.portalSystem;
   const { useNearbyWaterDome } = Game.waterDimensionSystem;
@@ -38,7 +38,7 @@
   const { updateFluids } = Game.fluids;
   const { addToInventory, eatFood, countItem } = Game.inventory;
   const { ITEM } = Game.items;
-  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal, useNearbyAirCrystal, useNearbyAirEntrance, useNearbyAirThiefPortal } = Game.interaction;
+  const { handleMouse, useNearbyDoor, useNearbyPillow, useNearbyDungeonSeal, useNearbyWaterCrystal, useNearbyAirCrystal, useNearbyAirEntrance, useNearbyAirThiefPortal, useNearbyEchoTemple, useNearbyEchoShard, useNearbyRootShrine } = Game.interaction;
   const { getLocationInfo } = Game.world;
   const { createCamera, updateCamera } = Game.camera;
   const { setupInput } = Game.input;
@@ -527,7 +527,7 @@
         if (skipEndingScene) skipEndingScene(state);
         return;
       }
-      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyAirCrystal(state, input, camera) && !useNearbyAirEntrance(state) && !useNearbyAirThiefPortal(state) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !(useInvisibilityAmulet && useInvisibilityAmulet(state)) && !useSteamCloud(state)) eatFood(state);
+      if (!useNearbyPortal(state, input, camera) && !useNearbyWaterDome(state) && !useNearbyWaterCrystal(state, input, camera) && !useNearbyAirCrystal(state, input, camera) && !useNearbyAirEntrance(state) && !useNearbyAirThiefPortal(state) && !(useNearbyEchoShard && useNearbyEchoShard(state)) && !(useNearbyEchoTemple && useNearbyEchoTemple(state)) && !(useNearbyRootShrine && useNearbyRootShrine(state)) && !useNearbyDungeonSeal(state, input, camera) && !useNearbyPillow(state, input, camera) && !useNearbyDoor(state, input, camera) && !(useEchoCrystal && useEchoCrystal(state)) && !(useRootHeart && useRootHeart(state)) && !(useInvisibilityAmulet && useInvisibilityAmulet(state)) && !useSteamCloud(state)) eatFood(state);
     },
     restart: () => {
       if (app.screen === 'playing' && !state.hardcoreDeath) resetCurrentWorld();

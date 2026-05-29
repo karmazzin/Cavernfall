@@ -4217,6 +4217,95 @@
     return { x0, x1, baseY, topY, centerX, throneX, throneY };
   }
 
+  function setMushroomCapBlock(state, tx, ty, blockId) {
+    if (tx < 1 || tx >= WORLD_W - 1 || ty < 1 || ty >= WORLD_H - 1) return;
+    setBlock(state, tx, ty, blockId);
+  }
+
+  function buildRoundMushroom(state, tx, terrainTop, stemBlock, capBlock, height, capRadius) {
+    const stemTop = terrainTop - height;
+    for (let yy = stemTop; yy < terrainTop; yy += 1) setBlock(state, tx, yy, stemBlock);
+    for (let lx = tx - capRadius; lx <= tx + capRadius; lx += 1) {
+      for (let ly = stemTop - Math.max(1, Math.floor(capRadius / 2)); ly <= stemTop + 1; ly += 1) {
+        const nx = Math.abs(lx - tx) / Math.max(1, capRadius);
+        const ny = Math.abs(ly - stemTop) / Math.max(1, Math.floor(capRadius / 2) + 1);
+        if ((nx * nx) + (ny * ny) <= 1.28) setMushroomCapBlock(state, lx, ly, capBlock);
+      }
+    }
+  }
+
+  function buildBellMushroom(state, tx, terrainTop, stemBlock, capBlock, height, capRadius) {
+    const stemTop = terrainTop - height;
+    for (let yy = stemTop; yy < terrainTop; yy += 1) setBlock(state, tx, yy, stemBlock);
+    for (let lx = tx - capRadius; lx <= tx + capRadius; lx += 1) {
+      const dx = Math.abs(lx - tx);
+      const topY = stemTop - 1 - Math.max(0, Math.floor((capRadius - dx) / 2));
+      const bottomY = stemTop + 1 + Math.max(1, Math.floor(dx / 2));
+      for (let ly = topY; ly <= bottomY; ly += 1) setMushroomCapBlock(state, lx, ly, capBlock);
+    }
+  }
+
+  function buildMushroomCluster(state, tx, terrainTop) {
+    const variants = [
+      { dx: -2, block: BLOCK.SMALL_WHITE_MUSHROOM },
+      { dx: 0, block: BLOCK.SMALL_FLY_AGARIC },
+      { dx: 2, block: BLOCK.SMALL_GLOW_MUSHROOM },
+    ];
+    for (const variant of variants) {
+      if (Math.random() < 0.72) setBlock(state, tx + variant.dx, terrainTop - 1, variant.block);
+    }
+  }
+
+  function buildEchoTemple(state, centerX, baseY) {
+    const width = 26;
+    const height = 12;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const y1 = baseY;
+    const y0 = y1 - height + 1;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === y0 || ty === y1;
+        setBlock(state, tx, ty, border ? BLOCK.BLACKSTONE : BLOCK.AIR);
+      }
+    }
+    for (let tx = x0 + 3; tx <= x1 - 3; tx += 1) setBlock(state, tx, y1 - 1, BLOCK.DEEPSTONE);
+    const coreX = centerX;
+    const coreY = y1 - 2;
+    setBlock(state, coreX, coreY, BLOCK.ECHO_CORE);
+    return { x0, x1, y0, y1, centerX, coreX, coreY };
+  }
+
+  function buildRootShrine(state, centerX, baseY) {
+    const width = 30;
+    const height = 16;
+    const x0 = centerX - Math.floor(width / 2);
+    const x1 = x0 + width - 1;
+    const y1 = baseY;
+    const y0 = y1 - height + 1;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = y0; ty <= y1; ty += 1) {
+        const border = tx === x0 || tx === x1 || ty === y0 || ty === y1;
+        setBlock(state, tx, ty, border ? BLOCK.ROOT_STONE : BLOCK.AIR);
+      }
+    }
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 1) setBlock(state, tx, y1 - 1, BLOCK.ROOT_STONE);
+    for (let ty = y0 + 2; ty <= y1 - 2; ty += 1) {
+      setBlock(state, centerX - 10, ty, BLOCK.GREAT_TREE_WOOD);
+      setBlock(state, centerX + 10, ty, BLOCK.GREAT_TREE_WOOD);
+    }
+    const nodes = [
+      { tx: centerX - 9, ty: y1 - 2 },
+      { tx: centerX, ty: y0 + 3 },
+      { tx: centerX + 9, ty: y1 - 2 },
+    ];
+    for (const node of nodes) setBlock(state, node.tx, node.ty, BLOCK.ROOT_NODE);
+    const coreX = centerX;
+    const coreY = y1 - 2;
+    setBlock(state, coreX, coreY, BLOCK.ROOT_CORE);
+    return { x0, x1, y0, y1, centerX, coreX, coreY, nodes };
+  }
+
   function generateUndergroundDimension(state) {
     state.world = createGrid();
     state.biomeAt = Array(WORLD_W).fill('underground_plains');
@@ -4262,19 +4351,171 @@
     state.fluidTick = 0;
 
     const baseY = 48;
+    const lakeX0 = Math.floor(WORLD_W * 0.03);
+    const lakeX1 = Math.floor(WORLD_W * 0.11);
+    const lavaX0 = Math.floor(WORLD_W * 0.23);
+    const lavaX1 = Math.floor(WORLD_W * 0.31);
+    const crystalX0 = Math.floor(WORLD_W * 0.34);
+    const crystalX1 = Math.floor(WORLD_W * 0.5);
+    const rootsX0 = Math.floor(WORLD_W * 0.54);
+    const rootsX1 = Math.floor(WORLD_W * 0.61);
     const gardenX0 = Math.floor(WORLD_W * 0.62);
     const gardenX1 = Math.floor(WORLD_W * 0.82);
+    const mushroomX0 = Math.floor(WORLD_W * 0.84);
+    const mushroomX1 = Math.floor(WORLD_W * 0.97);
     let gardenGroundY = baseY;
     for (let tx = 0; tx < WORLD_W; tx += 1) {
-      const terrainTop = Math.round(baseY + Math.sin(tx / 27) * 2 + Math.sin(tx / 9) * 0.8);
-      state.surfaceAt[tx] = terrainTop;
+      const inLakes = tx >= lakeX0 && tx <= lakeX1;
+      const inLava = tx >= lavaX0 && tx <= lavaX1;
       const inGarden = tx >= gardenX0 && tx <= gardenX1;
-      state.biomeAt[tx] = inGarden ? 'great_tree_garden' : 'underground_plains';
+      const inCrystal = tx >= crystalX0 && tx <= crystalX1;
+      const inRoots = !inGarden && tx >= rootsX0 && tx <= rootsX1;
+      const inMushroom = tx >= mushroomX0 && tx <= mushroomX1;
+      const terrainTop = Math.round(
+        baseY
+        + Math.sin(tx / 27) * 2
+        + Math.sin(tx / 9) * 0.8
+        + (inLakes ? 2.2 + Math.sin(tx / 4.5) * 1.3 : 0)
+        + (inLava ? 1.4 + Math.cos(tx / 6) * 1.1 : 0)
+        + (inRoots ? Math.sin(tx / 5.5) * 0.9 : 0)
+        + (inCrystal ? Math.sin(tx / 12) * 0.4 : 0)
+        + (inMushroom ? -1.3 + Math.sin(tx / 8) * 0.8 : 0)
+      );
+      state.surfaceAt[tx] = terrainTop;
+      state.biomeAt[tx] = inGarden
+        ? 'great_tree_garden'
+        : inLakes
+          ? 'underground_lakes'
+          : inLava
+            ? 'lava_fissures'
+            : inMushroom
+              ? 'mushroom_halls'
+        : inCrystal
+          ? 'crystal_vaults'
+          : inRoots
+            ? 'great_roots'
+            : 'underground_plains';
       if (inGarden) gardenGroundY = Math.min(gardenGroundY, terrainTop);
+      if (!inGarden) {
+        const vaultTop = Math.max(
+          3,
+          Math.round(
+            8
+            + Math.sin(tx / 21) * 2
+            + Math.sin(tx / 7) * 1.5
+            + (inCrystal ? -1 : 0)
+            + (inMushroom ? -2 : 0)
+            + (inLakes ? 1 : 0)
+          )
+        );
+        for (let ty = 0; ty <= vaultTop; ty += 1) {
+          const ceilingBlock = inLava
+            ? BLOCK.BASALT
+            : inCrystal && ty >= vaultTop - 1
+              ? BLOCK.BLACKSTONE
+              : BLOCK.DEEPSTONE;
+          setBlock(state, tx, ty, ceilingBlock);
+        }
+        if (inCrystal) {
+          const spikeLen = 2 + Math.abs(Math.round(Math.sin(tx / 4))) + (tx % 3 === 0 ? 1 : 0);
+          for (let step = 1; step <= spikeLen; step += 1) {
+            const ore = step === spikeLen || (step > 1 && tx % 2 === 0) ? BLOCK.DIAMOND_ORE : BLOCK.DEEP_ORE;
+            setBlock(state, tx, vaultTop + step, ore);
+          }
+        }
+        if (inLava) {
+          const fissureDepth = 3 + Math.abs(Math.round(Math.sin(tx / 5) * 3));
+          for (let step = 0; step <= fissureDepth; step += 1) {
+            const yy = terrainTop - step;
+            if (yy <= vaultTop + 2) break;
+            setBlock(state, tx, yy, step >= fissureDepth - 1 ? BLOCK.LAVA : BLOCK.BASALT);
+          }
+          if (tx % 6 === 0) {
+            for (let step = 1; step <= 3; step += 1) {
+              const yy = vaultTop + step;
+              if (yy >= terrainTop - 2) break;
+              setBlock(state, tx, yy, BLOCK.BASALT);
+            }
+          }
+        }
+        if (inRoots) {
+          const rootStart = vaultTop + 1;
+          const rootLen = 6 + Math.abs(Math.round(Math.sin(tx / 6) * 5));
+          for (let step = 0; step < rootLen; step += 1) {
+            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+            if (step > 2 && step % 3 === 0) {
+              setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+            }
+          }
+        }
+      }
       for (let ty = terrainTop; ty < WORLD_H; ty += 1) {
-        if (ty === terrainTop) setBlock(state, tx, ty, inGarden ? BLOCK.GRASS : BLOCK.BLACKSTONE);
-        else if (ty <= terrainTop + 2) setBlock(state, tx, ty, inGarden ? BLOCK.DIRT : BLOCK.STONE);
-        else setBlock(state, tx, ty, BLOCK.STONE);
+        if (ty === terrainTop) setBlock(state, tx, ty, inGarden ? BLOCK.GRASS : inMushroom ? BLOCK.MUSHROOM_SOIL : inLava ? BLOCK.BASALT : BLOCK.BLACKSTONE);
+        else if (ty <= terrainTop + 2) setBlock(state, tx, ty, inGarden ? BLOCK.DIRT : inMushroom ? BLOCK.MUSHROOM_SOIL : inLava ? BLOCK.BASALT : BLOCK.STONE);
+        else setBlock(state, tx, ty, inLava ? BLOCK.DEEPSTONE : BLOCK.STONE);
+      }
+      if (inLakes) {
+        const lakeDepth = 3 + Math.abs(Math.round(Math.sin(tx / 7) * 2));
+        for (let step = 0; step <= lakeDepth; step += 1) {
+          const yy = terrainTop - step;
+          if (yy <= 2) break;
+          setBlock(state, tx, yy, step <= lakeDepth - 1 ? BLOCK.WATER : BLOCK.BLACKSTONE);
+        }
+        if (tx % 9 === 0) {
+          setBlock(state, tx, Math.max(1, terrainTop - lakeDepth - 1), BLOCK.TORCH);
+        }
+      }
+      if (inCrystal) {
+        const floorSpikeLen = 2 + Math.abs(Math.round(Math.cos(tx / 5) * 2));
+        for (let step = 1; step <= floorSpikeLen; step += 1) {
+          const yy = terrainTop - step;
+          if (yy <= 2) break;
+          setBlock(state, tx, yy, step === floorSpikeLen ? BLOCK.DIAMOND_ORE : BLOCK.DEEP_ORE);
+        }
+      }
+      if (inMushroom) {
+        if (tx % 17 === 0) {
+          buildRoundMushroom(
+            state,
+            tx,
+            terrainTop,
+            BLOCK.WHITE_MUSHROOM_STEM,
+            BLOCK.WHITE_MUSHROOM_CAP,
+            5 + Math.abs(Math.round(Math.sin(tx / 10) * 2)),
+            4
+          );
+        } else if (tx % 19 === 0) {
+          buildBellMushroom(
+            state,
+            tx,
+            terrainTop,
+            BLOCK.FLY_AGARIC_STEM,
+            BLOCK.FLY_AGARIC_CAP,
+            6 + Math.abs(Math.round(Math.cos(tx / 8) * 2)),
+            4
+          );
+        } else if (tx % 23 === 0) {
+          buildRoundMushroom(
+            state,
+            tx,
+            terrainTop,
+            BLOCK.GLOW_MUSHROOM_STEM,
+            BLOCK.GLOW_MUSHROOM_CAP,
+            4 + Math.abs(Math.round(Math.sin(tx / 7) * 2)),
+            3
+          );
+        } else if (tx % 7 === 0) {
+          buildMushroomCluster(state, tx, terrainTop);
+        }
+      }
+      if (tx >= gardenX0 - 8 && tx <= gardenX1 + 8 && tx % 6 === 0) {
+        const rootLen = 5 + Math.abs(Math.round(Math.sin(tx / 8) * 6));
+        for (let step = 0; step < rootLen; step += 1) {
+          const yy = terrainTop + 2 + step;
+          if (yy >= WORLD_H) break;
+          setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD);
+          if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD);
+        }
       }
       if (inGarden && tx % 18 === 0) {
         const trunkTop = terrainTop - 8;
@@ -4288,9 +4529,76 @@
     }
 
     const castle = buildUndergroundCastle(state, Math.floor(WORLD_W * 0.18), baseY - 1);
+    const echoTemple = buildEchoTemple(state, Math.floor((crystalX0 + crystalX1) / 2), Math.min(state.surfaceAt[Math.floor((crystalX0 + crystalX1) / 2)] + 1, baseY + 1));
+    const echoShardDepth = { tx: crystalX0 + 9, ty: Math.max(10, state.surfaceAt[crystalX0 + 9] - 4), itemId: ITEM.DEPTH_CRYSTAL };
+    const echoShardLake = { tx: Math.floor((lakeX0 + lakeX1) / 2), ty: Math.max(10, state.surfaceAt[Math.floor((lakeX0 + lakeX1) / 2)] - 4), itemId: ITEM.LAKE_CRYSTAL };
+    const echoShardRift = { tx: Math.floor((lavaX0 + lavaX1) / 2), ty: Math.max(10, state.surfaceAt[Math.floor((lavaX0 + lavaX1) / 2)] - 5), itemId: ITEM.RIFT_CRYSTAL };
+    for (const shard of [echoShardDepth, echoShardLake, echoShardRift]) {
+      setBlock(state, shard.tx, shard.ty + 1, BLOCK.ECHO_SHARD_PEDESTAL);
+      setBlock(state, shard.tx, shard.ty, BLOCK.ECHO_CORE);
+    }
+    const rootShrine = buildRootShrine(state, Math.floor((rootsX0 + gardenX0) / 2), Math.min(WORLD_H - 10, gardenGroundY + 24));
+    const keepers = [
+      { x: Math.floor((lakeX0 + lakeX1) / 2) * TILE - 8, y: (state.surfaceAt[Math.floor((lakeX0 + lakeX1) / 2)] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'lake', anchorPhase: 0.15 },
+      { x: Math.floor((crystalX0 + crystalX1) / 2) * TILE - 8, y: (Math.min(state.surfaceAt[Math.floor((crystalX0 + crystalX1) / 2)], baseY) - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'crystal', anchorPhase: 0.4 },
+      { x: (crystalX0 + 12) * TILE - 8, y: (state.surfaceAt[crystalX0 + 12] - 2) * TILE, w: 16, h: 24, dir: -1, kind: 'crystal', anchorPhase: 1.1 },
+      { x: (rootsX0 + 8) * TILE - 8, y: (state.surfaceAt[rootsX0 + 8] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'roots', anchorPhase: 2.3 },
+      { x: (rootsX1 - 6) * TILE - 8, y: (state.surfaceAt[rootsX1 - 6] - 2) * TILE, w: 16, h: 24, dir: -1, kind: 'roots', anchorPhase: 3.4 },
+      { x: (mushroomX0 + 9) * TILE - 8, y: (state.surfaceAt[mushroomX0 + 9] - 2) * TILE, w: 16, h: 24, dir: 1, kind: 'mushroom', anchorPhase: 4.05 },
+    ].map((keeper) => ({
+      ...keeper,
+      anchorX: keeper.x,
+      anchorY: keeper.y,
+      dirTimer: 1.4 + Math.random() * 1.8,
+      timer: Math.random() * 2,
+    }));
     state.undergroundWorldMeta = {
       name: 'Подземное измерение',
       castle,
+      crystalVaults: {
+        x0: crystalX0,
+        x1: crystalX1,
+        centerX: Math.floor((crystalX0 + crystalX1) / 2),
+      },
+      undergroundLakes: {
+        x0: lakeX0,
+        x1: lakeX1,
+        centerX: Math.floor((lakeX0 + lakeX1) / 2),
+      },
+      lavaFissures: {
+        x0: lavaX0,
+        x1: lavaX1,
+        centerX: Math.floor((lavaX0 + lavaX1) / 2),
+      },
+      rootGrove: {
+        x0: rootsX0,
+        x1: rootsX1,
+        centerX: Math.floor((rootsX0 + rootsX1) / 2),
+      },
+      mushroomHalls: {
+        x0: mushroomX0,
+        x1: mushroomX1,
+        centerX: Math.floor((mushroomX0 + mushroomX1) / 2),
+      },
+      echoTemple: {
+        ...echoTemple,
+        inserted: {
+          [ITEM.DEPTH_CRYSTAL]: false,
+          [ITEM.LAKE_CRYSTAL]: false,
+          [ITEM.RIFT_CRYSTAL]: false,
+        },
+        rewardGiven: false,
+      },
+      echoShards: [
+        { ...echoShardDepth, taken: false },
+        { ...echoShardLake, taken: false },
+        { ...echoShardRift, taken: false },
+      ],
+      rootShrine: {
+        ...rootShrine,
+        activated: [false, false, false],
+        rewardGiven: false,
+      },
       garden: {
         x0: gardenX0,
         x1: gardenX1,
@@ -4304,6 +4612,7 @@
         h: 24,
         dir: -1,
       },
+      keepers,
       firstArrivalShown: false,
       saplingGiven: false,
       greatTreePlanted: false,
