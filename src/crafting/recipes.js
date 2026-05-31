@@ -5,19 +5,9 @@
 
   const RECIPES = [
     {
-      name: 'Доски',
+      name: 'Обычные доски',
       pattern: [[BLOCK.WOOD]],
       result: { id: BLOCK.PLANK, count: 4 },
-    },
-    {
-      name: 'Доски',
-      pattern: [[BLOCK.SPRUCE_WOOD]],
-      result: { id: BLOCK.PLANK, count: 4 },
-    },
-    {
-      name: 'Секвойные доски',
-      pattern: [[BLOCK.SEQUOIA_WOOD]],
-      result: { id: BLOCK.SEQUOIA_PLANK, count: 4 },
     },
     {
       name: 'Палки',
@@ -26,6 +16,34 @@
         [BLOCK.PLANK],
       ],
       result: { id: ITEM.STICK, count: 4 },
+    },
+    {
+      name: 'Деревянный меч',
+      pattern: [
+        [null, BLOCK.PLANK, null],
+        [null, BLOCK.PLANK, null],
+        [null, ITEM.STICK, null],
+      ],
+      result: { id: ITEM.WOODEN_SWORD, count: 1 },
+    },
+    {
+      name: 'Лекарство',
+      pattern: [
+        [null, BLOCK.GOLDEN_FLOWER, null],
+        [ITEM.BREAD, ITEM.CARROT, ITEM.BREAD],
+        [null, BLOCK.GOLDEN_FLOWER, null],
+      ],
+      result: { id: ITEM.MEDICINE, count: 1 },
+    },
+    {
+      name: 'Еловые доски',
+      pattern: [[BLOCK.SPRUCE_WOOD]],
+      result: { id: BLOCK.PLANK, count: 4 },
+    },
+    {
+      name: 'Обычные доски',
+      pattern: [[BLOCK.SEQUOIA_WOOD]],
+      result: { id: BLOCK.PLANK, count: 4 },
     },
     {
       name: 'Палки',
@@ -79,15 +97,6 @@
       result: { id: ITEM.FLOUR, count: 3 },
     },
     {
-      name: 'Лекарство',
-      pattern: [
-        [null, BLOCK.GOLDEN_FLOWER, null],
-        [ITEM.BREAD, ITEM.CARROT, ITEM.BREAD],
-        [null, BLOCK.GOLDEN_FLOWER, null],
-      ],
-      result: { id: ITEM.MEDICINE, count: 1 },
-    },
-    {
       name: 'Деревянная кирка',
       pattern: [
         [BLOCK.PLANK, BLOCK.PLANK, BLOCK.PLANK],
@@ -113,15 +122,6 @@
         [null, ITEM.STICK, null],
       ],
       result: { id: ITEM.WOODEN_SHOVEL, count: 1 },
-    },
-    {
-      name: 'Деревянный меч',
-      pattern: [
-        [null, BLOCK.PLANK, null],
-        [null, BLOCK.PLANK, null],
-        [null, ITEM.STICK, null],
-      ],
-      result: { id: ITEM.WOODEN_SWORD, count: 1 },
     },
     {
       name: 'Каменная кирка',
