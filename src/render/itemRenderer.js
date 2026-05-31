@@ -478,6 +478,63 @@
       return;
     }
 
+    if (itemId === ITEM.TREASURE_MAP) {
+      ctx.fillStyle = '#d9c796';
+      ctx.fillRect(x + size * 0.18, y + size * 0.16, size * 0.62, size * 0.66);
+      ctx.strokeStyle = '#836647';
+      ctx.lineWidth = Math.max(1, size * 0.04);
+      ctx.strokeRect(x + size * 0.18, y + size * 0.16, size * 0.62, size * 0.66);
+      ctx.fillStyle = '#5ca6d2';
+      ctx.fillRect(x + size * 0.28, y + size * 0.28, size * 0.26, size * 0.12);
+      ctx.fillStyle = '#d8ba68';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.58, y + size * 0.58, size * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#734d24';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.34, y + size * 0.62);
+      ctx.lineTo(x + size * 0.50, y + size * 0.46);
+      ctx.lineTo(x + size * 0.64, y + size * 0.66);
+      ctx.stroke();
+      return;
+    }
+
+    if (itemId === ITEM.CHARRED_MAP) {
+      ctx.fillStyle = '#b89973';
+      ctx.fillRect(x + size * 0.18, y + size * 0.16, size * 0.62, size * 0.66);
+      ctx.strokeStyle = '#4b3428';
+      ctx.lineWidth = Math.max(1, size * 0.04);
+      ctx.strokeRect(x + size * 0.18, y + size * 0.16, size * 0.62, size * 0.66);
+      ctx.fillStyle = '#6f5b46';
+      ctx.fillRect(x + size * 0.30, y + size * 0.30, size * 0.22, size * 0.12);
+      ctx.fillStyle = '#ff8d42';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.60, y + size * 0.58, size * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#3a2419';
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.32, y + size * 0.62);
+      ctx.lineTo(x + size * 0.46, y + size * 0.50);
+      ctx.lineTo(x + size * 0.62, y + size * 0.68);
+      ctx.stroke();
+      return;
+    }
+
+    if (itemId === ITEM.EMBER_CORE) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.006);
+      ctx.fillStyle = '#3b2924';
+      ctx.beginPath();
+      ctx.arc(x + size * 0.5, y + size * 0.52, size * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#6f4330';
+      ctx.fillRect(x + size * 0.34, y + size * 0.40, size * 0.32, size * 0.18);
+      ctx.fillStyle = `rgba(255,128,58,${0.7 + pulse * 0.25})`;
+      ctx.fillRect(x + size * 0.42, y + size * 0.33, size * 0.16, size * 0.36);
+      ctx.fillStyle = '#ffd09a';
+      ctx.fillRect(x + size * 0.47, y + size * 0.39, size * 0.06, size * 0.18);
+      return;
+    }
+
     if (itemId === ITEM.FRIENDSHIP_INGOT) {
       ctx.fillStyle = '#7fe1ae';
       ctx.beginPath();

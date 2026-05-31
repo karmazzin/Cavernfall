@@ -119,19 +119,42 @@
     const x = zombie.x - camera.x;
     const y = zombie.y - camera.y;
     const walk = Math.sin(time * 8 + zombie.x * 0.02) * Math.min(2.3, Math.max(0.4, Math.abs(zombie.vx) / 40));
-    ctx.fillStyle = '#597f4d';
-    ctx.fillRect(x + 2, y + 7, 8, 10);
-    ctx.fillStyle = '#7ea36f';
-    ctx.fillRect(x + 2, y + 1, 8, 8);
-    ctx.fillStyle = '#2d3d25';
+    const pirate = !!zombie.pirate;
+    const ashGuardian = !!zombie.ashGuardian;
+    ctx.fillStyle = ashGuardian ? '#4d4743' : pirate ? '#4f6d46' : '#597f4d';
+    ctx.fillRect(x + 2, y + 7, ashGuardian ? 10 : 8, ashGuardian ? 11 : 10);
+    ctx.fillStyle = ashGuardian ? '#7c716b' : '#7ea36f';
+    ctx.fillRect(x + 2, y + 1, ashGuardian ? 10 : 8, 8);
+    ctx.fillStyle = ashGuardian ? '#ff8b4a' : '#2d3d25';
     ctx.fillRect(x + 3, y + 4, 2, 2);
-    ctx.fillRect(x + 7, y + 4, 2, 2);
-    ctx.fillStyle = '#4e6c9e';
+    ctx.fillRect(x + (ashGuardian ? 9 : 7), y + 4, 2, 2);
+    ctx.fillStyle = ashGuardian ? '#342b28' : pirate ? '#7a4e2f' : '#4e6c9e';
     ctx.fillRect(x + 1, y + 17 + Math.max(0, walk), 4, 7 - Math.min(3, Math.max(0, walk)));
-    ctx.fillRect(x + 7, y + 17 + Math.max(0, -walk), 4, 7 - Math.min(3, Math.max(0, -walk)));
-    ctx.fillStyle = '#7ea36f';
+    ctx.fillRect(x + (ashGuardian ? 9 : 7), y + 17 + Math.max(0, -walk), 4, 7 - Math.min(3, Math.max(0, -walk)));
+    ctx.fillStyle = ashGuardian ? '#7c716b' : '#7ea36f';
     ctx.fillRect(x, y + 10 + Math.max(0, -walk * 0.5), 2, 7);
-    ctx.fillRect(x + 10, y + 10 + Math.max(0, walk * 0.5), 2, 7);
+    ctx.fillRect(x + (ashGuardian ? 12 : 10), y + 10 + Math.max(0, walk * 0.5), 2, 7);
+    if (ashGuardian) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 7 + zombie.x * 0.03);
+      ctx.fillStyle = `rgba(255,110,42,${0.45 + pulse * 0.35})`;
+      ctx.fillRect(x + 5, y + 10, 5, 5);
+      ctx.fillStyle = '#2f2825';
+      ctx.fillRect(x + 1, y, 12, 2);
+      ctx.fillRect(x + 4, y + 2, 6, 2);
+      ctx.fillStyle = '#9d9490';
+      ctx.fillRect(x + 4, y + 6, 5, 1);
+      return;
+    }
+    if (pirate) {
+      ctx.fillStyle = '#2f2320';
+      ctx.fillRect(x + 1, y, 10, 2);
+      ctx.fillRect(x + 4, y + 2, 4, 2);
+      ctx.fillStyle = '#b3312d';
+      ctx.fillRect(x + 2, y + 1, 2, 1);
+      ctx.fillRect(x + 8, y + 1, 2, 1);
+      ctx.fillStyle = '#d7d0c0';
+      ctx.fillRect(x + 5, y + 6, 2, 1);
+    }
   }
 
   function drawSpider(ctx, spider, camera, time) {

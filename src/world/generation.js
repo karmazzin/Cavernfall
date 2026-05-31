@@ -46,8 +46,8 @@
     WARM: 'warm',
   };
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
-  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
-  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
+  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake', 'ash_fields', 'blazing_gardens']);
+  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden', 'coral_gardens', 'glow_kelp_fields']);
   const SINGLE_BIOME_AIR_SET = new Set(['air_plains', 'air_isles', 'air_void']);
   const SINGLE_BIOME_UNDERGROUND_SET = new Set([
     'underground_plains',
@@ -136,7 +136,7 @@
   function climateForBiome(biome) {
     if (biome === 'mountains' || biome === 'snow_plains') return CLIMATE.COLD;
     if (biome === 'desert' || biome === 'volcano') return CLIMATE.WARM;
-    if (biome === 'plains' || biome === 'forest') return CLIMATE.TEMPERATE;
+    if (biome === 'plains' || biome === 'forest' || biome === 'sequoia_forest') return CLIMATE.TEMPERATE;
     return CLIMATE.ANY;
   }
 
@@ -147,9 +147,12 @@
       return Math.random() < 0.58 ? 'snow_plains' : 'mountains';
     }
     if (climate === CLIMATE.WARM) return 'desert';
+    if (lastBiome === 'sequoia_forest') return Math.random() < 0.68 ? 'forest' : 'plains';
     if (lastBiome === 'forest') return Math.random() < 0.62 ? 'plains' : 'forest';
     if (lastBiome === 'plains') return Math.random() < 0.38 ? 'forest' : 'plains';
-    return Math.random() < 0.34 ? 'forest' : 'plains';
+    const roll = Math.random();
+    if (roll < 0.12) return 'sequoia_forest';
+    return roll < 0.42 ? 'forest' : 'plains';
   }
 
   function chooseClimate(lastClimate) {
@@ -236,7 +239,7 @@
         const mid = state.surfaceAt[tx];
         const right = state.surfaceAt[tx + 1];
         const avg = Math.round((left + mid * 2 + right) / 4);
-        const blend = biome === 'mountains' ? 3 : biome === 'forest' ? 4 : biome === 'desert' ? 5 : 5;
+        const blend = biome === 'mountains' ? 3 : biome === 'forest' || biome === 'sequoia_forest' ? 4 : biome === 'desert' ? 5 : 5;
         next[tx] = clamp(Math.round((mid * blend + avg) / (blend + 1)), 8, 38);
       }
       state.surfaceAt = next;
@@ -321,13 +324,14 @@
       if (biome === 'mountains') segLen = Math.floor(rand(104, 164));
       if (biome === 'snow_plains') segLen = Math.floor(rand(96, 156));
       if (biome === 'forest') segLen = Math.floor(rand(72, 136));
+      if (biome === 'sequoia_forest') segLen = Math.floor(rand(70, 118));
       if (biome === 'desert') segLen = Math.floor(rand(112, 176));
 
       const segmentStart = x;
       const segmentEnd = Math.min(WORLD_W - 1, x + segLen - 1);
       const center = (segmentStart + segmentEnd) / 2;
       const half = Math.max(1, (segmentEnd - segmentStart) / 2);
-      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : biome === 'snow_plains' ? rand(0.4, 1.8) : rand(0, 1.2);
+      const peakLift = biome === 'mountains' ? rand(10, 18) : biome === 'forest' || biome === 'sequoia_forest' ? rand(1, 3) : biome === 'desert' ? rand(0, 1.4) : biome === 'snow_plains' ? rand(0.4, 1.8) : rand(0, 1.2);
       const segmentBase = biome === 'plains' || biome === 'desert' || biome === 'snow_plains' ? SURFACE_BASE + rand(-0.6, 0.6) : SURFACE_BASE + rand(-1.2, 1.2);
 
       for (; x <= segmentEnd; x += 1) {
@@ -341,13 +345,15 @@
           target += Math.sin((x - segmentStart) / 12) * 0.7 + rand(-0.2, 0.2);
         } else if (biome === 'forest') {
           target += Math.sin((x - segmentStart) / 9) * 1.2 + rand(-0.4, 0.4);
+        } else if (biome === 'sequoia_forest') {
+          target += Math.sin((x - segmentStart) / 13) * 1.5 + Math.sin((x - segmentStart) / 5) * 0.5 + rand(-0.35, 0.35);
         } else if (biome === 'desert') {
           target += Math.sin((x - segmentStart) / 14) * 0.9 + rand(-0.25, 0.25);
         } else if ((x - segmentStart) % Math.floor(rand(12, 22)) === 0) {
           target += rand(-0.4, 0.4);
         }
 
-        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : 0.4;
+        const maxStep = biome === 'mountains' ? 2 : biome === 'forest' || biome === 'sequoia_forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : 0.4;
         state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), biome === 'mountains' ? 8 : 20, biome === 'mountains' ? 28 : 36));
         state.biomeAt[x] = biome;
         state.climateAt[x] = climate;
@@ -405,6 +411,48 @@
     const hostStart = Math.floor(rand(80, WORLD_W - 160));
     const width = Math.floor(rand(120, 182));
     applyDesertSegment(state, hostStart, Math.min(WORLD_W - 40, hostStart + width));
+  }
+
+  function ensureSequoiaSegment(state) {
+    for (let tx = 0; tx < WORLD_W; tx += 1) {
+      if (state.biomeAt[tx] === 'sequoia_forest') return;
+    }
+
+    const candidates = [];
+    let x = 20;
+    while (x < WORLD_W - 20) {
+      const biome = state.biomeAt[x];
+      if (biome !== 'forest' && biome !== 'plains' && biome !== 'snow_plains') {
+        x += 1;
+        continue;
+      }
+      const start = x;
+      while (x < WORLD_W - 20 && (state.biomeAt[x] === 'forest' || state.biomeAt[x] === 'plains' || state.biomeAt[x] === 'snow_plains')) x += 1;
+      const end = x - 1;
+      if (end - start + 1 >= 50) candidates.push({ start, end });
+    }
+    if (candidates.length === 0) {
+      x = 20;
+      while (x < WORLD_W - 20) {
+        const biome = state.biomeAt[x];
+        if (biome === 'volcano' || biome === 'desert' || biome === 'mountains') {
+          x += 1;
+          continue;
+        }
+        const start = x;
+        while (x < WORLD_W - 20 && state.biomeAt[x] !== 'volcano' && state.biomeAt[x] !== 'desert' && state.biomeAt[x] !== 'mountains') x += 1;
+        const end = x - 1;
+        if (end - start + 1 >= 42) candidates.push({ start, end });
+      }
+    }
+    if (candidates.length === 0) return;
+    const host = candidates[Math.floor(rand(0, candidates.length))];
+    const width = Math.min(host.end - host.start + 1, Math.floor(rand(54, 92)));
+    const start = clamp(Math.floor((host.start + host.end) / 2) - Math.floor(width / 2), host.start, host.end - width + 1);
+    for (let tx = start; tx < start + width; tx += 1) {
+      state.biomeAt[tx] = 'sequoia_forest';
+      state.climateAt[tx] = CLIMATE.TEMPERATE;
+    }
   }
 
   function ensureClimateAt(state) {
@@ -1719,6 +1767,7 @@
       else if (biome === 'snow_plains') setBlock(state, tx, s, BLOCK.SNOW);
       else if (biome === 'desert') setBlock(state, tx, s, BLOCK.SAND);
       else if (biome === 'volcano') setBlock(state, tx, s, BLOCK.BLACKSTONE);
+      else if (biome === 'sequoia_forest' && Math.random() < 0.34) setBlock(state, tx, s, BLOCK.MOSS);
       else setBlock(state, tx, s, BLOCK.GRASS);
       const filler = biome === 'volcano' ? BLOCK.BLACKSTONE : biome === 'mountains' ? BLOCK.STONE : biome === 'desert' ? BLOCK.SANDSTONE : BLOCK.DIRT;
       for (let ty = s + 1; ty <= Math.min(WORLD_H - 2, s + 2); ty += 1) {
@@ -1786,6 +1835,122 @@
     if (getBlock(state, tx, topY - 1) === BLOCK.AIR) setBlock(state, tx, topY - 1, BLOCK.SPRUCE_LEAF);
   }
 
+  function canPlantSequoiaAt(state, tx, radius, surfaceFluidColumns) {
+    if (tx < radius + 5 || tx >= WORLD_W - radius - 5) return false;
+    for (let xx = tx - radius - 2; xx <= tx + radius + 2; xx += 1) {
+      if (surfaceFluidColumns.has(xx)) return false;
+      if (state.biomeAt[xx] !== 'sequoia_forest') return false;
+      if (Math.abs(state.surfaceAt[xx] - state.surfaceAt[tx]) > 2) return false;
+      const surfaceBlock = getBlock(state, xx, state.surfaceAt[xx]);
+      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.MOSS) return false;
+    }
+    return true;
+  }
+
+  function placeSequoiaLeaf(state, tx, ty, chance = 1) {
+    if (Math.random() > chance) return;
+    if (getBlock(state, tx, ty) === BLOCK.AIR) setBlock(state, tx, ty, BLOCK.SEQUOIA_LEAF);
+  }
+
+  function plantSequoiaTree(state, tx, s, radius = 1) {
+    const maxHeight = Math.max(16, s - 3);
+    const targetHeight = radius >= 2 ? Math.floor(rand(28, 39)) : Math.floor(rand(22, 32));
+    const height = clamp(targetHeight, 16, maxHeight);
+    const topY = s - height;
+
+    for (let ty = s - 1; ty >= topY; ty -= 1) {
+      for (let xx = tx - radius; xx <= tx + radius; xx += 1) {
+        setBlock(state, xx, ty, BLOCK.SEQUOIA_WOOD);
+      }
+    }
+
+    for (const dir of [-1, 1]) {
+      const rootLen = Math.floor(rand(radius + 2, radius + 6));
+      for (let step = 1; step <= rootLen; step += 1) {
+        const rx = tx + dir * (radius + step);
+        if (rx < 2 || rx >= WORLD_W - 2 || state.biomeAt[rx] !== 'sequoia_forest') break;
+        const rs = state.surfaceAt[rx];
+        if (Math.abs(rs - s) > 3) break;
+        const ry = rs - 1;
+        if (getBlock(state, rx, ry) === BLOCK.AIR || getBlock(state, rx, ry) === BLOCK.GRASS || getBlock(state, rx, ry) === BLOCK.MOSS) {
+          setBlock(state, rx, ry, BLOCK.SEQUOIA_WOOD);
+        }
+      }
+    }
+
+    const branchLevels = [
+      topY + 2,
+      topY + Math.floor(height * 0.28),
+      topY + Math.floor(height * 0.46),
+      topY + Math.floor(height * 0.64),
+    ];
+    for (const levelY of branchLevels) {
+      const crownRadius = levelY <= topY + 3 ? radius + 5 : radius + 3;
+      for (let yy = -2; yy <= 2; yy += 1) {
+        const rowRadius = Math.max(1, crownRadius - Math.abs(yy));
+        for (let xx = -rowRadius; xx <= rowRadius; xx += 1) {
+          const edge = Math.abs(xx) >= rowRadius - 1;
+          placeSequoiaLeaf(state, tx + xx, levelY + yy, edge ? 0.58 : 0.92);
+        }
+      }
+      for (const dir of [-1, 1]) {
+        const branchLen = Math.floor(rand(radius + 3, radius + 7));
+        for (let step = radius + 1; step <= branchLen; step += 1) {
+          setBlock(state, tx + dir * step, levelY, BLOCK.SEQUOIA_WOOD);
+          placeSequoiaLeaf(state, tx + dir * step, levelY - 1, 0.75);
+          placeSequoiaLeaf(state, tx + dir * step, levelY + 1, 0.65);
+        }
+      }
+    }
+
+    for (let yy = -3; yy <= 2; yy += 1) {
+      const capRadius = radius + 2 - Math.floor(Math.max(0, yy) / 2);
+      for (let xx = -capRadius; xx <= capRadius; xx += 1) {
+        if (Math.abs(xx) + Math.abs(yy) > capRadius + 3) continue;
+        placeSequoiaLeaf(state, tx + xx, topY + yy, 0.9);
+      }
+    }
+  }
+
+  function placeFallenSequoia(state, tx, dir, length, surfaceFluidColumns) {
+    for (let step = 0; step < length; step += 1) {
+      const xx = tx + dir * step;
+      if (xx < 3 || xx >= WORLD_W - 3 || state.biomeAt[xx] !== 'sequoia_forest' || surfaceFluidColumns.has(xx)) return;
+      if (Math.abs(state.surfaceAt[xx] - state.surfaceAt[tx]) > 3) return;
+    }
+    for (let step = 0; step < length; step += 1) {
+      const xx = tx + dir * step;
+      const yy = state.surfaceAt[xx] - 1;
+      if (getBlock(state, xx, yy) === BLOCK.AIR || getBlock(state, xx, yy) === BLOCK.SEQUOIA_LEAF) setBlock(state, xx, yy, BLOCK.SEQUOIA_WOOD);
+      if (step % 5 === 0 && getBlock(state, xx, yy - 1) === BLOCK.AIR) setBlock(state, xx, yy - 1, BLOCK.SEQUOIA_LEAF);
+    }
+  }
+
+  function decorateSequoiaForest(state, surfaceFluidColumns) {
+    let tx = 6;
+    while (tx < WORLD_W - 6) {
+      if (state.biomeAt[tx] !== 'sequoia_forest') {
+        tx += 1;
+        continue;
+      }
+      const start = tx;
+      while (tx < WORLD_W - 6 && state.biomeAt[tx] === 'sequoia_forest') tx += 1;
+      const end = tx - 1;
+      const width = end - start + 1;
+      let cursor = start + Math.floor(rand(8, 16));
+      while (cursor <= end - 8) {
+        const radius = Math.random() < 0.22 && width > 48 ? 2 : 1;
+        const s = state.surfaceAt[cursor];
+        if (canPlantSequoiaAt(state, cursor, radius, surfaceFluidColumns)) plantSequoiaTree(state, cursor, s, radius);
+        cursor += Math.floor(rand(radius >= 2 ? 17 : 12, radius >= 2 ? 25 : 20));
+      }
+      if (width > 34 && Math.random() < 0.7) {
+        const logX = Math.floor(rand(start + 6, end - 12));
+        placeFallenSequoia(state, logX, Math.random() < 0.5 ? -1 : 1, Math.floor(rand(9, 18)), surfaceFluidColumns);
+      }
+    }
+  }
+
   function plantTrees(state, surfaceFluidColumns) {
     function tryPlantOakTreeAt(tx) {
       if (tx < 4 || tx >= WORLD_W - 4 || surfaceFluidColumns.has(tx)) return false;
@@ -1827,6 +1992,7 @@
         }
       }
     }
+    decorateSequoiaForest(state, surfaceFluidColumns);
   }
 
   function plantDesertFlora(state, surfaceFluidColumns) {
@@ -2544,6 +2710,8 @@
         }
       } else if (biome === 'forest') {
         target += Math.sin(x / 9) * 1.2 + rand(-0.4, 0.4);
+      } else if (biome === 'sequoia_forest') {
+        target += Math.sin(x / 13) * 1.5 + Math.sin(x / 5) * 0.5 + rand(-0.35, 0.35);
       } else if (biome === 'desert') {
         target += Math.sin(x / 14) * 0.9 + rand(-0.25, 0.25);
       } else if (biome === 'snow_plains') {
@@ -2560,7 +2728,7 @@
       } else if (x % Math.floor(rand(12, 22)) === 0) {
         target += rand(-0.4, 0.4);
       }
-      const maxStep = biome === 'mountains' ? 2.1 : biome === 'forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : biome === 'volcano' ? 1.35 : 0.4;
+      const maxStep = biome === 'mountains' ? 2.1 : biome === 'forest' || biome === 'sequoia_forest' ? 1.1 : biome === 'desert' ? 0.6 : biome === 'snow_plains' ? 0.55 : biome === 'volcano' ? 1.35 : 0.4;
       const minY = biome === 'mountains' ? 8 : biome === 'volcano' ? 10 : 20;
       const maxY = biome === 'mountains' ? 30 : biome === 'volcano' ? 34 : 36;
       state.surfaceAt[x] = Math.round(clamp(prev + clamp(target - prev, -maxStep, maxStep), minY, maxY));
@@ -2644,7 +2812,11 @@
           continue;
         }
         if (ty <= ceil[tx] || ty >= floor[tx]) {
-          setBlock(state, tx, ty, biome === 'red_land' ? BLOCK.RED_EARTH : BLOCK.BASALT);
+          let shellBlock = BLOCK.BASALT;
+          if (biome === 'red_land') shellBlock = BLOCK.RED_EARTH;
+          else if (biome === 'ash_fields') shellBlock = ty >= floor[tx] && ty <= floor[tx] + 1 ? BLOCK.ASH : BLOCK.ASH_STONE;
+          else if (biome === 'blazing_gardens') shellBlock = ty >= floor[tx] && ty <= floor[tx] + 2 ? BLOCK.RED_EARTH : BLOCK.BASALT;
+          setBlock(state, tx, ty, shellBlock);
         } else {
           setBlock(state, tx, ty, BLOCK.AIR);
         }
@@ -2662,12 +2834,25 @@
       carveTunnel(state, sx, sy, Math.floor(rand(24, 64)), Math.floor(rand(3, 5)), 8, lavaLakeStart - 8);
     }
 
+    if (biome === 'ash_fields') decorateAshFields(state, 0, WORLD_W - 1, floor);
+    if (biome === 'blazing_gardens') decorateBlazingGardens(state, 0, WORLD_W - 1, floor);
+
     const spawnX = Math.floor(WORLD_W * 0.2);
     const spawnY = Math.floor((ceil[spawnX] + floor[spawnX]) / 2);
     carveRect(state, spawnX - 6, spawnY - 3, spawnX + 6, spawnY + 4, BLOCK.AIR);
     for (let tx = spawnX - 3; tx <= spawnX + 3; tx += 1) setBlock(state, tx, spawnY + 4, BLOCK.BASALT);
     state.player.x = spawnX * TILE;
     state.player.y = spawnY * TILE;
+    state.fireWorldMeta = {
+      lavaLakeStart,
+      name: biome === 'lava_lake'
+        ? 'Лавовое озеро'
+        : biome === 'ash_fields'
+          ? 'Пепельные поля'
+          : biome === 'blazing_gardens'
+            ? 'Пылающие сады'
+            : 'Красные земли',
+    };
   }
 
   function generateSingleBiomeWaterWorld(state, biome) {
@@ -2753,10 +2938,22 @@
           setBlock(state, tx, ty, BLOCK.WATER);
         }
       }
-      if (biome === 'water_floor') state.biomeAt[tx] = 'water_floor';
+    }
+    if (biome === 'water_floor') {
+      for (let tx = 0; tx < WORLD_W; tx += 1) state.biomeAt[tx] = 'water_floor';
+    } else if (biome === 'coral_gardens') {
+      decorateCoralGardens(state, 0, WORLD_W - 1, floorStart);
+    } else if (biome === 'glow_kelp_fields') {
+      decorateGlowKelpFields(state, 0, WORLD_W - 1, floorStart);
     }
     state.waterWorldMeta = {
-      name: biome === 'water_floor' ? 'Дно' : 'Водная гладь',
+      name: biome === 'water_floor'
+        ? 'Дно'
+        : biome === 'coral_gardens'
+          ? 'Коралловые сады'
+          : biome === 'glow_kelp_fields'
+            ? 'Поля светящихся водорослей'
+            : 'Водная гладь',
       floorStart,
     };
     const spawnX = Math.floor(WORLD_W / 2);
@@ -3343,7 +3540,7 @@
         const s = state.surfaceAt[tx];
         if (!Number.isFinite(s) || s >= WORLD_H - 6) continue;
         const surfaceBlock = getBlock(state, tx, s);
-        if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.SAND) continue;
+        if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.SAND && surfaceBlock !== BLOCK.MOSS) continue;
         if (getBlock(state, tx, s - 1) !== BLOCK.AIR) continue;
         return tx;
       }
@@ -3356,7 +3553,7 @@
       if ((state.humanSettlements.villages || []).some((village) => tx >= village.bounds.x0 && tx <= village.bounds.x1)) continue;
       if (state.firePyramid && state.firePyramid.bounds && tx >= state.firePyramid.bounds.x0 && tx <= state.firePyramid.bounds.x1) continue;
       const surfaceBlock = getBlock(state, tx, state.surfaceAt[tx]);
-      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.BLACKSTONE && surfaceBlock !== BLOCK.STONE) continue;
+      if (surfaceBlock !== BLOCK.GRASS && surfaceBlock !== BLOCK.SAND && surfaceBlock !== BLOCK.SNOW && surfaceBlock !== BLOCK.MOSS && surfaceBlock !== BLOCK.BLACKSTONE && surfaceBlock !== BLOCK.STONE) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx - 1]) > 1) continue;
       if (Math.abs(state.surfaceAt[tx] - state.surfaceAt[tx + 1]) > 1) continue;
       return tx;
@@ -3419,6 +3616,7 @@
     generateBiomeBands(state);
     ensureDesertSegment(state);
     ensureVolcanoSegment(state);
+    ensureSequoiaSegment(state);
     smoothSurface(state, 1);
     flattenPlains(state);
     addPlainMicroRelief(state);
@@ -3717,6 +3915,123 @@
     return { shaftX, shaftTopY, shaftBottomY };
   }
 
+  function decorateAshFields(state, x0, x1, floorProfile) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      state.biomeAt[tx] = 'ash_fields';
+      const floorY = floorProfile[tx];
+      if (!Number.isFinite(floorY)) continue;
+      setBlock(state, tx, floorY, BLOCK.ASH);
+      if (getBlock(state, tx, floorY + 1) !== BLOCK.LAVA) setBlock(state, tx, floorY + 1, BLOCK.ASH);
+      for (let depth = 2; depth <= 5; depth += 1) {
+        const yy = floorY + depth;
+        if (getBlock(state, tx, yy) === BLOCK.LAVA) break;
+        if (getBlock(state, tx, yy) !== BLOCK.AIR) setBlock(state, tx, yy, BLOCK.ASH_STONE);
+      }
+      if (getBlock(state, tx, floorY - 1) === BLOCK.AIR) {
+        const roll = Math.random();
+        if (roll < 0.09) setBlock(state, tx, floorY - 1, BLOCK.EMBER_SHRUB);
+        else if (roll < 0.16) setBlock(state, tx, floorY - 1, BLOCK.DRY_BUSH);
+      }
+    }
+  }
+
+  function decorateBlazingGardens(state, x0, x1, floorProfile) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      state.biomeAt[tx] = 'blazing_gardens';
+      const floorY = floorProfile[tx];
+      if (!Number.isFinite(floorY)) continue;
+      setBlock(state, tx, floorY, BLOCK.RED_EARTH);
+      if (getBlock(state, tx, floorY + 1) !== BLOCK.LAVA) setBlock(state, tx, floorY + 1, BLOCK.RED_EARTH);
+      for (let depth = 2; depth <= 4; depth += 1) {
+        const yy = floorY + depth;
+        if (getBlock(state, tx, yy) === BLOCK.LAVA) break;
+        if (getBlock(state, tx, yy) !== BLOCK.AIR) setBlock(state, tx, yy, depth === 2 ? BLOCK.ASH_STONE : BLOCK.BASALT);
+      }
+      if (getBlock(state, tx, floorY - 1) === BLOCK.AIR) {
+        const roll = Math.random();
+        if (roll < 0.18) setBlock(state, tx, floorY - 1, BLOCK.EMBER_FLOWER);
+        else if (roll < 0.31) setBlock(state, tx, floorY - 1, BLOCK.EMBER_SHRUB);
+      }
+    }
+  }
+
+  function buildBurnedTower(state, centerX, floorY) {
+    const x0 = centerX - 6;
+    const x1 = centerX + 6;
+    const topY = floorY - 19;
+    const landingY = floorY - 1;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      for (let ty = topY; ty <= landingY; ty += 1) {
+        const shell = tx === x0 || tx === x1 || ty === topY || ty === landingY || (tx >= centerX - 1 && tx <= centerX + 1 && ty >= floorY - 4);
+        setBlock(state, tx, ty, shell ? BLOCK.BLACKSTONE : BLOCK.AIR);
+      }
+      setBlock(state, tx, landingY + 1, BLOCK.ASH_STONE);
+    }
+    for (let tx = centerX - 4; tx <= centerX + 4; tx += 1) {
+      setBlock(state, tx, floorY - 13, BLOCK.BASALT);
+      setBlock(state, tx, floorY - 7, BLOCK.BASALT);
+    }
+    for (let ty = topY + 2; ty <= floorY - 2; ty += 1) setBlock(state, centerX - 4, ty, BLOCK.LADDER);
+    for (let ty = floorY - 4; ty <= floorY - 2; ty += 1) {
+      setBlock(state, x0, ty, BLOCK.AIR);
+      setBlock(state, x0 + 1, ty, BLOCK.AIR);
+    }
+    setBlock(state, x0 + 2, floorY - 3, BLOCK.TORCH);
+    setBlock(state, centerX + 3, floorY - 14, BLOCK.TORCH);
+    setBlock(state, centerX - 3, floorY - 8, BLOCK.TORCH);
+    setBlock(state, centerX, topY + 1, BLOCK.TORCH);
+
+    const chestPositions = [
+      [centerX + 2, floorY - 2],
+      [centerX - 1, floorY - 14],
+      [centerX + 1, topY + 2],
+    ];
+    for (const [tx, ty] of chestPositions) {
+      setBlock(state, tx, ty, BLOCK.CHEST);
+      ensureChestAt(state, tx, ty, null);
+      clearChestSlots(state.chests[chestKey(tx, ty)]);
+    }
+
+    const mapChest = state.chests[chestKey(centerX + 2, floorY - 2)];
+    mapChest.slots[0] = createItemStack(ITEM.CHARRED_MAP, 1);
+    mapChest.slots[1] = createItemStack(ITEM.BREAD, 3);
+    mapChest.slots[2] = createItemStack(ITEM.COAL, 6);
+
+    const midChest = state.chests[chestKey(centerX - 1, floorY - 14)];
+    midChest.slots[0] = createItemStack(ITEM.RAW_IRON, 4);
+    midChest.slots[1] = createItemStack(ITEM.RAW_GOLD, 2);
+    midChest.slots[2] = createItemStack(ITEM.FIRE_CRYSTAL, 1);
+
+    const topChest = state.chests[chestKey(centerX + 1, topY + 2)];
+    topChest.slots[0] = createItemStack(ITEM.IRON_INGOT, 3);
+    topChest.slots[1] = createItemStack(ITEM.COIN, 7);
+    topChest.slots[2] = createItemStack(ITEM.COAL, 5);
+
+    return { x0, x1, topY, floorY, centerX };
+  }
+
+  function buildAshCache(state, tx, floorY) {
+    const ty = Math.min(WORLD_H - 4, floorY + 10);
+    for (let xx = tx - 2; xx <= tx + 2; xx += 1) {
+      for (let yy = ty - 2; yy <= ty + 2; yy += 1) {
+        if (xx === tx && yy === ty) continue;
+        if (yy >= WORLD_H - 1) continue;
+        setBlock(state, xx, yy, yy <= ty ? BLOCK.ASH_STONE : BLOCK.BASALT);
+      }
+    }
+    setBlock(state, tx, ty, BLOCK.CHEST);
+    ensureChestAt(state, tx, ty, null);
+    const chest = state.chests[chestKey(tx, ty)];
+    clearChestSlots(chest);
+    chest.slots[0] = createItemStack(ITEM.GOLD_INGOT, 8);
+    chest.slots[1] = createItemStack(ITEM.BIG_DIAMOND, 1);
+    chest.slots[2] = createItemStack(ITEM.FIRE_CRYSTAL, 3);
+    chest.slots[3] = createItemStack(ITEM.COIN, 16);
+    chest.slots[4] = createItemStack(ITEM.IRON_INGOT, 5);
+    chest.slots[5] = createItemStack(ITEM.EMBER_CORE, 1);
+    return { tx, ty, visited: false, guardianSpawned: false, guardianDefeated: false };
+  }
+
   function generateFireDimension(state) {
     state.world = createGrid();
     state.biomeAt = Array(WORLD_W).fill('red_land');
@@ -3751,6 +4066,8 @@
     state.fluidTick = 0;
 
     const lavaLakeStart = Math.floor(WORLD_H * 0.56);
+    const ashRange = { x0: 92, x1: 152 };
+    const gardenRange = { x0: 518, x1: 586 };
     const lavaSegments = [];
     let x = 20;
     while (x < WORLD_W - 24) {
@@ -3805,6 +4122,9 @@
       }
     }
 
+    decorateAshFields(state, ashRange.x0, ashRange.x1, floor);
+    decorateBlazingGardens(state, gardenRange.x0, gardenRange.x1, floor);
+
     const portalX = Math.floor(WORLD_W / 2);
     const portalY = Math.floor((ceil[portalX] + floor[portalX]) / 2);
     carveFireArrivalChamber(state, portalX, portalY);
@@ -3824,6 +4144,8 @@
     const dungeonBaseY = Math.min(lavaLakeStart - 10, Math.max(roadY + 18, floor[dungeonCenterX] + 10));
     const fireDungeon = buildFireDungeon(state, dungeonCenterX, dungeonBaseY);
     const dungeonAccess = carveFireDungeonAccess(state, fireDungeon, roadY);
+    const burnedTower = buildBurnedTower(state, 124, floor[124]);
+    const ashCache = buildAshCache(state, 146, floor[146]);
 
     for (const spot of castle.guardSpots) {
       spawnFireGuard(state, spot.tx, spot.ty, spot.tx < castleCenterX ? 1 : -1);
@@ -3853,6 +4175,8 @@
       lavaLakeStart,
       castle,
       fireDungeon: { ...fireDungeon, access: dungeonAccess },
+      burnedTower,
+      ashCache,
       road: { x0: portalX + 12, x1: castleCenterX - 23, y: roadY },
       name: 'Огненный мир',
     };
@@ -4065,6 +4389,189 @@
     setBlock(state, tx, ty, BLOCK.GOLDEN_FLOWER);
   }
 
+  function carveWaterBiomeFloor(state, x0, x1, baseFloorY, biome) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      const local = tx - x0;
+      const floorY = Math.round(baseFloorY + Math.sin(local / 9) * 2 + Math.sin(local / 19) * 1.4);
+      state.biomeAt[tx] = biome;
+      for (let ty = 0; ty < WORLD_H; ty += 1) {
+        if (ty === WORLD_H - 1) {
+          setBlock(state, tx, ty, BLOCK.BEDROCK);
+        } else if (ty >= floorY) {
+          const blockId = ty < floorY + 2 ? BLOCK.SAND : BLOCK.STONE;
+          setBlock(state, tx, ty, blockId);
+        } else {
+          setBlock(state, tx, ty, BLOCK.WATER);
+        }
+      }
+    }
+  }
+
+  function placeCoralCluster(state, tx, ty) {
+    const coralChoices = [BLOCK.PINK_CORAL, BLOCK.BLUE_CORAL, BLOCK.GOLD_CORAL];
+    const main = coralChoices[Math.floor(Math.random() * coralChoices.length)];
+    setBlock(state, tx, ty, main);
+    if (Math.random() < 0.7) setBlock(state, tx - 1, ty, coralChoices[Math.floor(Math.random() * coralChoices.length)]);
+    if (Math.random() < 0.7) setBlock(state, tx + 1, ty, coralChoices[Math.floor(Math.random() * coralChoices.length)]);
+    if (Math.random() < 0.45) setBlock(state, tx, ty - 1, coralChoices[Math.floor(Math.random() * coralChoices.length)]);
+  }
+
+  function decorateCoralGardens(state, x0, x1, baseFloorY) {
+    carveWaterBiomeFloor(state, x0, x1, baseFloorY, 'coral_gardens');
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 1) {
+      let floorY = 0;
+      for (let ty = 1; ty < WORLD_H - 1; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.WATER) {
+          floorY = ty;
+          break;
+        }
+      }
+      if (!floorY) continue;
+      if (Math.random() < 0.22) {
+        setBlock(state, tx, floorY, BLOCK.CORAL_STONE);
+        setBlock(state, tx, floorY - 1, BLOCK.CORAL_STONE);
+        if (Math.random() < 0.4) setBlock(state, tx + (Math.random() < 0.5 ? -1 : 1), floorY, BLOCK.CORAL_STONE);
+      }
+      if (Math.random() < 0.30) {
+        placeCoralCluster(state, tx, floorY - 1);
+      }
+    }
+  }
+
+  function decorateGlowKelpFields(state, x0, x1, baseFloorY) {
+    carveWaterBiomeFloor(state, x0, x1, baseFloorY, 'glow_kelp_fields');
+    for (let tx = x0 + 2; tx <= x1 - 2; tx += 1) {
+      let floorY = 0;
+      for (let ty = 1; ty < WORLD_H - 1; ty += 1) {
+        if (getBlock(state, tx, ty) !== BLOCK.WATER) {
+          floorY = ty;
+          break;
+        }
+      }
+      if (!floorY) continue;
+      if (Math.random() < 0.25) setBlock(state, tx, floorY, BLOCK.CORAL_STONE);
+      if (Math.random() < 0.42) {
+        const height = 2 + Math.floor(Math.random() * 5);
+        for (let step = 1; step <= height; step += 1) {
+          const kelpBlock = step >= height - 1 ? BLOCK.TALL_GLOW_ALGAE : BLOCK.GLOW_ALGAE;
+          setBlock(state, tx, floorY - step, kelpBlock);
+        }
+      }
+    }
+  }
+
+  function buildShipwreck(state, centerX, floorY) {
+    const x0 = centerX - 10;
+    const x1 = centerX + 10;
+    const deckY = floorY - 5;
+    const keelY = floorY - 1;
+    for (let tx = x0; tx <= x1; tx += 1) {
+      const taper = Math.abs(tx - centerX);
+      const topY = deckY + Math.max(0, Math.floor((taper - 3) / 3));
+      const bottomY = keelY - Math.max(0, 2 - Math.floor(taper / 4));
+      for (let ty = topY; ty <= bottomY; ty += 1) {
+        const border = ty === topY || ty === bottomY || tx === x0 || tx === x1 || (taper > 8 && ty >= bottomY - 1);
+        setBlock(state, tx, ty, border ? BLOCK.PLANK : BLOCK.WATER);
+      }
+    }
+    for (let tx = centerX - 3; tx <= centerX + 3; tx += 1) {
+      setBlock(state, tx, deckY - 1, BLOCK.PLANK);
+    }
+    for (let ty = deckY - 6; ty <= deckY - 1; ty += 1) {
+      setBlock(state, centerX, ty, BLOCK.WOOD);
+    }
+    setBlock(state, centerX + 1, deckY - 5, BLOCK.PLANK);
+    setBlock(state, centerX + 2, deckY - 4, BLOCK.PLANK);
+
+    const chestPositions = [
+      [centerX - 5, floorY - 3],
+      [centerX + 1, floorY - 3],
+      [centerX + 6, floorY - 2],
+    ];
+    for (const [tx, ty] of chestPositions) {
+      setBlock(state, tx, ty, BLOCK.CHEST);
+      ensureChestAt(state, tx, ty, null);
+      clearChestSlots(state.chests[chestKey(tx, ty)]);
+    }
+    const mapChest = state.chests[chestKey(centerX - 5, floorY - 3)];
+    mapChest.slots[0] = createItemStack(ITEM.TREASURE_MAP, 1);
+    mapChest.slots[1] = createItemStack(ITEM.BREAD, 3);
+    mapChest.slots[2] = createItemStack(ITEM.COAL, 5);
+
+    const lootChestA = state.chests[chestKey(centerX + 1, floorY - 3)];
+    lootChestA.slots[0] = createItemStack(ITEM.RAW_IRON, 5);
+    lootChestA.slots[1] = createItemStack(ITEM.RAW_GOLD, 3);
+    lootChestA.slots[2] = createItemStack(ITEM.BREAD, 2);
+    lootChestA.slots[3] = createItemStack(ITEM.COAL, 6);
+
+    const lootChestB = state.chests[chestKey(centerX + 6, floorY - 2)];
+    lootChestB.slots[0] = createItemStack(ITEM.IRON_INGOT, 3);
+    lootChestB.slots[1] = createItemStack(ITEM.COIN, 8);
+    lootChestB.slots[2] = createItemStack(ITEM.COAL, 4);
+
+    return { x0, x1, y0: deckY - 6, y1: floorY, centerX, floorY };
+  }
+
+  function buildPirateTreasure(state, tx, floorY) {
+    const ty = WORLD_H - 3;
+    for (let xx = tx - 2; xx <= tx + 2; xx += 1) {
+      for (let yy = ty - 2; yy <= ty + 2; yy += 1) {
+        if (xx === tx && yy === ty) continue;
+        if (yy >= WORLD_H - 1) continue;
+        setBlock(state, xx, yy, BLOCK.STONE);
+      }
+    }
+    setBlock(state, tx, ty, BLOCK.CHEST);
+    ensureChestAt(state, tx, ty, null);
+    const chest = state.chests[chestKey(tx, ty)];
+    clearChestSlots(chest);
+    chest.slots[0] = createItemStack(ITEM.GOLD_INGOT, 10);
+    chest.slots[1] = createItemStack(ITEM.BIG_DIAMOND, 2);
+    chest.slots[2] = createItemStack(ITEM.DEEP_DIAMOND, 2);
+    chest.slots[3] = createItemStack(ITEM.COIN, 20);
+    chest.slots[4] = createItemStack(ITEM.IRON_INGOT, 8);
+    return { tx, ty, visited: false };
+  }
+
+  function findOpenWaterMobSpawn(state, tx, ty) {
+    const baseTx = Math.max(2, Math.min(WORLD_W - 3, tx));
+    const baseTy = Math.max(4, Math.min(WORLD_H - 4, ty));
+    for (let radius = 0; radius <= 6; radius += 1) {
+      for (let dx = -radius; dx <= radius; dx += 1) {
+        const testTx = Math.max(2, Math.min(WORLD_W - 3, baseTx + dx));
+        for (let dy = -radius; dy <= radius; dy += 1) {
+          const testTy = Math.max(4, Math.min(WORLD_H - 4, baseTy + dy));
+          if (getBlock(state, testTx, testTy) !== BLOCK.WATER) continue;
+          if (getBlock(state, testTx, testTy + 1) !== BLOCK.WATER) continue;
+          if (getBlock(state, testTx, testTy - 1) !== BLOCK.WATER) continue;
+          return { tx: testTx, ty: testTy };
+        }
+      }
+    }
+    return { tx: baseTx, ty: baseTy };
+  }
+
+  function createPirateZombieAt(tx, ty, dir = 1) {
+    return {
+      x: tx * TILE,
+      y: ty * TILE,
+      w: 12,
+      h: 24,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      attackCd: 0,
+      hp: 4,
+      burnTimer: 0,
+      jumpCd: 0,
+      obstacleTimer: 0,
+      pirate: true,
+      dir,
+      anchorX: tx * TILE,
+      anchorY: ty * TILE,
+    };
+  }
+
   function buildGoldenGarden(state, centerX, floorStart) {
     const width = 42;
     const x0 = centerX - Math.floor(width / 2);
@@ -4213,6 +4720,11 @@
       }
     }
 
+    const coralRange = { x0: 96, x1: 158 };
+    const glowRange = { x0: 166, x1: 206 };
+    decorateCoralGardens(state, coralRange.x0, coralRange.x1, floorStart + 1);
+    decorateGlowKelpFields(state, glowRange.x0, glowRange.x1, floorStart + 2);
+
     const portalX = Math.floor(WORLD_W / 2);
     const portalY = 18;
     const arrivalDome = buildWaterArrivalDome(state, portalX, portalY);
@@ -4232,6 +4744,8 @@
     const roadStartX = portalX + 14;
     const roadEndX = castle.x0 + 2;
     buildWaterRoad(state, roadStartX, roadEndX, floorStart - 1);
+    const shipwreck = buildShipwreck(state, 132, floorStart + 1);
+    const pirateTreasure = buildPirateTreasure(state, 184, floorStart + 2);
     const houses = [
       buildWaterHouse(state, roadStartX + 18, floorStart - 1, 10, 6),
       buildWaterHouse(state, roadStartX + 38, floorStart - 2, 12, 7),
@@ -4241,6 +4755,20 @@
       buildWaterHouse(state, castle.x0 - 18, floorStart - 2, 12, 7),
       buildWaterHouse(state, castle.x0 - 34, floorStart - 1, 10, 6),
     ];
+
+    const pirateZombies = [
+      { x: shipwreck.centerX - 7, y: shipwreck.floorY - 4, dir: -1 },
+      { x: shipwreck.centerX + 2, y: shipwreck.floorY - 5, dir: 1 },
+      { x: shipwreck.centerX + 8, y: shipwreck.floorY - 3, dir: -1 },
+      { x: shipwreck.x0 - 5, y: shipwreck.floorY - 2, dir: 1 },
+      { x: shipwreck.x1 + 3, y: shipwreck.floorY - 2, dir: -1 },
+      { x: shipwreck.centerX - 13, y: shipwreck.floorY - 6, dir: 1 },
+      { x: shipwreck.centerX + 14, y: shipwreck.floorY - 5, dir: -1 },
+    ];
+    for (const pirate of pirateZombies) {
+      const spawn = findOpenWaterMobSpawn(state, pirate.x, pirate.y);
+      state.zombies.push(createPirateZombieAt(spawn.tx, spawn.ty, pirate.dir));
+    }
 
     for (const house of houses) {
       state.waterfolk.push({
@@ -4335,6 +4863,10 @@
       mainWellMapGiven: false,
       returnAfterWellShown: false,
       steamAmuletGiven: false,
+      coralGardens: coralRange,
+      glowKelpFields: glowRange,
+      shipwreck,
+      pirateTreasure,
       goldenGarden,
       mainWell,
       castle,
@@ -4871,6 +5403,8 @@
       },
       keepers,
       firstArrivalShown: false,
+      kingIntroPending: false,
+      kingIntroDelay: 0,
       saplingGiven: false,
       greatTreePlanted: false,
       finalAmuletDropped: false,

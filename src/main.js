@@ -410,6 +410,9 @@
       if (button.id === 'compass_track_fire_dungeon') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'fire_dungeon' ? null : 'fire_dungeon';
       }
+      if (button.id === 'compass_track_ash_cache') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'ash_cache' ? null : 'ash_cache';
+      }
       if (button.id === 'compass_track_water_well') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'water_well' ? null : 'water_well';
       }
@@ -418,6 +421,9 @@
       }
       if (button.id === 'compass_track_main_well') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'main_well' ? null : 'main_well';
+      }
+      if (button.id === 'compass_track_pirate_treasure') {
+        state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'pirate_treasure' ? null : 'pirate_treasure';
       }
       if (button.id === 'compass_track_air_entrance') {
         state.pause.activeCompassTarget = state.pause.activeCompassTarget === 'air_entrance' ? null : 'air_entrance';
@@ -762,6 +768,12 @@
         const dx = state.fireDungeon.centerX * Game.constants.TILE - px;
         const dy = state.fireDungeon.centerY * Game.constants.TILE - py;
         reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'ash_cache' && state.fireWorldMeta && state.fireWorldMeta.ashCache) {
+        const cache = state.fireWorldMeta.ashCache;
+        const dx = cache.tx * Game.constants.TILE - px;
+        const dy = cache.ty * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 6;
+        if (reached) cache.visited = true;
       } else if (state.pause.activeCompassTarget === 'water_well' && state.waterWell) {
         const dx = state.waterWell.centerX * Game.constants.TILE - px;
         const dy = state.waterWell.baseY * Game.constants.TILE - py;
@@ -779,6 +791,12 @@
         const dx = mainWell.centerX * Game.constants.TILE - px;
         const dy = mainWell.baseY * Game.constants.TILE - py;
         reached = Math.hypot(dx, dy) <= Game.constants.TILE * 8;
+      } else if (state.pause.activeCompassTarget === 'pirate_treasure' && state.waterWorldMeta && state.waterWorldMeta.pirateTreasure) {
+        const treasure = state.waterWorldMeta.pirateTreasure;
+        const dx = treasure.tx * Game.constants.TILE - px;
+        const dy = treasure.ty * Game.constants.TILE - py;
+        reached = Math.hypot(dx, dy) <= Game.constants.TILE * 6;
+        if (reached) treasure.visited = true;
       } else if (state.pause.activeCompassTarget === 'air_entrance' && state.airCaves && state.airCaves.entrance) {
         const entrance = state.airCaves.entrance;
         reached = px >= entrance.x0 * Game.constants.TILE && px <= (entrance.x1 + 1) * Game.constants.TILE && py >= entrance.y0 * Game.constants.TILE && py <= (entrance.y1 + 1) * Game.constants.TILE;
@@ -800,6 +818,27 @@
         state.pause.activeCompassTarget = null;
         state.ui.noticeText = 'Цель компаса достигнута.';
         state.ui.noticeTimer = 3;
+      }
+    }
+
+    if (state.waterWorldMeta && state.waterWorldMeta.pirateTreasure) {
+      const treasure = state.waterWorldMeta.pirateTreasure;
+      const heldSlot = state.player.hotbar[state.player.selectedSlot];
+      const holdingTreasureMap = !!(heldSlot && heldSlot.id === ITEM.TREASURE_MAP && (heldSlot.count || 0) > 0);
+      if (holdingTreasureMap && !treasure.visited) {
+        state.pause.activeCompassTarget = 'pirate_treasure';
+      } else if (state.pause.activeCompassTarget === 'pirate_treasure') {
+        state.pause.activeCompassTarget = null;
+      }
+    }
+    if (state.fireWorldMeta && state.fireWorldMeta.ashCache) {
+      const cache = state.fireWorldMeta.ashCache;
+      const heldSlot = state.player.hotbar[state.player.selectedSlot];
+      const holdingCharredMap = !!(heldSlot && heldSlot.id === ITEM.CHARRED_MAP && (heldSlot.count || 0) > 0);
+      if (holdingCharredMap && !cache.visited) {
+        state.pause.activeCompassTarget = 'ash_cache';
+      } else if (state.pause.activeCompassTarget === 'ash_cache') {
+        state.pause.activeCompassTarget = null;
       }
     }
 

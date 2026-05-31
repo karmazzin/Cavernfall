@@ -76,6 +76,7 @@
   function biomeLabel(biomeKey) {
     if (biomeKey === 'forest') return 'Лес';
     if (biomeKey === 'forest_clearing') return 'Лесная поляна';
+    if (biomeKey === 'sequoia_forest') return 'Секвойный лес';
     if (biomeKey === 'lake') return 'Озеро';
     if (biomeKey === 'cave') return 'Пещера';
     if (biomeKey === 'dwarf_caves') return 'Пещеры гномов';
@@ -95,9 +96,13 @@
     if (biomeKey === 'water_surface') return 'Водная гладь';
     if (biomeKey === 'water_floor') return 'Дно';
     if (biomeKey === 'golden_garden') return 'Сад золотых цветков';
+    if (biomeKey === 'coral_gardens') return 'Коралловые сады';
+    if (biomeKey === 'glow_kelp_fields') return 'Поля светящихся водорослей';
     if (biomeKey === 'void') return 'Пустота';
     if (biomeKey === 'red_land') return 'Красные земли';
     if (biomeKey === 'lava_lake') return 'Лавовое озеро';
+    if (biomeKey === 'ash_fields') return 'Пепельные поля';
+    if (biomeKey === 'blazing_gardens') return 'Пылающие сады';
     if (biomeKey === 'mountains') return 'Горы';
     if (biomeKey === 'snow_plains') return 'Снежная равнина';
     if (biomeKey === 'desert') return 'Пустыня';
@@ -160,6 +165,15 @@
         y: dungeon.centerY * TILE,
       };
     }
+    if (key === 'ash_cache') {
+      const cache = state.fireWorldMeta && state.fireWorldMeta.ashCache;
+      if (!cache) return null;
+      return {
+        label: 'Пепельный клад',
+        x: cache.tx * TILE,
+        y: cache.ty * TILE,
+      };
+    }
     if (key === 'water_well') {
       const well = state.waterWell;
       if (!well) return null;
@@ -194,6 +208,15 @@
         label: 'Главный колодец',
         x: mainWell.centerX * TILE,
         y: mainWell.baseY * TILE,
+      };
+    }
+    if (key === 'pirate_treasure') {
+      const treasure = state.waterWorldMeta && state.waterWorldMeta.pirateTreasure;
+      if (!treasure) return null;
+      return {
+        label: 'Пиратский клад',
+        x: treasure.tx * TILE,
+        y: treasure.ty * TILE,
       };
     }
     if (key === 'air_entrance') {

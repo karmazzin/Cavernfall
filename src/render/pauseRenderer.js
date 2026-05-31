@@ -94,6 +94,15 @@
         y: dungeon.centerY * TILE,
       };
     }
+    if (key === 'ash_cache') {
+      const cache = state.fireWorldMeta && state.fireWorldMeta.ashCache;
+      if (!cache) return null;
+      return {
+        label: 'Пепельный клад',
+        x: cache.tx * TILE,
+        y: cache.ty * TILE,
+      };
+    }
     if (key === 'water_well') {
       const well = state.waterWell;
       if (!well) return null;
@@ -119,6 +128,15 @@
         label: 'Главный колодец',
         x: mainWell.centerX * TILE,
         y: mainWell.baseY * TILE,
+      };
+    }
+    if (key === 'pirate_treasure') {
+      const treasure = state.waterWorldMeta && state.waterWorldMeta.pirateTreasure;
+      if (!treasure) return null;
+      return {
+        label: 'Пиратский клад',
+        x: treasure.tx * TILE,
+        y: treasure.ty * TILE,
       };
     }
     if (key === 'air_entrance') {
@@ -164,6 +182,8 @@
     const keys = ['fire_pyramid', 'fire_caves', 'water_caves', 'air_caves', 'fire_castle', 'fire_dungeon', 'water_well'];
     if (countItem(state, ITEM.MAGIC_GARDEN_MAP) > 0) keys.push('golden_garden');
     if (countItem(state, ITEM.MAIN_WELL_MAP) > 0) keys.push('main_well');
+    if (countItem(state, ITEM.TREASURE_MAP) > 0 && state.waterWorldMeta && state.waterWorldMeta.pirateTreasure) keys.push('pirate_treasure');
+    if (countItem(state, ITEM.CHARRED_MAP) > 0 && state.fireWorldMeta && state.fireWorldMeta.ashCache) keys.push('ash_cache');
     if (state.airCaves && state.airCaves.entrance && state.airCaves.entrance.spawned) keys.push('air_entrance');
     if (state.airWorldMeta && state.airWorldMeta.castle) keys.push('air_castle');
     if (state.undergroundWorldMeta && state.undergroundWorldMeta.garden) keys.push('great_tree_garden');
@@ -186,8 +206,12 @@
                 ? 'Огненная темница'
                 : key === 'golden_garden'
                   ? 'Сад золотых цветков'
-                  : key === 'main_well'
-                    ? 'Главный колодец'
+                : key === 'main_well'
+                  ? 'Главный колодец'
+                  : key === 'pirate_treasure'
+                    ? 'Пиратский клад'
+                    : key === 'ash_cache'
+                      ? 'Пепельный клад'
                     : key === 'air_entrance'
                       ? 'Вход в воздушное измерение'
                       : key === 'air_castle'

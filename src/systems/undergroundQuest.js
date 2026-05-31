@@ -151,6 +151,8 @@
       });
     }
     if (typeof meta.saplingGiven !== 'boolean') meta.saplingGiven = false;
+    if (typeof meta.kingIntroPending !== 'boolean') meta.kingIntroPending = false;
+    meta.kingIntroDelay = Number.isFinite(meta.kingIntroDelay) ? Math.max(0, meta.kingIntroDelay) : 0;
     if (typeof meta.greatTreePlanted !== 'boolean') meta.greatTreePlanted = !!meta.greatTree;
     if (typeof meta.finalAmuletDropped !== 'boolean') meta.finalAmuletDropped = false;
     if (meta.finalAmuletFall && typeof meta.finalAmuletFall === 'object') {
@@ -316,6 +318,7 @@
     if (state.activeDimension !== 'underground') return;
     const meta = ensureUndergroundMeta(state);
     if (!meta) return;
+    if (meta.kingIntroPending) return;
     const playerHidden = !!(isPlayerUndetectable && isPlayerUndetectable(state));
     if (!meta.saplingGiven && playerNearKing(state, meta.king) && !playerHidden) {
       if (!addToInventory(state, ITEM.GREAT_TREE_SAPLING, 1)) {
@@ -512,6 +515,11 @@
   }
 
   function updateUndergroundQuest(state, dt) {
+    const meta = state.activeDimension === 'underground' ? ensureUndergroundMeta(state) : null;
+    if (meta && meta.kingIntroDelay > 0) {
+      meta.kingIntroDelay = Math.max(0, meta.kingIntroDelay - dt);
+      if (meta.kingIntroDelay <= 0) meta.kingIntroPending = false;
+    }
     resolveTemporaryEarthBlocks(state, dt);
     updateUndergroundKeepers(state, dt);
     updateKingQuest(state);

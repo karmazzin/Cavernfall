@@ -15,10 +15,23 @@
       result: { id: BLOCK.PLANK, count: 4 },
     },
     {
+      name: 'Секвойные доски',
+      pattern: [[BLOCK.SEQUOIA_WOOD]],
+      result: { id: BLOCK.SEQUOIA_PLANK, count: 4 },
+    },
+    {
       name: 'Палки',
       pattern: [
         [BLOCK.PLANK],
         [BLOCK.PLANK],
+      ],
+      result: { id: ITEM.STICK, count: 4 },
+    },
+    {
+      name: 'Палки',
+      pattern: [
+        [BLOCK.SEQUOIA_PLANK],
+        [BLOCK.SEQUOIA_PLANK],
       ],
       result: { id: ITEM.STICK, count: 4 },
     },

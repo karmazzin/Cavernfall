@@ -291,6 +291,8 @@
         if (link.mode === 'quest') {
           if (state.undergroundWorldMeta && !state.undergroundWorldMeta.firstArrivalShown) {
             state.undergroundWorldMeta.firstArrivalShown = true;
+            state.undergroundWorldMeta.kingIntroPending = true;
+            state.undergroundWorldMeta.kingIntroDelay = 5.5;
             state.ui.noticeText = 'Воздушный король: Ой, портал был сломан, что же делать?';
             state.ui.noticeTimer = 5.5;
           }

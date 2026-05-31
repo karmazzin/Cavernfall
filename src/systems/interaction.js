@@ -111,6 +111,53 @@
     if (slot) damageSlotTool(slot, amount);
   }
 
+  function isAshCacheChest(state, tx, ty) {
+    const cache = state.fireWorldMeta && state.fireWorldMeta.ashCache;
+    return !!(cache && tx === cache.tx && ty === cache.ty);
+  }
+
+  function hasAshGuardian(state) {
+    return (state.zombies || []).some((zombie) => zombie && zombie.ashGuardian);
+  }
+
+  function spawnAshGuardian(state, cache) {
+    if (!cache || cache.guardianDefeated || hasAshGuardian(state)) return false;
+    cache.guardianSpawned = true;
+    const spawnTx = Math.max(2, Math.min(state.world[0].length - 3, cache.tx - 3));
+    const spawnTy = Math.max(2, cache.ty - 3);
+    state.zombies.push({
+      x: spawnTx * TILE,
+      y: spawnTy * TILE,
+      w: 14,
+      h: 26,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      attackCd: 0.4,
+      hp: 12,
+      maxHp: 12,
+      burnTimer: 0,
+      jumpCd: 0,
+      obstacleTimer: 0,
+      ashGuardian: true,
+      dir: 1,
+    });
+    state.ui.noticeText = 'Пепельный страж поднялся из тайника.';
+    state.ui.noticeTimer = 4;
+    return true;
+  }
+
+  function guardAshCache(state, tx, ty) {
+    if (!isAshCacheChest(state, tx, ty)) return false;
+    const cache = state.fireWorldMeta.ashCache;
+    if (cache.guardianDefeated) return false;
+    spawnAshGuardian(state, cache);
+    state.breaking = null;
+    state.ui.noticeText = 'Пока жив Пепельный страж, сундук не открыть.';
+    state.ui.noticeTimer = 3.5;
+    return true;
+  }
+
   function screenToTile(mx, my, camera) {
     return {
       tx: Math.floor((mx / VIEW_ZOOM + camera.x) / TILE),
@@ -605,7 +652,10 @@
           zombie.clickCd = 0.25;
           audio.playHit();
           useSelectedTool(state);
-          if (zombie.hp <= 0) state.zombies.splice(i, 1);
+          if (zombie.hp <= 0) {
+            if (Game.zombiesEntity && Game.zombiesEntity.defeatZombie) Game.zombiesEntity.defeatZombie(state, i);
+            else state.zombies.splice(i, 1);
+          }
         }
         input.mouse.justPressed = false;
         return;
@@ -738,6 +788,11 @@
     if (block === BLOCK.DOOR && input.mouse.justPressed) {
       toggleDoor(state, tx, ty);
       state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
+
+    if (block === BLOCK.CHEST && guardAshCache(state, tx, ty)) {
       input.mouse.justPressed = false;
       return;
     }

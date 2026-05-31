@@ -43,6 +43,45 @@
     return { x: tx * TILE, y: ty * TILE, w: 12, h: 24, vx: 0, vy: 0, onGround: false, attackCd: 0, hp: 3, burnTimer: 0, jumpCd: 0, obstacleTimer: 0 };
   }
 
+  function createPirateZombie(tx, ty, dir = 1) {
+    return {
+      x: tx * TILE,
+      y: ty * TILE,
+      w: 12,
+      h: 24,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      attackCd: 0,
+      hp: 4,
+      burnTimer: 0,
+      jumpCd: 0,
+      obstacleTimer: 0,
+      pirate: true,
+      dir,
+    };
+  }
+
+  function createAshGuardian(tx, ty) {
+    return {
+      x: tx * TILE,
+      y: ty * TILE,
+      w: 14,
+      h: 26,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      attackCd: 0.4,
+      hp: 12,
+      maxHp: 12,
+      burnTimer: 0,
+      jumpCd: 0,
+      obstacleTimer: 0,
+      ashGuardian: true,
+      dir: Math.random() < 0.5 ? -1 : 1,
+    };
+  }
+
   function createSpider(tx, ty) {
     return { x: tx * TILE + 1, y: ty * TILE + 4, w: 14, h: 10, vx: 0, vy: 0, onGround: false, hp: 2, attackCd: 0, clickCd: 0, moveTimer: rand(0.4, 1.5), dir: Math.random() < 0.5 ? -1 : 1, jumpCd: 0, obstacleTimer: 0 };
   }
@@ -208,6 +247,8 @@
   const EGG_DEFS = [
     { id: ITEM.SPAWN_EGG_SHEEP, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.animals.push(createAnimal(tx, ty)); } },
     { id: ITEM.SPAWN_EGG_ZOMBIE, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.zombies.push(createZombie(tx, ty)); } },
+    { id: ITEM.SPAWN_EGG_PIRATE_ZOMBIE, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.zombies.push(createPirateZombie(tx, ty, Math.random() < 0.5 ? -1 : 1)); } },
+    { id: ITEM.SPAWN_EGG_ASH_GUARDIAN, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.zombies.push(createAshGuardian(tx, ty)); } },
     { id: ITEM.SPAWN_EGG_SPIDER, wTiles: 2, hTiles: 1, spawn(state, tx, ty) { state.spiders.push(createSpider(tx, ty)); } },
     { id: ITEM.SPAWN_EGG_DWARF_GUARD, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.dwarves.push(createDwarf(tx, ty, 'guard')); } },
     { id: ITEM.SPAWN_EGG_DWARF_MINER, wTiles: 1, hTiles: 2, spawn(state, tx, ty) { state.dwarves.push(createDwarf(tx, ty, 'miner')); } },

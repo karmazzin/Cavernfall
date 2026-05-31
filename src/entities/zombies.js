@@ -18,6 +18,17 @@
     return aabb(zombie.x - 4, zombie.y - 4, zombie.w + 8, zombie.h + 8, state.player.x, state.player.y, state.player.w, state.player.h);
   }
 
+  function defeatZombie(state, index) {
+    const zombie = state.zombies[index];
+    if (zombie && zombie.ashGuardian && state.fireWorldMeta && state.fireWorldMeta.ashCache) {
+      state.fireWorldMeta.ashCache.guardianDefeated = true;
+      state.fireWorldMeta.ashCache.guardianSpawned = true;
+      state.ui.noticeText = 'Пепельный страж рассыпался. Клад открыт.';
+      state.ui.noticeTimer = 4;
+    }
+    state.zombies.splice(index, 1);
+  }
+
   function isMineLike(state, tx, ty) {
     for (let yy = ty - 2; yy <= ty + 2; yy += 1) {
       for (let xx = tx - 3; xx <= tx + 3; xx += 1) {
@@ -166,6 +177,10 @@
     for (let i = state.zombies.length - 1; i >= 0; i -= 1) {
       const zombie = state.zombies[i];
       ensureMobState(zombie);
+      if (zombie.ashGuardian) {
+        zombie.hp = Math.min(zombie.hp, zombie.maxHp || zombie.hp);
+        zombie.breath = 3.5;
+      }
       zombie.jumpCd = Math.max(0, (zombie.jumpCd || 0) - dt);
       zombie.obstacleTimer = zombie.obstacleTimer || 0;
       const zombieTx = Math.floor((zombie.x + zombie.w / 2) / TILE);
@@ -175,31 +190,40 @@
       let target = null;
       let targetIsPlayer = false;
       let targetDist = Infinity;
+      const pirateAggroRange = zombie.pirate ? TILE * 18 : Infinity;
 
       if (!creative) {
         const playerDist = Math.hypot(state.player.x - zombie.x, state.player.y - zombie.y);
-        target = state.player;
-        targetIsPlayer = true;
-        targetDist = playerDist;
-      }
-      for (const dwarf of state.dwarves || []) {
-        const dist = Math.hypot(dwarf.x - zombie.x, dwarf.y - zombie.y);
-        if (dist < targetDist) {
-          target = dwarf;
-          targetIsPlayer = false;
-          targetDist = dist;
+        if (playerDist <= pirateAggroRange) {
+          target = state.player;
+          targetIsPlayer = true;
+          targetDist = playerDist;
         }
       }
-      for (const human of state.humans || []) {
-        const dist = Math.hypot(human.x - zombie.x, human.y - zombie.y);
-        if (dist < targetDist) {
-          target = human;
-          targetIsPlayer = false;
-          targetDist = dist;
+      if (!zombie.pirate) {
+        for (const dwarf of state.dwarves || []) {
+          const dist = Math.hypot(dwarf.x - zombie.x, dwarf.y - zombie.y);
+          if (dist < targetDist) {
+            target = dwarf;
+            targetIsPlayer = false;
+            targetDist = dist;
+          }
         }
+        for (const human of state.humans || []) {
+          const dist = Math.hypot(human.x - zombie.x, human.y - zombie.y);
+          if (dist < targetDist) {
+            target = human;
+            targetIsPlayer = false;
+            targetDist = dist;
+          }
+        }
+      } else if (!target && Number.isFinite(zombie.anchorX) && Number.isFinite(zombie.anchorY)) {
+        target = { x: zombie.anchorX, y: zombie.anchorY, w: zombie.w, h: zombie.h };
+        targetIsPlayer = false;
+        targetDist = Math.hypot(zombie.anchorX - zombie.x, zombie.anchorY - zombie.y);
       }
 
-      if (sunlight && !inCave) {
+      if (sunlight && !inCave && !zombie.ashGuardian) {
         zombie.burnTimer += dt;
         if (zombie.burnTimer >= 0.45) {
           zombie.burnTimer = 0;
@@ -212,12 +236,31 @@
       const wasOnGround = zombie.onGround;
       const preMoveVy = zombie.vy;
       const dx = target ? target.x - zombie.x : 0;
-      zombie.vx = !target ? 0 : Math.sign(dx) * 75;
+      const walkSpeed = zombie.ashGuardian ? 92 : 75;
+      zombie.vx = !target ? 0 : Math.sign(dx) * walkSpeed;
       if (Math.abs(dx) < 4) zombie.vx = 0;
       if (zombie.inWater) {
-        zombie.dir = getWaterEscapeDir(state, zombie, zombie.vx >= 0 ? 1 : -1);
-        zombie.vx = zombie.dir * 95;
-        zombie.vy = -220;
+        if (zombie.pirate) {
+          const swimDir = dx === 0 ? (zombie.dir || 1) : Math.sign(dx);
+          zombie.dir = swimDir || 1;
+          zombie.vx = zombie.dir * (targetIsPlayer ? 125 : 68);
+          if (target) {
+            const targetMidY = target.y + (target.h || 0) * 0.5;
+            const selfMidY = zombie.y + zombie.h * 0.5;
+            const dy = targetMidY - selfMidY;
+            zombie.vy = clamp(dy * (targetIsPlayer ? 2.4 : 1.6), -250, 180);
+            if (!targetIsPlayer && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+              zombie.vx *= 0.2;
+              zombie.vy *= 0.2;
+            }
+          } else {
+            zombie.vy = -70 + Math.sin((zombie.x + zombie.y) * 0.01) * 30;
+          }
+        } else {
+          zombie.dir = getWaterEscapeDir(state, zombie, zombie.vx >= 0 ? 1 : -1);
+          zombie.vx = zombie.dir * 95;
+          zombie.vy = -220;
+        }
         zombie.obstacleTimer = 0;
       } else {
         const dir = zombie.vx < 0 ? -1 : zombie.vx > 0 ? 1 : 0;
@@ -246,22 +289,26 @@
         }
       }
       moveEntity(state, zombie, dt);
-      applyMobEnvironmentDamage(state, zombie, dt, wasOnGround, preMoveVy);
+      if (!zombie.ashGuardian) applyMobEnvironmentDamage(state, zombie, dt, wasOnGround, preMoveVy);
+      else if (!wasOnGround && zombie.onGround && !zombie.inWater && preMoveVy > 760) {
+        const damage = Math.ceil((preMoveVy - 760) / 260);
+        if (damage > 0) zombie.hp -= damage;
+      }
 
       zombie.attackCd -= dt;
       if (targetIsPlayer && !creative && canHitPlayer(state, zombie) && zombie.attackCd <= 0) {
-        zombie.attackCd = 0.7;
-        applyPlayerDamage(state, 1, { flash: 0.25 });
+        zombie.attackCd = zombie.ashGuardian ? 0.95 : 0.7;
+        applyPlayerDamage(state, zombie.ashGuardian ? 1.7 : 1, { flash: 0.25, elementalKind: zombie.ashGuardian ? 'fire' : null });
       } else if (!targetIsPlayer && target && aabb(zombie.x, zombie.y, zombie.w, zombie.h, target.x, target.y, target.w, target.h) && zombie.attackCd <= 0) {
         zombie.attackCd = 0.8;
         target.hp -= 1;
       }
 
       if (zombie.hp <= 0) {
-        state.zombies.splice(i, 1);
+        defeatZombie(state, i);
       }
     }
   }
 
-  Game.zombiesEntity = { spawnZombieNearPlayer, spawnZombieInCave, updateZombies };
+  Game.zombiesEntity = { spawnZombieNearPlayer, spawnZombieInCave, updateZombies, defeatZombie };
 })();

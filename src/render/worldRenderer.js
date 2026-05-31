@@ -73,7 +73,16 @@
   }
 
   function drawBlock(ctx, id, x, y, time = 0) {
-    if (id !== BLOCK.TORCH && id !== BLOCK.CACTUS && id !== BLOCK.DRY_BUSH) {
+    if (
+      id !== BLOCK.TORCH &&
+      id !== BLOCK.CACTUS &&
+      id !== BLOCK.DRY_BUSH &&
+      id !== BLOCK.PINK_CORAL &&
+      id !== BLOCK.BLUE_CORAL &&
+      id !== BLOCK.GOLD_CORAL &&
+      id !== BLOCK.GLOW_ALGAE &&
+      id !== BLOCK.TALL_GLOW_ALGAE
+    ) {
       ctx.fillStyle = BLOCK_COLORS[id] || '#000';
       ctx.fillRect(x, y, TILE, TILE);
     }
@@ -107,6 +116,33 @@
       ctx.fillStyle = '#775844';
       ctx.fillRect(x + 6, y, 1, TILE);
       ctx.fillRect(x + 9, y, 1, TILE);
+    } else if (id === BLOCK.SEQUOIA_WOOD) {
+      ctx.fillStyle = '#6f2d24';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#9a4a37';
+      ctx.fillRect(x + 2, y, 3, TILE);
+      ctx.fillRect(x + 10, y, 2, TILE);
+      ctx.fillStyle = '#3f1a16';
+      ctx.fillRect(x + 7, y + 1, 2, TILE - 2);
+      ctx.fillStyle = 'rgba(255,187,132,0.18)';
+      ctx.fillRect(x + 3, y + 2, 1, TILE - 4);
+    } else if (id === BLOCK.SEQUOIA_LEAF) {
+      ctx.fillStyle = '#2b5544';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#3e7358';
+      ctx.fillRect(x + 1, y + 2, 6, 5);
+      ctx.fillRect(x + 8, y + 5, 6, 5);
+      ctx.fillStyle = '#1f3d33';
+      ctx.fillRect(x + 3, y + 10, 8, 3);
+    } else if (id === BLOCK.SEQUOIA_PLANK) {
+      ctx.fillStyle = '#93513e';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#b46d54';
+      ctx.fillRect(x, y + 3, TILE, 2);
+      ctx.fillRect(x, y + 10, TILE, 2);
+      ctx.fillStyle = '#5f2b22';
+      ctx.fillRect(x + 5, y, 1, TILE);
+      ctx.fillRect(x + 11, y, 1, TILE);
     } else if (id === BLOCK.WATER_FRAME) {
       ctx.fillStyle = '#3a5f71';
       ctx.fillRect(x, y, TILE, TILE);
@@ -196,6 +232,96 @@
       ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
       ctx.fillStyle = '#dff7ff';
       ctx.fillRect(x + 7, y + 7, TILE - 14, TILE - 14);
+    } else if (id === BLOCK.CORAL_STONE) {
+      ctx.fillStyle = '#5f7d88';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7fa1ae';
+      ctx.fillRect(x + 2, y + 3, 5, 4);
+      ctx.fillRect(x + 8, y + 8, 4, 3);
+      ctx.fillStyle = '#96beca';
+      ctx.fillRect(x + 5, y + 11, 3, 2);
+    } else if (id === BLOCK.PINK_CORAL) {
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#f48fb7';
+      ctx.fillRect(x + 7, y + 6, 2, 8);
+      ctx.fillRect(x + 4, y + 8, 2, 4);
+      ctx.fillRect(x + 10, y + 7, 2, 5);
+      ctx.fillRect(x + 6, y + 4, 4, 2);
+      ctx.fillStyle = '#ffd0e2';
+      ctx.fillRect(x + 5, y + 8, 1, 1);
+      ctx.fillRect(x + 10, y + 7, 1, 1);
+    } else if (id === BLOCK.BLUE_CORAL) {
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#66b6ff';
+      ctx.fillRect(x + 7, y + 5, 2, 9);
+      ctx.fillRect(x + 5, y + 7, 2, 3);
+      ctx.fillRect(x + 9, y + 7, 2, 3);
+      ctx.fillRect(x + 4, y + 9, 2, 2);
+      ctx.fillRect(x + 10, y + 9, 2, 2);
+      ctx.fillStyle = '#cfeaff';
+      ctx.fillRect(x + 7, y + 5, 2, 1);
+    } else if (id === BLOCK.GOLD_CORAL) {
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#e6c95d';
+      ctx.fillRect(x + 7, y + 6, 2, 8);
+      ctx.fillRect(x + 4, y + 6, 2, 2);
+      ctx.fillRect(x + 10, y + 6, 2, 2);
+      ctx.fillRect(x + 5, y + 9, 2, 3);
+      ctx.fillRect(x + 9, y + 9, 2, 3);
+      ctx.fillStyle = '#fff0a8';
+      ctx.fillRect(x + 7, y + 6, 2, 1);
+    } else if (id === BLOCK.GLOW_ALGAE || id === BLOCK.TALL_GLOW_ALGAE) {
+      const pulse = 0.5 + 0.5 * Math.sin(time * 3 + x * 0.08);
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = `rgba(120,229,194,${0.6 + pulse * 0.2})`;
+      ctx.fillRect(x + 6, y + 3, 2, 11);
+      ctx.fillRect(x + 9, y + 5, 2, 9);
+      if (id === BLOCK.TALL_GLOW_ALGAE) {
+        ctx.fillRect(x + 4, y + 1, 2, 13);
+        ctx.fillRect(x + 11, y + 3, 1, 11);
+      }
+      ctx.fillStyle = `rgba(225,255,241,${0.22 + pulse * 0.18})`;
+      ctx.fillRect(x + 6, y + 6, 4, 4);
+    } else if (id === BLOCK.ASH) {
+      ctx.fillStyle = '#857d79';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#9d9490';
+      ctx.fillRect(x, y, TILE, 4);
+      ctx.fillStyle = '#6d6764';
+      ctx.fillRect(x + 2, y + 7, 4, 2);
+      ctx.fillRect(x + 9, y + 10, 3, 2);
+    } else if (id === BLOCK.ASH_STONE) {
+      ctx.fillStyle = '#57514f';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#6b6461';
+      ctx.fillRect(x + 2, y + 2, 5, 3);
+      ctx.fillRect(x + 8, y + 8, 4, 3);
+      ctx.fillStyle = '#474242';
+      ctx.fillRect(x + 5, y + 11, 5, 2);
+    } else if (id === BLOCK.EMBER_FLOWER) {
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7f3d22';
+      ctx.fillRect(x + 7, y + 8, 2, 6);
+      ctx.fillStyle = '#ff8b4a';
+      ctx.fillRect(x + 5, y + 5, 6, 3);
+      ctx.fillRect(x + 6, y + 3, 4, 2);
+      ctx.fillStyle = '#ffd0a3';
+      ctx.fillRect(x + 7, y + 4, 2, 1);
+    } else if (id === BLOCK.EMBER_SHRUB) {
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#7d3f24';
+      ctx.fillRect(x + 6, y + 8, 4, 5);
+      ctx.fillStyle = '#b45831';
+      ctx.fillRect(x + 4, y + 6, 8, 4);
+      ctx.fillRect(x + 5, y + 4, 6, 2);
+      ctx.fillStyle = '#ff9d52';
+      ctx.fillRect(x + 7, y + 5, 2, 1);
     } else if (id === BLOCK.CLOUD) {
       ctx.fillStyle = 'rgba(242,250,255,0.95)';
       ctx.beginPath();

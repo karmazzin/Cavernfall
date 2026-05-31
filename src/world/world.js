@@ -6,6 +6,7 @@
     plains: 'Равнина',
     forest: 'Лес',
     forest_clearing: 'Лесная поляна',
+    sequoia_forest: 'Секвойный лес',
     mountains: 'Горы',
     snow_plains: 'Снежная равнина',
     desert: 'Пустыня',
@@ -17,9 +18,13 @@
     water_caves: 'Водные пещеры',
     red_land: 'Красные земли',
     lava_lake: 'Лавовое озеро',
+    ash_fields: 'Пепельные поля',
+    blazing_gardens: 'Пылающие сады',
     water_surface: 'Водная гладь',
     water_floor: 'Дно',
     golden_garden: 'Сад золотых цветков',
+    coral_gardens: 'Коралловые сады',
+    glow_kelp_fields: 'Поля светящихся водорослей',
     air_caves: 'Воздушные пещеры',
     air_plains: 'Воздушная равнина',
     air_isles: 'Облачные острова',
@@ -37,8 +42,8 @@
   };
   const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing']);
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
-  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake']);
-  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden']);
+  const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake', 'ash_fields', 'blazing_gardens']);
+  const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden', 'coral_gardens', 'glow_kelp_fields']);
   const SINGLE_BIOME_AIR_SET = new Set(['air_plains', 'air_isles', 'air_void']);
   const SINGLE_BIOME_UNDERGROUND_SET = new Set([
     'underground_plains',
@@ -71,8 +76,10 @@
       id !== BLOCK.COBWEB &&
       id !== BLOCK.WOOD &&
       id !== BLOCK.SPRUCE_WOOD &&
+      id !== BLOCK.SEQUOIA_WOOD &&
       id !== BLOCK.LEAF &&
       id !== BLOCK.SPRUCE_LEAF &&
+      id !== BLOCK.SEQUOIA_LEAF &&
       id !== BLOCK.TORCH &&
       id !== BLOCK.PILLAR &&
       id !== BLOCK.LADDER &&
@@ -94,7 +101,14 @@
       id !== BLOCK.GLOW_MUSHROOM_STEM &&
       id !== BLOCK.SMALL_WHITE_MUSHROOM &&
       id !== BLOCK.SMALL_FLY_AGARIC &&
-      id !== BLOCK.SMALL_GLOW_MUSHROOM
+      id !== BLOCK.SMALL_GLOW_MUSHROOM &&
+      id !== BLOCK.PINK_CORAL &&
+      id !== BLOCK.BLUE_CORAL &&
+      id !== BLOCK.GOLD_CORAL &&
+      id !== BLOCK.GLOW_ALGAE &&
+      id !== BLOCK.TALL_GLOW_ALGAE &&
+      id !== BLOCK.EMBER_FLOWER &&
+      id !== BLOCK.EMBER_SHRUB
     );
   }
 
@@ -157,6 +171,14 @@
   function getLocationInfo(state, tx, ty) {
     const safeTx = Math.max(0, Math.min(WORLD_W - 1, tx));
     const singleBiome = state.worldMeta && state.worldMeta.worldType === 'single_biome' ? state.worldMeta.singleBiome : null;
+    if (singleBiome === 'sequoia_forest') {
+      return {
+        biome: state.biomeAt[safeTx] || singleBiome,
+        climate: 'temperate',
+        inCave: false,
+        surfaceY: state.surfaceAt[safeTx] || 0,
+      };
+    }
     if (singleBiome && SINGLE_BIOME_CAVE_SET.has(singleBiome)) {
       const biome = state.biomeAt[safeTx] || singleBiome;
       return {
@@ -234,8 +256,9 @@
       const floorStart = Number.isFinite(waterMeta.floorStart) ? waterMeta.floorStart : WORLD_H - 18;
       const garden = waterMeta.goldenGarden || null;
       const inGarden = !!(garden && tx >= garden.x0 && tx <= garden.x1 && ty >= garden.y0 && ty <= garden.y1);
+      const columnBiome = state.biomeAt[safeTx] || 'water_surface';
       return {
-        biome: inGarden ? 'golden_garden' : ty >= floorStart ? 'water_floor' : (state.biomeAt[safeTx] || 'water_surface'),
+        biome: inGarden ? 'golden_garden' : (columnBiome === 'coral_gardens' || columnBiome === 'glow_kelp_fields' ? columnBiome : (ty >= floorStart ? 'water_floor' : columnBiome)),
         climate: 'any',
         inCave: false,
         surfaceY: state.surfaceAt[safeTx] || 0,
