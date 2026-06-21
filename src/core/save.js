@@ -140,6 +140,8 @@
       invisibilityBlocks: state.invisibilityBlocks,
       invisibilityGroupSeed: state.invisibilityGroupSeed,
       temporaryEarthBlocks: state.temporaryEarthBlocks,
+      factionMemory: state.factionMemory,
+      settings: state.settings,
       achievements: state.achievements,
     };
   }
@@ -394,6 +396,14 @@
       state.invisibilityBlocks = Array.isArray(data.invisibilityBlocks) ? data.invisibilityBlocks : state.invisibilityBlocks;
       state.invisibilityGroupSeed = Number.isFinite(data.invisibilityGroupSeed) ? data.invisibilityGroupSeed : state.invisibilityGroupSeed;
       state.temporaryEarthBlocks = Array.isArray(data.temporaryEarthBlocks) ? data.temporaryEarthBlocks : state.temporaryEarthBlocks;
+      state.factionMemory = data.factionMemory && typeof data.factionMemory === 'object' ? data.factionMemory : state.factionMemory;
+      state.settings = data.settings && typeof data.settings === 'object'
+        ? {
+            ...state.settings,
+            ...data.settings,
+            ambientNpcSpeech: data.settings.ambientNpcSpeech !== false,
+          }
+        : state.settings;
       state.achievements = data.achievements && typeof data.achievements === 'object'
         ? {
             unlocked: data.achievements.unlocked && typeof data.achievements.unlocked === 'object' ? data.achievements.unlocked : {},

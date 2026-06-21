@@ -218,6 +218,28 @@
       invisibilityBlocks: [],
       invisibilityGroupSeed: 1,
       temporaryEarthBlocks: [],
+      speechBubbles: [],
+      speechSystem: {
+        clock: 0,
+        globalCooldown: 0,
+        ambientMuteTimer: 0,
+        ambientScanTimer: 0,
+        lastPhase: null,
+        recentLineIds: [],
+        lineCooldowns: {},
+        eventQueue: [],
+        pendingReplies: [],
+      },
+      factionMemory: {
+        humanVillages: {},
+        humansGlobal: { reputation: 0, helped: false, harmed: false, tradedCount: 0 },
+        dwarvesGlobal: { reputation: 0, helped: false, harmed: false, tradedCount: 0 },
+        waterfolk: { reputation: 0, helped: false, harmed: false, tradedCount: 0 },
+        windfolk: { reputation: 0, helped: false, harmed: false, tradedCount: 0 },
+      },
+      settings: {
+        ambientNpcSpeech: true,
+      },
       autosaveTick: 0,
       breaking: null,
       crafting: {

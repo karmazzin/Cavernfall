@@ -251,9 +251,19 @@
   function applySettlementAlert(state, settlementId, severity = 1) {
     const settlement = findSettlement(state, settlementId);
     if (!settlement) return;
+    const wasHostile = !!settlement.hostileToPlayer;
     settlement.alertLevel = Math.max(settlement.alertLevel || 0, severity);
     settlement.alertTimer = 24;
-    if (severity >= 2) settlement.hostileToPlayer = true;
+    if (severity >= 2) {
+      settlement.hostileToPlayer = true;
+      if (!wasHostile && !settlement.speechHostileWarned && Game.speechSystem && Game.speechSystem.notifyDwarfHostile) {
+        settlement.speechHostileWarned = true;
+        Game.speechSystem.notifyDwarfHostile(state, settlementId);
+      }
+    } else if (!settlement.speechHarmedWarned && Game.speechSystem && Game.speechSystem.notifyPlayerHarmed) {
+      settlement.speechHarmedWarned = true;
+      Game.speechSystem.notifyPlayerHarmed(state, 'dwarf');
+    }
     for (const dwarf of state.dwarves) {
       if (dwarf.settlementId !== settlementId) continue;
       dwarf.state = DWARF_STATE.ALERT;

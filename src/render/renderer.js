@@ -13,6 +13,7 @@
   const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawUndergroundKeeper, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
   const { drawCraftingOverlay } = Game.craftingRenderer;
+  const { drawSpeechBubbles } = Game.speechRenderer;
   const { drawPauseOverlay } = Game.pauseRenderer;
   const { getLightSourcesInView } = Game.furnaceSystem;
   const { getDoorAt } = Game.doorSystem;
@@ -980,6 +981,7 @@
     }
 
     drawWeatherOverlay(ctx, canvas, weather, time);
+    drawSpeechBubbles(ctx, canvas, state, renderCamera);
 
     drawUI(ctx, canvas, state, phase);
     drawFireDungeonGuide(ctx, canvas, state);

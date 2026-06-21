@@ -253,6 +253,7 @@
     const panelWidth = mobile ? Math.min(canvas.width - 16, 340) : 360;
     const creativeExtra = hasCompassMode(state) ? 1 : 0;
     const assistantExtra = isMobileClient(state) ? 0 : 1;
+    const settingsExtra = 1;
     const panelHeight = state.pause.confirmRestart
       ? 240
       : state.pause.showControls
@@ -263,7 +264,7 @@
             ? (mobile ? (compactHeight ? 146 : 168) : 176)
           : state.pause.showCompass
             ? (mobile ? (compactHeight ? 604 : 676) : 712)
-          : (mobile ? (compactHeight ? 406 + creativeExtra * 44 + assistantExtra * 44 : 474 + creativeExtra * 50 + assistantExtra * 50) : 474 + creativeExtra * 52 + assistantExtra * 52);
+          : (mobile ? (compactHeight ? 406 + (creativeExtra + assistantExtra + settingsExtra) * 44 : 474 + (creativeExtra + assistantExtra + settingsExtra) * 50) : 474 + (creativeExtra + assistantExtra + settingsExtra) * 52);
     const panel = {
       w: panelWidth,
       h: panelHeight,
@@ -352,20 +353,29 @@
     const buttonH = compactHeight ? 36 : 42;
     const startY = compactHeight ? 82 : 92;
     const gap = compactHeight ? 8 : 10;
-    return {
-      panel,
-      buttons: [
-        { id: 'continue', label: 'Продолжить', x: panel.x + 20, y: panel.y + startY, w: panel.w - 40, h: buttonH },
-        { id: 'controls', label: 'Управление', x: panel.x + 20, y: panel.y + startY + (buttonH + gap), w: panel.w - 40, h: buttonH },
-        ...(!isHardcoreSpectator(state) ? [{ id: 'choose_mode', label: 'Выбрать режим', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * 2, w: panel.w - 40, h: buttonH }] : []),
-        ...(hasCompassMode(state) ? [{ id: 'compass', label: 'Компас', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * (isHardcoreSpectator(state) ? 2 : 3), w: panel.w - 40, h: buttonH }] : []),
-        ...(isMobileClient(state) ? [] : [{ id: 'assistant', label: 'Помощник', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 2 : 3) + creativeExtra), w: panel.w - 40, h: buttonH }]),
-        { id: 'save', label: 'Сохранить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 3 : 4) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
-        { id: 'fullscreen', label: state.pause.fullscreenLabel || 'Полный экран', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 4 : 5) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
-        { id: 'restart', label: 'Перезапустить', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 5 : 6) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
-        { id: 'exit_to_menu', label: 'Выйти', x: panel.x + 20, y: panel.y + startY + (buttonH + gap) * ((isHardcoreSpectator(state) ? 6 : 7) + creativeExtra - (isMobileClient(state) ? 1 : 0)), w: panel.w - 40, h: buttonH },
-      ],
-    };
+    const speechEnabled = !state.settings || state.settings.ambientNpcSpeech !== false;
+    const buttons = [];
+    function addButton(id, label) {
+      buttons.push({
+        id,
+        label,
+        x: panel.x + 20,
+        y: panel.y + startY + (buttonH + gap) * buttons.length,
+        w: panel.w - 40,
+        h: buttonH,
+      });
+    }
+    addButton('continue', 'Продолжить');
+    addButton('controls', 'Управление');
+    if (!isHardcoreSpectator(state)) addButton('choose_mode', 'Выбрать режим');
+    if (hasCompassMode(state)) addButton('compass', 'Компас');
+    if (!isMobileClient(state)) addButton('assistant', 'Помощник');
+    addButton('toggle_speech', speechEnabled ? 'Фоновые реплики: вкл' : 'Фоновые реплики: выкл');
+    addButton('save', 'Сохранить');
+    addButton('fullscreen', state.pause.fullscreenLabel || 'Полный экран');
+    addButton('restart', 'Перезапустить');
+    addButton('exit_to_menu', 'Выйти');
+    return { panel, buttons };
   }
 
   function drawButton(ctx, button) {

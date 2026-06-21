@@ -46,6 +46,7 @@
   const { saveWorld, loadWorld, listWorlds, deleteWorld, createWorldMeta, migrateLegacySave } = Game.saveSystem;
   const { draw, getHardcoreDeathLayout } = Game.renderer;
   const { updateAchievements } = Game.achievementsSystem;
+  const { updateSpeech } = Game.speechSystem;
   const { drawMenuBackground } = Game.menuRenderer;
   const { createMenuUi } = Game.menuUi;
   const { getPauseLayout } = Game.pauseRenderer;
@@ -443,6 +444,11 @@
       if (button.id === 'mode_creative') applyWorldMode('creative');
       if (button.id === 'mode_infinite_inventory') applyWorldMode('infinite_inventory');
       if (button.id === 'mode_spectator') applyWorldMode('spectator');
+      if (button.id === 'toggle_speech') {
+        if (!state.settings) state.settings = {};
+        state.settings.ambientNpcSpeech = state.settings.ambientNpcSpeech === false;
+        state.pause.statusText = state.settings.ambientNpcSpeech ? 'Фоновые реплики включены' : 'Фоновые реплики выключены';
+      }
       if (button.id === 'save') state.pause.statusText = saveCurrentWorld() ? 'Игра сохранена' : 'Сохранение не удалось';
       if (button.id === 'fullscreen') input.toggleFullscreen();
       if (button.id === 'restart') state.pause.confirmRestart = true;
@@ -740,6 +746,7 @@
     updateBreath(state, dt);
     updateWeather(state, dt);
     updateAchievements(state, dt);
+    updateSpeech(state, dt);
     if (state.quake) {
       state.quake.timer = Math.max(0, (state.quake.timer || 0) - dt);
       if (state.quake.timer <= 0) state.quake = null;

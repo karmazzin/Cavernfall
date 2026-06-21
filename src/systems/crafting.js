@@ -732,7 +732,9 @@
       for (let i = 0; i < offers.length; i += 1) {
         const rect = slotRect(startX, startY + i * (offerHeight + 6), layout.trade.panel.w - 20, offerHeight);
         if (!contains(rect, x, y)) continue;
-        crafting.tradeStatus = performTrade(state, trader, offers[i].id) ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
+        const traded = performTrade(state, trader, offers[i].id);
+        crafting.tradeStatus = traded ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
+        if (traded && Game.speechSystem && Game.speechSystem.recordTrade) Game.speechSystem.recordTrade(state, trader);
         input.mouse.justPressed = false;
         return true;
       }
