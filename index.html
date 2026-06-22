@@ -11,6 +11,8 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <canvas id="game3d" class="game-3d is-hidden"></canvas>
+  <canvas id="game3dOverlay" class="game-3d-overlay is-hidden"></canvas>
   <div id="menuRoot" class="menu-root"></div>
   <div id="itemTooltip" class="item-tooltip is-hidden" aria-hidden="true"></div>
   <div id="assistantRoot" class="assistant-root is-hidden" aria-hidden="true"></div>
@@ -98,6 +100,17 @@
   <script defer src="./src/render/pauseRenderer.js"></script>
   <script defer src="./src/render/menuRenderer.js"></script>
   <script defer src="./src/render/renderer.js"></script>
+  <script defer src="./vendor/three.min.js"></script>
+  <script defer src="./src/3d/constants3d.js"></script>
+  <script defer src="./src/3d/world3d.js"></script>
+  <script defer src="./src/3d/state3d.js"></script>
+  <script defer src="./src/3d/generation3d.js"></script>
+  <script defer src="./src/3d/input3d.js"></script>
+  <script defer src="./src/3d/player3d.js"></script>
+  <script defer src="./src/3d/interaction3d.js"></script>
+  <script defer src="./src/3d/fluids3d.js"></script>
+  <script defer src="./src/3d/ui3d.js"></script>
+  <script defer src="./src/3d/renderer3d.js"></script>
   <script defer src="./src/app/menuUi.js"></script>
   <script defer src="./src/main.js"></script>
 </body>

@@ -50,13 +50,23 @@
   const { drawMenuBackground } = Game.menuRenderer;
   const { createMenuUi } = Game.menuUi;
   const { getPauseLayout } = Game.pauseRenderer;
+  const { createGameState3D } = Game.state3d;
+  const { generateWorld3D } = Game.generation3d;
+  const { updatePlayer3D } = Game.player3d;
+  const { updateInteraction3D } = Game.interaction3d;
+  const { updateFluids3D } = Game.fluids3d;
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const canvas3d = document.getElementById('game3d');
+  const canvas3dOverlay = document.getElementById('game3dOverlay');
+  const ctx3dOverlay = canvas3dOverlay ? canvas3dOverlay.getContext('2d') : null;
   const menuRoot = document.getElementById('menuRoot');
   const assistantRoot = document.getElementById('assistantRoot');
   const state = createGameState();
+  let state3d = null;
   const app = createAppState();
+  const input3d = Game.input3d.createInput3D(canvas3d || canvas3dOverlay || canvas, () => state3d);
   const assistantUi = Game.gameAssistant.createAssistantUi(assistantRoot, {
     onClose: () => {
       if (app.screen === 'playing') state.pause.showAssistant = false;
@@ -164,10 +174,14 @@
 
   function syncBodyUiState() {
     const playing = app.screen === 'playing';
+    const playing3d = app.screen === 'playing3d';
     const overlayHidden = !!(playing && (state.pause.open || (state.crafting && state.crafting.open)));
     document.body.classList.toggle('ui-overlay-hidden', overlayHidden);
-    document.body.classList.toggle('menu-open', !playing);
-    assistantUi.setVisible(!isTouchClient() && !!((playing && state.pause.open && state.pause.showAssistant) || (!playing && app.showAssistant)));
+    document.body.classList.toggle('menu-open', !playing && !playing3d);
+    canvas.classList.toggle('is-hidden', playing3d);
+    if (canvas3d && Game.renderer3d) Game.renderer3d.setVisible(canvas3d, playing3d);
+    if (canvas3dOverlay) canvas3dOverlay.classList.toggle('is-hidden', !playing3d);
+    assistantUi.setVisible(!isTouchClient() && !!((playing && state.pause.open && state.pause.showAssistant) || (!playing && !playing3d && app.showAssistant)));
   }
 
   function refreshWorldList() {
@@ -247,6 +261,36 @@
     app.currentWorldId = meta.id;
     app.screen = 'playing';
     app.pendingInitialSave = true;
+    menu.render(app);
+    syncBodyUiState();
+  }
+
+  function startNewWorld3D(options) {
+    const seed = options.seed && options.seed.trim() ? options.seed.trim() : makeSeed();
+    const meta = createWorldMeta({
+      name: options.name && options.name.trim() ? options.name.trim() : 'Новый 3D мир',
+      mode: options.mode || 'survival',
+      worldType: options.worldType || 'normal',
+      singleBiome: options.singleBiome || 'forest',
+      cavernBiome: options.cavernBiome || 'mix',
+      seed,
+      preview: null,
+    });
+    meta.kind = '3d';
+    state3d = createGameState3D(meta);
+    generateWorld3D(state3d);
+    if (!Game.renderer3d.init(canvas3d)) {
+      app.screen = 'menu';
+      menu.render(app);
+      syncBodyUiState();
+      return;
+    }
+    Game.renderer3d.resize(canvas3d, canvas3dOverlay || canvas);
+    Game.renderer3d.setWorld(state3d);
+    input3d.resetMovement();
+    app.currentWorldId = meta.id;
+    app.screen = 'playing3d';
+    app.pendingInitialSave = false;
     menu.render(app);
     syncBodyUiState();
   }
@@ -468,6 +512,7 @@
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    if (canvas3d && Game.renderer3d) Game.renderer3d.resize(canvas3d, canvas3dOverlay || canvas);
   }
 
   window.addEventListener('resize', resize);
@@ -500,6 +545,10 @@
         app.screen = 'new-world';
         if (isTouchClient()) app.newWorld.mode = app.newWorld.mode === 'spectator' ? 'spectator' : 'mobile';
       }
+      if (action === 'open-new-3d') {
+        app.screen = 'new-world-3d';
+        if (app.newWorld.mode === 'mobile') app.newWorld.mode = 'survival';
+      }
       if (action === 'open-load') {
         refreshWorldList();
         app.screen = 'load-worlds';
@@ -517,6 +566,7 @@
         app.screen = 'load-worlds';
       }
       if (action !== 'open-assistant') app.showAssistant = false;
+      if (action === 'create-world-3d') startNewWorld3D(app.newWorld);
       menu.render(app);
       syncBodyUiState();
     },
@@ -919,12 +969,44 @@
     if (!isCreativeMode() && !isSpectatorMode() && !isInfiniteInventoryMode() && state.player.health <= 0) onPlayerDeath();
   }
 
+  function update3D(dt) {
+    if (!state3d) return;
+    state3d.ui.fpsFrames += 1;
+    state3d.ui.fpsAccum += dt;
+    if (state3d.ui.fpsAccum >= 0.25) {
+      state3d.ui.fps = state3d.ui.fpsFrames / state3d.ui.fpsAccum;
+      state3d.ui.fpsFrames = 0;
+      state3d.ui.fpsAccum = 0;
+    }
+    if (input3d.input.keys.Escape && !input3d.input.pointerLocked) {
+      input3d.input.keys.Escape = false;
+      app.screen = 'menu';
+      menu.render(app);
+      syncBodyUiState();
+      return;
+    }
+    const mouse = input3d.consumeMouse();
+    updatePlayer3D(state3d, input3d.input, mouse, dt);
+    updateInteraction3D(state3d, input3d.input, input3d.consumeActions(), dt);
+    updateFluids3D(state3d, dt);
+  }
+
   const camera = createCamera(state, canvas);
   let last = performance.now();
 
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+
+    if (app.screen === 'playing3d') {
+      update3D(dt);
+      if (app.screen === 'playing3d' && state3d) {
+        Game.renderer3d.resize(canvas3d, canvas3dOverlay || canvas);
+        Game.renderer3d.render(state3d, ctx3dOverlay || ctx, canvas3dOverlay || canvas);
+      }
+      requestAnimationFrame(loop);
+      return;
+    }
 
     if (app.screen !== 'playing') {
       update(dt);
