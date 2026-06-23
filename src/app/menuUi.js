@@ -46,7 +46,6 @@
         <div class="menu-subtitle">Подземное выживание, шахты, озёра, вулканы</div>
         <div class="menu-actions">
           <button class="menu-btn menu-btn-primary" data-menu-action="open-new">Создать Новый Мир</button>
-          <button class="menu-btn" data-menu-action="open-new-3d">3D игра</button>
           <button class="menu-btn" data-menu-action="open-load">Загрузить Сохраненные Миры</button>
           ${mobileClient ? '' : '<button class="menu-btn" data-menu-action="open-assistant">Спросить у чат-бота</button>'}
         </div>
@@ -54,12 +53,12 @@
     `;
   }
 
-  function renderNewWorld(app, is3d = false) {
+  function renderNewWorld(app) {
     const model = app.newWorld;
     const mobileClient = matchMedia('(pointer: coarse)').matches || Math.max(navigator.maxTouchPoints || 0, navigator.msMaxTouchPoints || 0) > 0 || window.innerWidth <= 1024;
     return `
       <div class="menu-card menu-form-card">
-        <div class="menu-panel-title">${is3d ? 'Создание 3D Мира' : 'Создание Мира'}</div>
+        <div class="menu-panel-title">Создание Мира</div>
         <label class="menu-field">
           <span>Название мира</span>
           <input type="text" data-menu-input="name" maxlength="40" value="${escapeHtml(model.name)}" placeholder="Новый мир" />
@@ -109,8 +108,6 @@
             ? 'Это выживание с бесконечным творческим каталогом предметов. При смерти игрок возрождается на месте без экрана поражения.'
             : model.mode === 'creative'
               ? 'В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.'
-              : is3d
-                ? 'Первый 3D-прототип создаёт небольшой мир с холмами. Типы мира и биомы будут подключены позже.'
               : model.worldType === 'flat'
                 ? 'Плоский мир без пещер и ландшафта. Подходит для строительства и тестов.'
                 : model.worldType === 'single_biome'
@@ -119,7 +116,7 @@
                 ? 'Хардкор: после смерти нельзя продолжить игру. Можно только удалить мир или стать безвыходным спектатором.'
                 : 'В режиме выживания действуют урон, сытость, дыхание и обычные взаимодействия с миром.'}</div>
         <div class="menu-actions menu-actions-inline">
-          <button class="menu-btn menu-btn-primary" data-menu-action="${is3d ? 'create-world-3d' : 'create-world'}">Создать</button>
+          <button class="menu-btn menu-btn-primary" data-menu-action="create-world">Создать</button>
           <button class="menu-btn" data-menu-action="back-main">Назад</button>
         </div>
       </div>
@@ -165,7 +162,7 @@
 
   function createMenuUi(root, handlers) {
     function render(app) {
-      const playing = app.screen === 'playing' || app.screen === 'playing3d';
+      const playing = app.screen === 'playing';
       root.classList.toggle('is-hidden', playing);
       if (playing) {
         root.innerHTML = '';
@@ -174,7 +171,6 @@
 
       let content = renderMain();
       if (app.screen === 'new-world') content = renderNewWorld(app);
-      if (app.screen === 'new-world-3d') content = renderNewWorld(app, true);
       if (app.screen === 'load-worlds') content = renderLoad(app);
       root.innerHTML = `<div class="menu-shell">${content}</div>`;
     }
