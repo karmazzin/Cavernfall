@@ -129,6 +129,14 @@ body {
   font-weight: 700;
 }
 
+.menu-link-btn {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .menu-btn-primary {
   background: linear-gradient(180deg, #e39b56 0%, #b85d24 100%);
   border-color: rgba(255, 215, 176, 0.4);

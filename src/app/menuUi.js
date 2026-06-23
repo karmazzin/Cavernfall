@@ -48,6 +48,7 @@
           <button class="menu-btn menu-btn-primary" data-menu-action="open-new">Создать Новый Мир</button>
           <button class="menu-btn" data-menu-action="open-load">Загрузить Сохраненные Миры</button>
           ${mobileClient ? '' : '<button class="menu-btn" data-menu-action="open-assistant">Спросить у чат-бота</button>'}
+          <a class="menu-btn menu-link-btn" href="https://karmazzin.github.io/cub-dep/">Cub dep</a>
         </div>
       </div>
     `;
