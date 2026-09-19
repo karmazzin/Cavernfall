@@ -245,6 +245,7 @@
       crafting: {
         open: false,
         tab: 'craft',
+        recipesPage: 0,
         grid: Array.from({ length: 9 }, () => createSlot()),
         cursor: createSlot(),
         result: null,

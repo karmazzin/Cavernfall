@@ -3,7 +3,6 @@
   const { getCraftingLayout } = Game.crafting;
   const { drawItem, drawDurabilityBar } = Game.itemRenderer;
   const { getItemDefinition } = Game.items;
-  const { RECIPES } = Game.craftingRecipes;
   const { getNearestFurnace } = Game.furnaceSystem;
   const { ARMOR_SLOT_ORDER, ensureArmorSlots } = Game.combat;
   const { isCreativeMode, getCreativeEntries, getSpawnEggCreativeEntries } = Game.creativeInventory;
@@ -63,79 +62,72 @@
     ctx.fillText(text, x, y);
   }
 
-  function drawRecipeCard(ctx, recipe, x, y, w, h) {
-    const cell = 12;
-    const gap = 2;
-    const startX = x + 10;
-    const startY = y + 22;
-
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
-
+  function drawRecipeBook(ctx, canvas, state, input, layout) {
+    const area = layout.recipeBook.area;
+    const entries = Game.crafting.getRecipeBookEntries();
+    const { cols, gap, cardW, cardH, pageSize, pageCount } = Game.crafting.getRecipePagination(layout, entries.length);
+    const page = Math.max(0, Math.min(state.crafting.recipesPage || 0, pageCount - 1));
+    state.crafting.recipesPage = page;
+    let tooltipVisible = false;
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 11px Arial';
-    ctx.fillText(recipe.name, x + 10, y + 14);
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText('Книга рецептов', area.x + 12, area.y + 22);
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('Наведи на предмет, чтобы узнать название.', area.x + 12, area.y + 42, area.w - 24);
 
-    for (let row = 0; row < 3; row += 1) {
-      for (let col = 0; col < 3; col += 1) {
-        const cellX = startX + col * (cell + gap);
-        const cellY = startY + row * (cell + gap);
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(cellX, cellY, cell, cell);
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-        ctx.strokeRect(cellX, cellY, cell, cell);
-
-        const rowData = recipe.pattern[row];
-        const itemId = rowData ? rowData[col] ?? null : null;
-        if (itemId != null) drawItem(ctx, itemId, cellX, cellY, 12);
+    function recipeSlot(rect, slot, result = false) {
+      drawSlot(ctx, rect, slot, result);
+      if (slot && input.mouse.x >= rect.x && input.mouse.x <= rect.x + rect.w && input.mouse.y >= rect.y && input.mouse.y <= rect.y + rect.h) {
+        const tip = slotTooltipText(slot);
+        if (tip) { showTooltip(canvas, rect, tip.title, tip.subtitle); tooltipVisible = true; }
       }
     }
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + 57, y + 35);
-    ctx.lineTo(x + 78, y + 35);
-    ctx.lineTo(x + 72, y + 29);
-    ctx.moveTo(x + 78, y + 35);
-    ctx.lineTo(x + 72, y + 41);
-    ctx.stroke();
+    entries.slice(page * pageSize, (page + 1) * pageSize).forEach((recipe, index) => {
+      const x = area.x + 12 + (index % cols) * (cardW + gap);
+      const y = area.y + 54 + Math.floor(index / cols) * (cardH + gap);
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(x, y, cardW, cardH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, cardW, cardH);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px Arial';
+      ctx.fillText(recipe.name, x + 10, y + 18, cardW - 20);
+      if (recipe.smelting) {
+        recipeSlot({ x: x + 10, y: y + 48, w: 34, h: 34 }, { id: recipe.pattern[0][0], count: 1 });
+        ctx.fillStyle = '#ffd36e';
+        ctx.font = '12px Arial';
+        ctx.fillText('Печь + топливо', x + 10, y + 107);
+      } else {
+        for (let row = 0; row < 3; row += 1) {
+          for (let col = 0; col < 3; col += 1) {
+            const id = recipe.pattern[row]?.[col];
+            recipeSlot({ x: x + 10 + col * 28, y: y + 30 + row * 28, w: 24, h: 24 }, id == null ? null : { id, count: 1 });
+          }
+        }
+      }
+      ctx.fillStyle = '#ffd36e';
+      ctx.font = '24px Arial';
+      ctx.fillText('→', x + 102, y + 76);
+      recipeSlot({ x: x + 146, y: y + 48, w: 42, h: 42 }, recipe.result, true);
+    });
 
-    const resultRect = { x: x + 88, y: y + 20, w: 28, h: 28 };
-    drawSlot(ctx, resultRect, recipe.result, true);
-  }
-
-  function drawRecipeHints(ctx, layout) {
-    const area = layout.recipes;
-    if (area.h <= 24) return;
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.fillRect(area.x, area.y, area.w, area.h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(area.x, area.y, area.w, area.h);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = `bold ${layout.mobile ? 15 : 18}px Arial`;
-    ctx.fillText('Подсказки рецептов', area.x + 16, area.y + 26);
-    ctx.font = `${layout.mobile ? 11 : 12}px Arial`;
-    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-    ctx.fillText('ЛКМ: весь стек', area.x + 16, area.y + 44);
-    if (!layout.mobile) ctx.fillText('ПКМ: половина стека или 1 предмет', area.x + 16, area.y + 62);
-
-    const cardW = layout.mobile ? Math.floor((area.w - 42) / 2) : 218;
-    const cardH = layout.mobile ? 58 : 66;
-    const gapY = layout.mobile ? 8 : 10;
-    const startY = area.y + (layout.mobile ? 58 : 82);
-
-    for (let i = 0; i < RECIPES.length; i += 1) {
-      const x = layout.mobile ? area.x + 16 + (i % 2) * (cardW + 10) : area.x + 16;
-      const y = layout.mobile ? startY + Math.floor(i / 2) * (cardH + gapY) : startY + i * (cardH + gapY);
-      if (y + cardH > area.y + area.h - 8) break;
-      drawRecipeCard(ctx, RECIPES[i], x, y, cardW, cardH);
+    const nav = layout.recipeBookNav;
+    for (const [rect, label, enabled] of [[nav.prev, '‹', page > 0], [nav.next, '›', page < pageCount - 1]]) {
+      ctx.fillStyle = enabled ? 'rgba(227,155,86,0.25)' : 'rgba(255,255,255,0.03)';
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.fillStyle = enabled ? '#fff' : '#777';
+      ctx.font = '22px Arial';
+      ctx.fillText(label, rect.x + 12, rect.y + 21);
     }
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Страница ${page + 1} / ${pageCount}`, nav.label.x + nav.label.w / 2, nav.label.y + 19);
+    ctx.textAlign = 'left';
+    if (!tooltipVisible) hideTooltip();
   }
 
   function drawFurnacePanel(ctx, layout, activeFurnace) {
@@ -401,8 +393,8 @@
     ctx.strokeRect(layout.panel.x, layout.panel.y, layout.panel.w, layout.panel.h);
 
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${layout.mobile ? 18 : 24}px Arial`;
-    ctx.fillText('Крафт и инвентарь', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + (layout.mobile ? 30 : 42));
+    ctx.font = `bold ${layout.mobile ? 16 : 24}px Arial`;
+    ctx.fillText(layout.mobile ? 'Инвентарь' : 'Крафт и инвентарь', layout.panel.x + (layout.mobile ? 16 : 32), layout.panel.y + 26);
 
     const activeTab = state.crafting.tab || 'craft';
     for (const [tabId, rect] of Object.entries(layout.tabs)) {
@@ -413,8 +405,16 @@
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.fillStyle = '#fff';
       ctx.font = `${layout.mobile ? 12 : 14}px Arial`;
-      const label = tabId === 'creative' ? 'Творческий' : tabId === 'spawn_eggs' ? 'Яйца призыва' : tabId === 'achievements' ? 'Достижения' : 'Крафт';
-      ctx.fillText(label, rect.x + 10, rect.y + 18);
+      const label = tabId === 'creative' ? 'Творческий' : tabId === 'spawn_eggs' ? 'Яйца призыва' : tabId === 'achievements' ? 'Достижения' : tabId === 'recipes' ? 'Книга рецептов' : 'Крафт';
+      ctx.fillText(label, rect.x + 6, rect.y + 18, rect.w - 12);
+    }
+
+    if (activeTab === 'recipes') {
+      drawRecipeBook(ctx, canvas, state, input, layout);
+      if (state.crafting.cursor && state.crafting.cursor.id != null && state.crafting.cursor.count > 0) {
+        drawSlot(ctx, { x: input.mouse.x - 20, y: input.mouse.y - 20, w: 40, h: 40 }, state.crafting.cursor, true);
+      }
+      return;
     }
 
     if (activeTab === 'achievements') {
@@ -588,7 +588,6 @@
       ctx.fillText(def ? def.label : 'Результат', layout.result.x - 6, layout.result.y + layout.result.h + 18);
     }
 
-    drawRecipeHints(ctx, layout);
     if (activeFurnace) drawFurnacePanel(ctx, layout, activeFurnace);
     if (activeChest) drawChestPanel(ctx, layout, state, activeChest);
     if (trader) drawTradePanel(ctx, layout, state, trader);

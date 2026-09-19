@@ -30,6 +30,7 @@
       creativePage: 0,
       spawnEggPage: 0,
       achievementsPage: 0,
+      recipesPage: 0,
       grid: Array.from({ length: 9 }, () => createSlot()),
       cursor: createSlot(),
       result: null,
@@ -161,7 +162,7 @@
   }
 
   function getCraftingLayout(canvas, state) {
-    const mobile = Game.uiRenderer && Game.uiRenderer.isMobileUi ? Game.uiRenderer.isMobileUi(canvas, state) : canvas.width < 900;
+    const mobile = canvas.width < 1152 || !!(Game.uiRenderer && Game.uiRenderer.isMobileUi && Game.uiRenderer.isMobileUi(canvas, state));
     const compact = mobile && canvas.height < 720;
     const slot = mobile ? (compact ? 26 : canvas.width < 420 ? 30 : 34) : 48;
     const gap = mobile ? 4 : 8;
@@ -185,6 +186,13 @@
       spawn_eggs: { x: panel.x + (mobile ? 204 : 248), y: panel.y + 36, w: mobile ? 108 : 128, h: 28 },
       achievements: { x: panel.x + (mobile ? 318 : 384), y: panel.y + 36, w: mobile ? 122 : 146, h: 28 },
     };
+
+    tabs.recipes = { x: panel.x + panel.w - (mobile ? 140 : 180), y: panel.y + 4, w: mobile ? 126 : 164, h: 28 };
+    if (mobile) {
+      const ids = isCreativeMode(state) ? ['craft', 'creative', 'spawn_eggs', 'achievements'] : ['craft', 'achievements'];
+      const width = (panel.w - 28 - (ids.length - 1) * 4) / ids.length;
+      ids.forEach((id, index) => { tabs[id] = { x: panel.x + 14 + index * (width + 4), y: panel.y + 36, w: width, h: 28 }; });
+    }
 
     const grid = [];
     const gridStartX = panel.x + (mobile ? 16 : 32);
@@ -233,21 +241,12 @@
         : slotRect(panel.x + 250, panel.y + 130, 60),
       inventory,
       hotbar,
-      recipes: mobile
-        ? {
-            x: panel.x + 14,
-            y: panel.y + (compact ? 366 : 466),
-            w: panel.w - 28,
-            h: panel.h - (compact ? 378 : 478),
-            compact: true,
-          }
-        : {
-            x: panel.x + 560,
-            y: panel.y + 76,
-            w: 250,
-            h: 452,
-            compact: false,
-          },
+      recipeBook: { area: { x: panel.x + 14, y: panel.y + 76, w: panel.w - 28, h: panel.h - 132 } },
+      recipeBookNav: {
+        prev: { x: panel.x + 14, y: panel.y + panel.h - 42, w: 34, h: 28 },
+        next: { x: panel.x + panel.w - 48, y: panel.y + panel.h - 42, w: 34, h: 28 },
+        label: { x: panel.x + 56, y: panel.y + panel.h - 42, w: panel.w - 112, h: 28 },
+      },
       furnace: {
         panel: mobile
           ? slotRect(panel.x + panel.w - 158, panel.y + 70, 144, 154)
@@ -521,6 +520,25 @@
     return { rowHeight, pageSize, pageCount };
   }
 
+  function getRecipeBookEntries() {
+    const smelting = Game.furnaceSystem.getSmeltRecipes().map(([input, result]) => {
+      const id = /^\d+$/.test(input) ? Number(input) : input;
+      return { name: Game.items.getItemDefinition(result.id).label, pattern: [[id]], result, smelting: true };
+    });
+    return [...Game.craftingRecipes.RECIPES, ...smelting];
+  }
+
+  function getRecipePagination(layout, totalEntries) {
+    const area = layout.recipeBook.area;
+    const gap = 10;
+    const cols = Math.max(1, Math.floor((area.w - 24 + gap) / 250));
+    const cardW = (area.w - 24 - (cols - 1) * gap) / cols;
+    const cardH = 120;
+    const rows = Math.max(1, Math.floor((area.h - 54 + gap) / (cardH + gap)));
+    const pageSize = cols * rows;
+    return { cols, gap, cardW, cardH, pageSize, pageCount: Math.max(1, Math.ceil(totalEntries / pageSize)) };
+  }
+
   function handleCraftingPointer(state, input, canvas) {
     const crafting = ensureCraftingState(state);
     const armor = ensureArmorSlots(state.player);
@@ -549,6 +567,13 @@
     if (creative && contains(layout.tabs.spawn_eggs, x, y)) {
       crafting.tab = 'spawn_eggs';
       crafting.spawnEggPage = 0;
+      input.mouse.justPressed = false;
+      return true;
+    }
+
+    if (contains(layout.tabs.recipes, x, y)) {
+      crafting.tab = 'recipes';
+      crafting.recipesPage = 0;
       input.mouse.justPressed = false;
       return true;
     }
@@ -637,6 +662,13 @@
         input.mouse.justPressed = false;
         return true;
       }
+    }
+
+    if (crafting.tab === 'recipes') {
+      const { pageCount } = getRecipePagination(layout, getRecipeBookEntries().length);
+      crafting.recipesPage = Math.max(0, Math.min(crafting.recipesPage || 0, pageCount - 1));
+      if (contains(layout.recipeBookNav.prev, x, y) && crafting.recipesPage > 0) crafting.recipesPage -= 1;
+      if (contains(layout.recipeBookNav.next, x, y) && crafting.recipesPage < pageCount - 1) crafting.recipesPage += 1;
     }
 
     if (crafting.tab !== 'craft') {
@@ -768,5 +800,7 @@
     getCreativePagination,
     getSpawnEggPagination,
     getAchievementPagination,
+    getRecipePagination,
+    getRecipeBookEntries,
   };
 })();

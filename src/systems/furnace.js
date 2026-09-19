@@ -216,6 +216,7 @@
     getNearestFurnace,
     getFuelTime,
     getSmeltRecipe,
+    getSmeltRecipes: () => Object.entries(SMELT_RECIPES),
     updateFurnaces,
     getLightSourcesInView,
   };
