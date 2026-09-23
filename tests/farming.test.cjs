@@ -150,7 +150,8 @@ test('soil tracking survives winter and spring ground-cover changes',()=>{
   s.cycleTime=10*G.constants.CYCLE;G.seasons.update(s);G.farming.update(s,5);
   s.cycleTime=15*G.constants.CYCLE;G.seasons.update(s);G.farming.update(s,5);
   const covered=Object.entries(s.seasons.cells).find(([,v])=>v.cover && v.values[3]===B.PINK_FLOWERS);
-  assert.ok(covered);const [x,y]=covered[0].split(',').map(Number);assert.equal(s.world[y+1][x],B.DIRT);
+  assert.ok(covered);const [x,y]=covered[0].split(',').map(Number);assert.equal(s.world[y+1][x],B.GRASS);
+  G.world.setBlock(s,x,y,B.PLANK);G.farming.update(s,5);assert.equal(s.world[y+1][x],B.DIRT);
 });
 test('clicking each visible shepherd offer buys that offer, including live sheep',()=>{
   const G=loadGame(),canvas={width:1280,height:800};
@@ -180,4 +181,18 @@ test('dimension bundles keep growth independent and old worlds initialize withou
   delete other.farming;G.state.applyDimensionState(s,other);G.farming.update(s,30);
   assert.equal(G.farming.stageAt(s,20,50),0);
   G.state.applyDimensionState(s,original);assert.equal(G.farming.stageAt(s,20,50),1);
+});
+
+test('cherry flowers and leaves preserve grass and reset the covering timer',()=>{
+  const G=loadGame(),B=G.blocks.BLOCK;
+  for(const cover of [B.PINK_FLOWERS,B.CHERRY_LEAF]) {
+    const s=fixture(G);
+    G.world.setBlock(s,20,49,B.PLANK);G.farming.update(s,4);
+    G.world.setBlock(s,20,49,cover);G.farming.update(s,10);
+    assert.equal(s.world[50][20],B.GRASS);
+    assert.equal(s.farming.covered['20,50'],undefined);
+    G.world.setBlock(s,20,49,B.PLANK);G.farming.update(s,4.9);
+    assert.equal(s.world[50][20],B.GRASS);
+    G.farming.update(s,0.1);assert.equal(s.world[50][20],B.DIRT);
+  }
 });

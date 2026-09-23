@@ -19,6 +19,7 @@
   const isPlant = id => isCrop(id) || SAPLINGS.has(id);
   const isGrass = id => id === B.GRASS || id === B.AUTUMN_GRASS;
   const isSoil = id => isGrass(id) || id === B.DIRT;
+  const blocksGrassLight = id => id !== B.AIR && id !== B.PINK_FLOWERS && id !== B.CHERRY_LEAF;
   const data = state => state.farming || (state.farming = { plants: {}, covered: {} });
   const freeItems = state => ['creative','infinite_inventory'].includes(state.worldMeta?.mode);
 
@@ -45,7 +46,7 @@
       const cell = getBlock(state,x,yy), above = getBlock(state,x,yy-1), sk = key(x,yy);
       if (runtime) { if (isSoil(cell)) runtime.cells.add(sk); else runtime.cells.delete(sk); }
       if (cell === B.DIRT && above === B.AIR) soilChange(state,x,yy,B.GRASS);
-      if (above === B.AIR) delete d.covered[sk];
+      if (!blocksGrassLight(above)) delete d.covered[sk];
     }
   }
   function tryPlant(state,x,y) {
@@ -150,8 +151,9 @@
     for(const k of runtime.cells) {
       const [x,y]=k.split(',').map(Number), id=getBlock(state,x,y);
       if(!isSoil(id)) {runtime.cells.delete(k); delete d.covered[k];continue;}
-      if(getBlock(state,x,y-1)===B.AIR) {
-        delete d.covered[k]; if(id===B.DIRT) soilChange(state,x,y,B.GRASS);
+      const above = getBlock(state,x,y-1);
+      if(!blocksGrassLight(above)) {
+        delete d.covered[k]; if(id===B.DIRT && above===B.AIR) soilChange(state,x,y,B.GRASS);
       } else if(isGrass(id)) {
         d.covered[k]=(d.covered[k]||0)+dt;
         if(d.covered[k]>=5-1e-9) { soilChange(state,x,y,B.DIRT);delete d.covered[k]; }
