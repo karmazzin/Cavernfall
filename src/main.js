@@ -709,6 +709,8 @@
     clampPlayerHealthToMax(state);
 
     if (!state.crafting.open) state.cycleTime += dt;
+    Game.seasons.update(state);
+    Game.farming.update(state, dt);
     if (state.attackFlash > 0) state.attackFlash -= dt;
     state.autosaveTick += dt;
     if (state.autosaveTick >= 60) {

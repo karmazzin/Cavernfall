@@ -23,6 +23,7 @@
 
   function worldTypeLabel(type) {
     if (type === 'flat') return 'Плоский';
+    if (type === 'seasons') return 'Времена года';
     if (type === 'single_biome') return 'Один биом';
     if (type === 'floating_islands') return 'Летающие острова';
     if (type === 'cavern') return 'Пещерный режим';
@@ -89,6 +90,7 @@
           <span>Тип мира</span>
           <div class="menu-mode-row">
             <button class="menu-mode-btn ${model.worldType === 'normal' ? 'is-active' : ''}" data-menu-world-type="normal">Обычный</button>
+            <button class="menu-mode-btn ${model.worldType === 'seasons' ? 'is-active' : ''}" data-menu-world-type="seasons">Времена года</button>
             <button class="menu-mode-btn ${model.worldType === 'flat' ? 'is-active' : ''}" data-menu-world-type="flat">Плоский</button>
             <button class="menu-mode-btn ${model.worldType === 'single_biome' ? 'is-active' : ''}" data-menu-world-type="single_biome">Один биом</button>
           </div>
@@ -109,7 +111,9 @@
             ? 'Это выживание с бесконечным творческим каталогом предметов. При смерти игрок возрождается на месте без экрана поражения.'
             : model.mode === 'creative'
               ? 'В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.'
-              : model.worldType === 'flat'
+              : model.worldType === 'seasons'
+                ? 'Равнина со сменой лета, осени, зимы и весны каждые 5 игровых дней. Деревья остаются на своих местах, постройки и добытые блоки сохраняются.'
+                : model.worldType === 'flat'
                 ? 'Плоский мир без пещер и ландшафта. Подходит для строительства и тестов.'
                 : model.worldType === 'single_biome'
                   ? `Весь мир будет состоять из одного биома: ${biomeLabel(model.singleBiome)}. Список пополняется всеми основными биомами игры.`

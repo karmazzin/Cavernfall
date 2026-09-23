@@ -31,12 +31,7 @@
   }
 
   function createAnimal(tx, ty) {
-    return {
-      x: tx * TILE + 2, y: ty * TILE, w: 12, h: 10, vx: 0, vy: 0, onGround: false, hp: 4,
-      dir: Math.random() < 0.5 ? -1 : 1, state: 'idle', stateTimer: rand(1.4, 3.2), grazing: false,
-      walkMin: 6, walkMax: 10, moveSpeed: 22, panicSpeed: 60, targetVx: 0, hopCd: 0, obstacleTimer: 0,
-      clickCd: 0, edgeCooldown: 0, commitTimer: 0, stuckTimer: 0, turnLockTimer: 0,
-    };
+    return Game.animalsEntity.createSheep(tx, ty);
   }
 
   function createZombie(tx, ty) {

@@ -6,6 +6,8 @@
 
   function preferredToolForBlock(blockId) {
     if (blockId === BLOCK.STONE || blockId === BLOCK.COAL_ORE || blockId === BLOCK.IRON_ORE || blockId === BLOCK.GOLD_ORE || blockId === BLOCK.DIAMOND_ORE || blockId === BLOCK.BLACKSTONE || blockId === BLOCK.DEEPSTONE || blockId === BLOCK.DEEP_ORE || blockId === BLOCK.FURNACE || blockId === BLOCK.SANDSTONE || blockId === BLOCK.BASALT || blockId === BLOCK.FIRE_SEAL || blockId === BLOCK.FRIENDSHIP_ORE || blockId === BLOCK.WATER_FRAME || blockId === BLOCK.STEAM_ORE || blockId === BLOCK.MAIN_WELL_FRAME) return 'pickaxe';
+    if (Game.blocks.SEASON_WOODS.has(blockId)) return 'axe';
+    if (blockId === BLOCK.AUTUMN_GRASS || blockId === BLOCK.WHEAT_FARMLAND || blockId === BLOCK.CARROT_FARMLAND) return 'shovel';
     if (blockId === BLOCK.WOOD || blockId === BLOCK.SPRUCE_WOOD || blockId === BLOCK.PLANK) return 'axe';
     if (blockId === BLOCK.DIRT || blockId === BLOCK.GRASS || blockId === BLOCK.SAND || blockId === BLOCK.RED_EARTH || blockId === BLOCK.SNOW) return 'shovel';
     if (blockId === BLOCK.COBWEB) return 'sword';

@@ -20,6 +20,7 @@
       { id: 'h_torch', label: '2 факела', costId: ITEM.COIN, cost: 1, rewardId: BLOCK.TORCH, rewardCount: 2 },
     ],
     shepherd: [
+      { id: 'h_sheep', label: '4 живые овцы', costId: ITEM.COIN, cost: 10, sheepCount: 4 },
       { id: 'h_sheep_food', label: '3 сырой баранины', costId: ITEM.COIN, cost: 2, rewardId: ITEM.RAW_MUTTON, rewardCount: 3 },
       { id: 'h_carrot_feed', label: '5 моркови', costId: ITEM.COIN, cost: 1, rewardId: ITEM.CARROT, rewardCount: 5 },
       { id: 'h_torch_shepherd', label: '2 факела', costId: ITEM.COIN, cost: 1, rewardId: BLOCK.TORCH, rewardCount: 2 },
@@ -80,7 +81,17 @@
     const offer = getTraderOffers(trader).find((entry) => entry.id === offerId);
     if (!offer) return false;
     if (!canAfford(state, offer)) return false;
+    const spots = offer.sheepCount ? Game.animalsEntity.findSheepSpots(state, offer.sheepCount) : null;
+    if (offer.sheepCount && !spots) {
+      state.ui.noticeText = 'Рядом нужно свободное место для четырёх овец.';
+      state.ui.noticeTimer = 3;
+      return false;
+    }
     if (!removeItem(state, offer.costId, offer.cost)) return false;
+    if (spots) {
+      for (const spot of spots) state.animals.push(Game.animalsEntity.createSheep(spot.x, spot.y));
+      return true;
+    }
     addToInventory(state, offer.rewardId, offer.rewardCount);
     return true;
   }

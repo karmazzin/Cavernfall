@@ -45,7 +45,9 @@
     return !!(state.worldMeta && state.worldMeta.mode === 'mobile');
   }
 
-  function getBlockDrop(blockId) {
+  function getBlockDrop(blockId, state, tx, ty) {
+    const farmDrop = Game.farming.getDrop(state, tx, ty);
+    if (farmDrop) return farmDrop;
     if (blockId === BLOCK.COAL_ORE) return { id: ITEM.COAL, count: 1 };
     if (blockId === BLOCK.IRON_ORE) return { id: ITEM.RAW_IRON, count: 1 };
     if (blockId === BLOCK.GOLD_ORE) return { id: ITEM.RAW_GOLD, count: 1 };
@@ -684,6 +686,12 @@
     for (let i = state.animals.length - 1; i >= 0; i -= 1) {
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {
+        if (selectedItemId(state) === ITEM.WHEAT) {
+          if (input.mouse.justPressed && dist <= 110) Game.animalsEntity.feedSheep(state, animal);
+          state.breaking = null;
+          input.mouse.justPressed = false;
+          return;
+        }
         if (rightClick) {
           input.mouse.justPressed = false;
           return;
@@ -762,6 +770,13 @@
     }
 
     const block = getBlock(state, tx, ty);
+    const heldId = selectedItemId(state);
+    if (!rightClick && (heldId === ITEM.WHEAT_SEEDS || heldId === ITEM.CARROT_SEEDS || Game.blocks.SAPLINGS.has(heldId))) {
+      if (input.mouse.justPressed) Game.farming.tryPlant(state, tx, ty);
+      state.breaking = null;
+      input.mouse.justPressed = false;
+      return;
+    }
 
     if (rightClick && input.mouse.justPressed) {
       const slot = state.player.hotbar[state.player.selectedSlot];
@@ -834,7 +849,7 @@
 
     if (isCreative(state)) {
       if (!input.mouse.justPressed) return;
-      const drop = getBlockDrop(block);
+      const drop = getBlockDrop(block, state, tx, ty);
       addToInventory(state, drop.id, drop.count);
       if (block === BLOCK.GOLDEN_FLOWER && state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
         state.waterWorldMeta.goldenGarden.flowerTaken = true;
@@ -895,7 +910,7 @@
         input.mouse.justPressed = false;
         return;
       }
-      const drop = getBlockDrop(block);
+      const drop = getBlockDrop(block, state, tx, ty);
       addToInventory(state, drop.id, drop.count);
       if (block === BLOCK.GOLDEN_FLOWER && state.activeDimension === 'water' && state.waterWorldMeta && state.waterWorldMeta.goldenGarden) {
         state.waterWorldMeta.goldenGarden.flowerTaken = true;

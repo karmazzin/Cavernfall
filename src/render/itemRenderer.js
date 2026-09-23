@@ -83,6 +83,14 @@
     const def = getItemDefinition(itemId);
     if (!def) return;
 
+    if (itemId === ITEM.WHEAT_SEEDS || itemId === ITEM.CARROT_SEEDS) {
+      ctx.fillStyle = itemId === ITEM.WHEAT_SEEDS ? '#d8bd66' : '#af7943';
+      for (const [dx,dy] of [[0.3,0.35],[0.58,0.28],[0.42,0.6],[0.68,0.55]]) {
+        ctx.fillRect(x+size*dx,y+size*dy,size*0.12,size*0.18);
+      }
+      ctx.fillStyle = '#669a43'; ctx.fillRect(x+size*0.2,y+size*0.65,size*0.2,size*0.08);
+      return;
+    }
     if (def.kind === 'spawn_egg') {
       const colors = def.spawnEggColors || ['#d9d9d9', '#8c8c8c'];
       ctx.fillStyle = colors[0];

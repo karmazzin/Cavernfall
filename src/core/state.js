@@ -6,6 +6,8 @@
   const { createArmorSlots } = Game.combat;
   const DIMENSION_KEYS = [
     'world',
+    'seasons',
+    'farming',
     'biomeAt',
     'climateAt',
     'surfaceAt',
@@ -189,6 +191,8 @@
       hardcoreDeath: null,
       endingScene: null,
       cycleTime: 0,
+      seasons: null,
+      farming: null,
       satietyTick: 0,
       starvationTick: 0,
       regenTick: 0,

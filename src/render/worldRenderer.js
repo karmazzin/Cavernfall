@@ -72,8 +72,106 @@
     ctx.fillRect(x + 4, y + 4, 8, 8);
   }
 
-  function drawBlock(ctx, id, x, y, time = 0) {
+  function drawBlock(ctx, id, x, y, time = 0, growth = 0) {
+    const stage = Math.min(3, Math.floor(growth / 30));
+    if (Game.blocks.SAPLINGS.has(id)) {
+      const species = Game.farming.SPECIES.find(s => s.id === id);
+      const height = [6, 10, TILE, TILE * 2][stage];
+      const top = y + TILE - height;
+      const center = x + TILE / 2;
+      ctx.fillStyle = BLOCK_COLORS[species.wood];
+      ctx.fillRect(center - 1, top + 3, stage >= 2 ? 3 : 2, height - 3);
+      ctx.fillStyle = BLOCK_COLORS[species.leaf];
+      if (stage < 2) {
+        ctx.fillRect(center - 5, top + 2, 5, 3);
+        ctx.fillRect(center + 1, top, 4, 3);
+        if (stage === 1) ctx.fillRect(center + 1, top + 5, 5, 2);
+      } else if (species.name === 'SPRUCE' || species.name === 'SEQUOIA') {
+        ctx.fillRect(center - 2, top, 4, 4);
+        ctx.fillRect(center - 4, top + 3, 8, height * 0.25);
+        ctx.fillRect(center - 6, top + height * 0.35, 12, height * 0.3);
+      } else {
+        ctx.fillRect(center - 4, top, 8, 3);
+        ctx.fillRect(center - 6, top + 3, 12, Math.max(5, height * 0.45));
+        ctx.fillStyle = species.name === 'CHERRY' ? '#ffe0ed' : '#a8c76a';
+        ctx.fillRect(center - 4, top + 4, 3, 2);
+        ctx.fillRect(center + 2, top + 7, 2, 2);
+      }
+      return;
+    }
+    if (id === BLOCK.WHEAT_FARMLAND || id === BLOCK.CARROT_FARMLAND) {
+      ctx.fillStyle = '#785036'; ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#432f25';
+      for (let row = 2; row < TILE; row += 4) ctx.fillRect(x + 1,y + row,TILE - 2,1);
+      const wheat = id === BLOCK.WHEAT_FARMLAND;
+      const height = [3,6,10,14][stage];
+      for (let i = 0; i < 3; i++) {
+        const xx = x + 3 + i * 5;
+        ctx.fillStyle = wheat && stage === 3 ? '#d5b84d' : '#689c3d';
+        ctx.fillRect(xx,y-height,1,height+1);
+        ctx.fillRect(xx-2,y-height+2,2,2); ctx.fillRect(xx+1,y-height+1,2,2);
+        if(stage>=2) {
+          ctx.fillStyle = wheat ? (growth>=120 ? '#f6da70' : '#a6ae48') : '#ed882c';
+          ctx.fillRect(xx-1,wheat ? y-height : y-2,3,wheat ? 5 : 4);
+        }
+      }
+      if (growth >= 120) { ctx.fillStyle = '#fff1bd'; ctx.fillRect(x+2,y-2,1,1); }
+      return;
+    }
+    if (Game.blocks.SEASON_WOODS.has(id)) {
+      ctx.fillStyle = BLOCK_COLORS[id];
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = id === BLOCK.BIRCH_WOOD ? '#494239' : id === BLOCK.CHERRY_WOOD ? '#753e4a' : '#645341';
+      for (let i = 0; i < 4; i++) {
+        const yy = (i * 5 + 2) % TILE;
+        ctx.fillRect(x + (i % 2 ? 9 : 2), y + yy, id === BLOCK.BIRCH_WOOD ? 5 : 2, 2);
+      }
+      ctx.fillStyle = 'rgba(255,225,180,0.22)';
+      ctx.fillRect(x + 5, y, 2, TILE);
+      return;
+    }
+    if (Game.blocks.SEASON_LEAVES.has(id)) {
+      ctx.fillStyle = BLOCK_COLORS[id];
+      ctx.fillRect(x, y, TILE, TILE);
+      const colors = id === BLOCK.AUTUMN_LEAF ? ['#f5ae43','#b74d28','#e88c2c'] : id === BLOCK.CHERRY_LEAF ? ['#ffdaea','#d77ca7','#f5bdd7'] : ['#a0bb63','#4c813d','#80a354'];
+      for (let i = 0; i < 9; i++) {
+        ctx.fillStyle = colors[i % 3];
+        ctx.fillRect(x + (i * 7 + 1) % 14, y + (i * 5 + 2) % 14, 2, 2);
+      }
+      return;
+    }
+    if (id === BLOCK.LEAF_LITTER || id === BLOCK.PINK_FLOWERS) {
+      const colors = id === BLOCK.LEAF_LITTER ? ['#d8792b','#f4b343','#a95028'] : ['#ed95be','#ffd1e4','#d972a1'];
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = colors[i % 3];
+        ctx.fillRect(x + i * 3, y + TILE - 2 - i % 3, 2, 2);
+        if (id === BLOCK.PINK_FLOWERS) ctx.fillRect(x + i * 3 + 1, y + TILE - 3 - i % 3, 1, 1);
+      }
+      return;
+    }
+    if (id === BLOCK.CHANTERELLE) {
+      ctx.fillStyle = '#c48a2e';
+      ctx.fillRect(x + 5, y + 11, 2, 5);
+      ctx.fillRect(x + 11, y + 12, 2, 4);
+      ctx.fillStyle = '#f3b83e';
+      ctx.fillRect(x + 2, y + 9, 8, 2);
+      ctx.fillRect(x + 4, y + 11, 4, 2);
+      ctx.fillRect(x + 9, y + 11, 6, 2);
+      return;
+    }
+    if (id === BLOCK.AUTUMN_GRASS) {
+      ctx.fillStyle = '#8d5a35';
+      ctx.fillRect(x,y,TILE,TILE);
+      ctx.fillStyle = '#d99738';
+      ctx.fillRect(x,y,TILE,4);
+      ctx.fillStyle = '#edb64b';
+      for (let i=0;i<4;i++) ctx.fillRect(x+i*4,y+3,2,2);
+      return;
+    }
     if (
+      id !== BLOCK.SMALL_WHITE_MUSHROOM &&
+      id !== BLOCK.SMALL_FLY_AGARIC &&
+      id !== BLOCK.SMALL_GLOW_MUSHROOM &&
       id !== BLOCK.TORCH &&
       id !== BLOCK.CACTUS &&
       id !== BLOCK.DRY_BUSH &&

@@ -4,7 +4,10 @@
   const { BLOCK } = Game.blocks;
   const BIOME_LABELS = {
     plains: 'Равнина',
+    field: 'Поле',
     forest: 'Лес',
+    autumn_forest: 'Осенний лес',
+    cherry_forest: 'Вишнёвый лес',
     forest_clearing: 'Лесная поляна',
     sequoia_forest: 'Секвойный лес',
     mountains: 'Горы',
@@ -40,7 +43,7 @@
     lake: 'Озеро',
     void: 'Пустота',
   };
-  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing']);
+  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing', 'field']);
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake', 'ash_fields', 'blazing_gardens']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden', 'coral_gardens', 'glow_kelp_fields']);
@@ -68,6 +71,8 @@
   }
 
   function blockSolid(id) {
+    if (Game.blocks.SAPLINGS.has(id)) return false;
+    if (Game.blocks.SEASON_WOODS.has(id) || Game.blocks.SEASON_LEAVES.has(id) || Game.blocks.GROUND_COVER.has(id)) return false;
     if (id === BLOCK.DOOR) return true;
     return (
       id !== BLOCK.AIR &&
@@ -130,7 +135,10 @@
 
   function setBlock(state, tx, ty, id) {
     if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) return;
+    if (Game.seasons) Game.seasons.markChanged(state, tx, ty, id);
+    const previous = state.world[ty][tx];
     state.world[ty][tx] = id;
+    if (Game.farming) Game.farming.onBlockChanged(state, tx, ty, previous, id);
   }
 
   function isSolidAtPixel(state, px, py, ent = null) {

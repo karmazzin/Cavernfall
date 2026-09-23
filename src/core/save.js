@@ -79,6 +79,8 @@
     return {
       worldMeta: state.worldMeta,
       world: state.world,
+      seasons: state.seasons,
+      farming: state.farming,
       biomeAt: state.biomeAt,
       climateAt: state.climateAt,
       surfaceAt: state.surfaceAt,
@@ -240,6 +242,8 @@
       delete state.worldMeta.modId;
       delete state.worldMeta.modName;
       delete state.worldMeta.modSummary;
+      state.farming = data.farming && typeof data.farming === 'object' ? data.farming : null;
+      state.seasons = data.seasons && typeof data.seasons === 'object' ? data.seasons : null;
       state.world = Array.isArray(data.world) ? data.world : state.world;
       state.biomeAt = Array.isArray(data.biomeAt) ? data.biomeAt : state.biomeAt;
       state.climateAt = Array.isArray(data.climateAt) ? data.climateAt : state.climateAt;

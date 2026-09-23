@@ -834,7 +834,7 @@
     const startX = Math.max(0, Math.floor(renderCamera.x / TILE));
     const endX = Math.min(WORLD_W - 1, Math.ceil((renderCamera.x + view.width) / TILE));
     const startY = Math.max(0, Math.floor(renderCamera.y / TILE));
-    const endY = Math.min(WORLD_H - 1, Math.ceil((renderCamera.y + view.height) / TILE));
+    const endY = Math.min(WORLD_H - 1, Math.ceil((renderCamera.y + view.height) / TILE) + 1);
 
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
@@ -854,7 +854,7 @@
           const door = getDoorAt(state, x, y);
           drawDoor(ctx, sx, sy, !!(door && door.open), !!(door && door.upper));
         } else {
-          drawBlock(ctx, id, sx, sy, time);
+          drawBlock(ctx, id, sx, sy, time, state.farming?.plants?.[`${x},${y}`]?.elapsed || 0);
         }
       }
     }

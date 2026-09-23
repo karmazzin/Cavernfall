@@ -153,8 +153,8 @@
     else openCrafting(state);
   }
 
-  function slotRect(x, y, size) {
-    return { x, y, w: size, h: size };
+  function slotRect(x, y, size, height = size) {
+    return { x, y, w: size, h: height };
   }
 
   function contains(rect, px, py) {
@@ -269,7 +269,7 @@
       trade: {
         panel: mobile
           ? slotRect(panel.x + panel.w - 158, panel.y + 394, 144, Math.max(108, panel.h - 404))
-          : slotRect(panel.x + 828, panel.y + 324, 260, 204),
+          : slotRect(panel.x + 828, panel.y + 324, 260, 224),
       },
       creative: {
         area: mobile
@@ -760,12 +760,13 @@
       const offers = getTraderOffers(trader);
       const offerHeight = layout.mobile ? 26 : 34;
       const startX = layout.trade.panel.x + 10;
-      const startY = layout.trade.panel.y + 30;
+      const startY = layout.trade.panel.y + 46;
       for (let i = 0; i < offers.length; i += 1) {
         const rect = slotRect(startX, startY + i * (offerHeight + 6), layout.trade.panel.w - 20, offerHeight);
         if (!contains(rect, x, y)) continue;
         const traded = performTrade(state, trader, offers[i].id);
-        crafting.tradeStatus = traded ? `Получено: ${offers[i].label}` : 'Недостаточно монет';
+        crafting.tradeStatus = traded ? `Получено: ${offers[i].label}`
+          : Game.tradeSystem.canAfford(state, offers[i]) && offers[i].sheepCount ? 'Нет места для овец' : 'Недостаточно монет';
         if (traded && Game.speechSystem && Game.speechSystem.recordTrade) Game.speechSystem.recordTrade(state, trader);
         input.mouse.justPressed = false;
         return true;

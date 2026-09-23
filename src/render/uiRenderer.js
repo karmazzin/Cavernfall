@@ -74,6 +74,8 @@
   }
 
   function biomeLabel(biomeKey) {
+    if (biomeKey === 'autumn_forest') return 'Осенний лес';
+    if (biomeKey === 'cherry_forest') return 'Вишнёвый лес';
     if (biomeKey === 'forest') return 'Лес';
     if (biomeKey === 'forest_clearing') return 'Лесная поляна';
     if (biomeKey === 'sequoia_forest') return 'Секвойный лес';
@@ -366,7 +368,7 @@
     const infoY2 = mobile ? panelY + (creative ? 36 : 38) : panelY + (creative ? 46 : 46);
     const infoY3 = mobile ? panelY + 56 : panelY + 68;
     ctx.font = `${mobile ? 11 : 16}px Arial`;
-    ctx.fillText(`Биом: ${biome}`, infoX, infoY1);
+    if (state.worldMeta.worldType !== 'seasons') ctx.fillText(`Биом: ${biome}`, infoX, infoY1);
     ctx.fillText(`Фаза: ${phaseLabel(phase.phase)}`, infoX, infoY2);
     if (!creative && !mobileMode) ctx.fillText(`Броня: ${getArmorValue(state)}`, infoX, infoY3);
     if (!mobile && !creative && !mobileMode) ctx.fillText(`В воде: ${state.player.inWater ? 'Да' : 'Нет'}`, panelX + 148, infoY3);

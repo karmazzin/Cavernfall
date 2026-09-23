@@ -189,6 +189,12 @@
     const y = animal.y - camera.y;
     const walk = Math.sin(time * 10 + animal.x * 0.05) * Math.min(2, Math.abs(animal.vx) / 18);
     const bob = animal.grazing ? 2 : Math.sin(time * 5 + animal.x * 0.05) * 0.5;
+    if (animal.loveTime > 0) {
+      const hy = y - 7 + Math.sin(time * 4);
+      ctx.fillStyle = '#ee6687';
+      ctx.fillRect(x+3,hy,2,2); ctx.fillRect(x+6,hy,2,2);
+      ctx.fillRect(x+3,hy+2,5,2); ctx.fillRect(x+4,hy+4,3,1); ctx.fillRect(x+5,hy+5,1,1);
+    }
     ctx.fillStyle = '#f3ecd8';
     ctx.fillRect(x + 1, y + 2, 10, 7);
     ctx.fillStyle = '#ffffff';

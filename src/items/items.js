@@ -45,6 +45,8 @@
     FRIENDSHIP_INGOT: 'friendship_ingot',
     STEAM_INGOT: 'steam_ingot',
     WHEAT: 'wheat',
+    WHEAT_SEEDS: 'wheat_seeds',
+    CARROT_SEEDS: 'carrot_seeds',
     FLOUR: 'flour',
     DOUGH: 'dough',
     BREAD: 'bread',
@@ -115,6 +117,7 @@
   };
 
   const BLOCK_LABELS = {
+    ...Game.blocks.NEW_BLOCK_LABELS,
     [BLOCK.GRASS]: 'Трава',
     [BLOCK.DIRT]: 'Земля',
     [BLOCK.STONE]: 'Камень',
@@ -285,6 +288,8 @@
     },
     [ITEM.FRIENDSHIP_INGOT]: { id: ITEM.FRIENDSHIP_INGOT, label: 'Дружный слиток', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.STEAM_INGOT]: { id: ITEM.STEAM_INGOT, label: 'Парный слиток', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.WHEAT_SEEDS]: { id: ITEM.WHEAT_SEEDS, label: 'Семена пшеницы', kind: 'material', stackLimit: STACK_LIMIT },
+    [ITEM.CARROT_SEEDS]: { id: ITEM.CARROT_SEEDS, label: 'Семена моркови', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.WHEAT]: { id: ITEM.WHEAT, label: 'Пшеница', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.FLOUR]: { id: ITEM.FLOUR, label: 'Мука', kind: 'material', stackLimit: STACK_LIMIT },
     [ITEM.DOUGH]: { id: ITEM.DOUGH, label: 'Тесто', kind: 'material', stackLimit: STACK_LIMIT },

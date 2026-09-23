@@ -52,6 +52,17 @@
       ];
     }
 
+    if (!location.inCave && location.biome === 'cherry_forest') {
+      return [{ type: WEATHER.CLEAR, weight: 1, intensity: 0 }];
+    }
+    if (!location.inCave && location.biome === 'autumn_forest') {
+      return [
+        { type: WEATHER.CLEAR, weight: 0.24, intensity: 0 },
+        { type: WEATHER.RAIN, weight: 0.68, intensity: randRange(0.4, 0.85) },
+        { type: WEATHER.FOG, weight: 0.08, intensity: randRange(0.18, 0.4) },
+      ];
+    }
+
     if (location.biome === 'desert') {
       return [
         { type: WEATHER.CLEAR, weight: 0.34, intensity: 0 },
@@ -86,10 +97,6 @@
     }
 
     return [{ type: WEATHER.CLEAR, weight: 1, intensity: 0 }];
-  }
-
-  function isTypeAllowed(state, location, type) {
-    return weatherPool(state, location).some((entry) => entry.type === type);
   }
 
   function pickWeighted(pool) {
@@ -127,7 +134,7 @@
     const key = contextKey(state, location);
 
     if (!weather.contextKey) setWeatherTarget(state, location, true);
-    else if (weather.contextKey !== key && !isTypeAllowed(state, location, weather.targetType)) setWeatherTarget(state, location, true);
+    else if (weather.contextKey !== key) setWeatherTarget(state, location, true);
 
     weather.timer -= dt;
     if (weather.timer <= 0) setWeatherTarget(state, location, false);
@@ -162,6 +169,7 @@
 
   Game.weatherSystem = {
     WEATHER,
+    weatherPool,
     ensureWeatherState,
     updateWeather,
     getWeatherState,

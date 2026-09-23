@@ -4,6 +4,9 @@
   const { ITEM } = Game.items;
 
   const RECIPES = [
+    { name: 'Семена пшеницы', pattern: [[ITEM.WHEAT]], result: { id: ITEM.WHEAT_SEEDS, count: 4 } },
+    { name: 'Семена моркови', pattern: [[ITEM.CARROT]], result: { id: ITEM.CARROT_SEEDS, count: 4 } },
+    ...[...Game.blocks.SEASON_WOODS].map(id => ({ name: 'Обычные доски', pattern: [[id]], result: { id: BLOCK.PLANK, count: 4 } })),
     {
       name: 'Обычные доски',
       pattern: [[BLOCK.WOOD]],

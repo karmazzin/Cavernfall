@@ -136,7 +136,7 @@
   function climateForBiome(biome) {
     if (biome === 'mountains' || biome === 'snow_plains') return CLIMATE.COLD;
     if (biome === 'desert' || biome === 'volcano') return CLIMATE.WARM;
-    if (biome === 'plains' || biome === 'forest' || biome === 'sequoia_forest') return CLIMATE.TEMPERATE;
+    if (biome === 'autumn_forest' || biome === 'cherry_forest' || biome === 'plains' || biome === 'forest' || biome === 'sequoia_forest') return CLIMATE.TEMPERATE;
     return CLIMATE.ANY;
   }
 
@@ -147,6 +147,9 @@
       return Math.random() < 0.58 ? 'snow_plains' : 'mountains';
     }
     if (climate === CLIMATE.WARM) return 'desert';
+    const woodlandRoll = Math.random();
+    if (woodlandRoll < 0.2) return 'autumn_forest';
+    if (woodlandRoll < 0.34) return 'cherry_forest';
     if (lastBiome === 'sequoia_forest') return Math.random() < 0.68 ? 'forest' : 'plains';
     if (lastBiome === 'forest') return Math.random() < 0.62 ? 'plains' : 'forest';
     if (lastBiome === 'plains') return Math.random() < 0.38 ? 'forest' : 'plains';
@@ -1616,6 +1619,9 @@
   }
 
   function retrofitWorldFeatures(state) {
+    // This world type is generated with current features from the start.
+    // Legacy retrofits must never replace a seasonal player's terrain on reload.
+    if (state.worldMeta && state.worldMeta.worldType === 'seasons') return;
     if (!('airCaves' in state)) state.airCaves = null;
     if (!('airGuardian' in state)) state.airGuardian = null;
     const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
@@ -1973,6 +1979,7 @@
 
     for (let tx = 4; tx < WORLD_W - 4; tx += 1) {
       const biome = state.biomeAt[tx];
+      if (biome === 'autumn_forest' || biome === 'cherry_forest' || state.worldMeta.worldType === 'seasons') continue;
       if (biome === 'lake' || biome === 'mountains' || biome === 'volcano' || biome === 'desert' || surfaceFluidColumns.has(tx)) continue;
       const treeChance = biome === 'forest' ? 0.22 : biome === 'snow_plains' ? 0.045 : 0.01;
       if (Math.random() >= treeChance) continue;
@@ -3592,6 +3599,12 @@
       edges: [],
       settlements: [],
     };
+
+    if (worldType === 'seasons') {
+      generateSingleBiomeWorld(state, 'plains');
+      generateAirCaves(state);
+      return;
+    }
 
     if (worldType === 'flat') {
       generateFlatWorld(state);
@@ -5969,7 +5982,12 @@
   }
 
   Game.generation = {
-    generateWorld,
+    generateWorld(state) {
+      generateWorld(state);
+      Game.farming.generateFields(state);
+      Game.seasons.decorate(state);
+      if (state.worldMeta.worldType === 'seasons') Game.seasons.initialize(state);
+    },
     generateFireDimensionBundle,
     generateWaterDimensionBundle,
     generateAirDimensionBundle,
