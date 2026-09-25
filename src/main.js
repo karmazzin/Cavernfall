@@ -164,6 +164,8 @@
 
   function syncBodyUiState() {
     const playing = app.screen === 'playing';
+    if (playing) window.addEventListener('beforeunload', handleWorldUnload);
+    else window.removeEventListener('beforeunload', handleWorldUnload);
     const overlayHidden = !!(playing && (state.pause.open || (state.crafting && state.crafting.open)));
     document.body.classList.toggle('ui-overlay-hidden', overlayHidden);
     document.body.classList.toggle('menu-open', !playing);
@@ -196,18 +198,49 @@
 
   function capturePreview() {
     try {
-      return canvas.toDataURL('image/jpeg', 0.72);
+      const thumbnail = document.createElement('canvas');
+      thumbnail.width = 240;
+      thumbnail.height = Math.round(240 * canvas.height / canvas.width);
+      thumbnail.getContext('2d').drawImage(canvas, 0, 0, thumbnail.width, thumbnail.height);
+      return thumbnail.toDataURL('image/jpeg', 0.55);
     } catch (error) {
       return null;
     }
   }
 
-  function saveCurrentWorld() {
+  function handleWorldUnload(event) {
+    Game.worldExit.beforeUnload(event, app, state);
+  }
+
+  let pendingWorldSave = null;
+  function saveCurrentWorld(withPreview = false, flush = false) {
     if (app.screen !== 'playing' || !state.worldMeta || !state.worldMeta.id) return false;
-    const preview = capturePreview();
+    if (pendingWorldSave) return flush ? pendingWorldSave.then(() => saveCurrentWorld(withPreview, true)) : pendingWorldSave;
+    const preview = withPreview ? capturePreview() : null;
+    const finish = result => {
+      if (result) {
+        refreshWorldList();
+        if (state.ui.noticeText === state.ui.lastSaveError) {
+          state.ui.noticeText = '';
+          state.ui.noticeTimer = 0;
+        }
+        state.ui.lastSaveError = null;
+      } else {
+        const error = state.saveError || 'Не удалось сохранить мир.';
+        if (state.ui.lastSaveError !== error) {
+          state.ui.noticeText = error;
+          state.ui.noticeTimer = 5;
+          state.ui.lastSaveError = error;
+        }
+      }
+      return result;
+    };
     const result = saveWorld(state, preview);
-    if (result) refreshWorldList();
-    return result;
+    if (result && typeof result.then === 'function') {
+      pendingWorldSave = result.then(finish).finally(() => { pendingWorldSave = null; });
+      return pendingWorldSave;
+    }
+    return finish(result);
   }
 
   function seedStarterInventory() {
@@ -240,6 +273,7 @@
       worldType: options.worldType || 'normal',
       singleBiome: options.singleBiome || 'forest',
       cavernBiome: options.cavernBiome || 'mix',
+      landscape3d: !!options.landscape3d,
       seed,
       preview: null,
     });
@@ -253,9 +287,11 @@
 
   function loadExistingWorld(worldId) {
     const loadedState = loadWorld(worldId);
+    if (loadedState && typeof loadedState.then === 'function') return loadedState.then(() => loadExistingWorld(worldId));
     if (!loadedState) return false;
     replaceState(loadedState);
     retrofitWorldFeatures(state);
+    Game.layers.initialize(state);
     ensureDimensions(state);
     app.currentWorldId = worldId;
     app.screen = 'playing';
@@ -276,11 +312,20 @@
   }
 
   function exitToMainMenu() {
-    saveCurrentWorld();
-    closePause();
-    app.screen = 'menu';
-    menu.render(app);
-    syncBodyUiState();
+    if (state.pause.savingExit) return;
+    const finish = saved => {
+      state.pause.savingExit = false;
+      if (!saved) return;
+      closePause();
+      app.screen = 'menu';
+      menu.render(app);
+      syncBodyUiState();
+    };
+    const result = Game.worldExit.confirmMenuExit(state, () => saveCurrentWorld(false, true));
+    if (result && typeof result.then === 'function') {
+      state.pause.savingExit = true;
+      result.then(finish);
+    } else finish(result);
   }
 
   function contains(rect, x, y) {
@@ -449,7 +494,14 @@
         state.settings.ambientNpcSpeech = state.settings.ambientNpcSpeech === false;
         state.pause.statusText = state.settings.ambientNpcSpeech ? 'Фоновые реплики включены' : 'Фоновые реплики выключены';
       }
-      if (button.id === 'save') state.pause.statusText = saveCurrentWorld() ? 'Игра сохранена' : 'Сохранение не удалось';
+      if (button.id === 'save') {
+        const saved = saveCurrentWorld(true);
+        const show = ok => { state.pause.statusText = ok ? 'Игра сохранена' : (state.saveError || 'Сохранение не удалось'); };
+        if (saved && typeof saved.then === 'function') {
+          state.pause.statusText = 'Сохранение мира…';
+          saved.then(show);
+        } else show(saved);
+      }
       if (button.id === 'fullscreen') input.toggleFullscreen();
       if (button.id === 'restart') state.pause.confirmRestart = true;
       if (button.id === 'restart_no') state.pause.confirmRestart = false;
@@ -470,6 +522,10 @@
     canvas.height = window.innerHeight;
   }
 
+  window.addEventListener('pagehide', () => saveCurrentWorld());
+  document.addEventListener?.('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveCurrentWorld();
+  });
   window.addEventListener('resize', resize);
   resize();
   ensureCraftingState(state);
@@ -484,6 +540,7 @@
     },
     onWorldTypeChange(worldType) {
       app.newWorld.worldType = worldType;
+      if (worldType === 'infinite_village' && !Game.world.getVillageBiomes().includes(app.newWorld.singleBiome)) app.newWorld.singleBiome = 'plains';
       if (worldType !== 'single_biome') app.newWorld.singleBiome = app.newWorld.singleBiome || 'forest';
       menu.render(app);
     },
@@ -512,7 +569,8 @@
       if (action === 'create-world') startNewWorld(app.newWorld);
       if (action === 'load-world' && worldId) loadExistingWorld(worldId);
       if (action === 'delete-world' && worldId) {
-        deleteWorld(worldId);
+        const deleted = deleteWorld(worldId);
+        if (deleted && typeof deleted.then === 'function') deleted.then(() => { refreshWorldList(); menu.render(app); });
         refreshWorldList();
         app.screen = 'load-worlds';
       }
@@ -557,6 +615,7 @@
   migrateLegacySave();
   if (Game.saveSystem.purgeMods) Game.saveSystem.purgeMods();
   refreshWorldList();
+  Game.worldStorage.ready.then(() => { refreshWorldList(); menu.render(app); });
   menu.render(app);
   syncBodyUiState();
 
@@ -712,13 +771,9 @@
     Game.seasons.update(state);
     Game.farming.update(state, dt);
     if (state.attackFlash > 0) state.attackFlash -= dt;
-    state.autosaveTick += dt;
-    if (state.autosaveTick >= 60) {
-      saveCurrentWorld();
-      state.autosaveTick = 0;
-    }
 
-    updatePlayer(state, input, dt);
+    Game.layers.withLayer(state, 1, () => updatePlayer(state, input, dt));
+    Game.layers.simulate(state, () => {
     updateAnimals(state, dt);
     updateZombies(state, dt);
     updateSpiders(state, dt);
@@ -735,17 +790,18 @@
     updateHumans(state, dt);
     updateDwarves(state, dt);
     updateFood(state, dt);
+    });
     updateFirePyramid(state, dt);
     if (updateWaterWell) updateWaterWell(state, dt);
     if (updateSteamQuest) updateSteamQuest(state, dt);
     if (updateInvisibility) updateInvisibility(state, dt);
     if (updateUndergroundQuest) updateUndergroundQuest(state, dt);
     if (updateEndQuest) updateEndQuest(state, dt);
-    updatePortals(state, dt);
+    Game.layers.withLayer(state, 1, () => updatePortals(state, dt));
     tryFireRoofWarp();
     updateFurnaces(state, dt);
-    updateSatiety(state, input, dt);
-    updateBreath(state, dt);
+    Game.layers.withLayer(state, 1, () => updateSatiety(state, input, dt));
+    Game.layers.withLayer(state, 1, () => updateBreath(state, dt));
     updateWeather(state, dt);
     updateAchievements(state, dt);
     updateSpeech(state, dt);
@@ -888,7 +944,7 @@
     state.fluidTick += dt;
     if (state.fluidTick >= 0.18) {
       state.fluidTick = 0;
-      updateFluids(state);
+      for (const layer of [1, 2, 3]) Game.layers.withLayer(state, layer, () => updateFluids(state));
     }
 
     for (const animal of state.animals) {
@@ -927,6 +983,13 @@
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    if (app.screen === 'playing') {
+    state.autosaveTick += dt;
+    if (state.autosaveTick >= (state.saveError ? 30 : 5)) {
+      saveCurrentWorld();
+      state.autosaveTick = 0;
+    }
+    }
 
     if (app.screen !== 'playing') {
       update(dt);

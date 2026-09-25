@@ -6,6 +6,9 @@
   const { createArmorSlots } = Game.combat;
   const DIMENSION_KEYS = [
     'world',
+    'blockLayers',
+    'backdrop',
+    'layersVersion',
     'seasons',
     'farming',
     'biomeAt',
@@ -107,6 +110,7 @@
         id: worldMeta && worldMeta.id ? worldMeta.id : null,
         name: worldMeta && worldMeta.name ? worldMeta.name : 'Новый мир',
         seed: worldMeta && worldMeta.seed ? worldMeta.seed : '',
+        landscape3d: !!worldMeta?.landscape3d,
         mode: worldMeta && worldMeta.mode ? worldMeta.mode : 'survival',
         worldType: worldMeta && worldMeta.worldType ? worldMeta.worldType : 'normal',
         singleBiome: worldMeta && worldMeta.singleBiome ? worldMeta.singleBiome : 'forest',
@@ -115,6 +119,9 @@
         updatedAt: worldMeta && worldMeta.updatedAt ? worldMeta.updatedAt : Date.now(),
       },
       world: createGrid(),
+      blockLayers: {},
+      backdrop: null,
+      layersVersion: 0,
       biomeAt: Array(WORLD_W).fill('plains'),
       climateAt: Array(WORLD_W).fill('temperate'),
       surfaceAt: Array(WORLD_W).fill(SURFACE_BASE),
@@ -295,6 +302,10 @@
   function applyDimensionState(state, bundle) {
     if (!bundle) return;
     for (const key of DIMENSION_KEYS) state[key] = bundle[key];
+    if (Game.generation) {
+      Game.generation.retrofitVillageBackWalls(state);
+      Game.generation.retrofitVillageWorkyards(state);
+    }
   }
 
   function ensureDimensions(state) {
@@ -323,6 +334,7 @@
     state.dimensions[state.activeDimension] = captureDimensionState(state);
     state.activeDimension = name;
     applyDimensionState(state, state.dimensions[name]);
+    if (Game.layers) Game.layers.initialize(state);
     state.breaking = null;
     if (state.crafting) {
       state.crafting.chestOpenKey = null;

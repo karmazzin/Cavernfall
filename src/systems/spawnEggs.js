@@ -10,20 +10,20 @@
     return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'infinite_inventory'));
   }
 
-  function findSpawnSpot(state, tx, ty, wTiles = 1, hTiles = 2) {
+  function findSpawnSpot(state, tx, ty, wTiles = 1, hTiles = 2, layer = 1) {
     for (let dy = 0; dy >= -4; dy -= 1) {
       const baseTy = ty + dy;
       let clear = true;
       for (let oy = 0; oy < hTiles; oy += 1) {
         for (let ox = 0; ox < wTiles; ox += 1) {
-          const block = getBlock(state, tx + ox, baseTy - oy);
+          const block = getBlock(state, tx + ox, baseTy - oy, layer);
           if (block !== Game.blocks.BLOCK.AIR && block !== Game.blocks.BLOCK.WATER) clear = false;
         }
       }
       if (!clear) continue;
       let solidFloor = false;
       for (let ox = 0; ox < wTiles; ox += 1) {
-        if (blockSolid(getBlock(state, tx + ox, baseTy + 1))) solidFloor = true;
+        if (Game.layers.supportAt(state, (tx + ox) * TILE + 1, (baseTy + 1) * TILE, {layer})) solidFloor = true;
       }
       if (solidFloor) return { x: tx * TILE + 2, y: (baseTy - (hTiles - 1)) * TILE };
     }
@@ -279,20 +279,25 @@
     return EGG_DEFS.map((entry) => createItemStack(entry.id, 64));
   }
 
-  function tryUseSelectedSpawnEgg(state, tx, ty) {
+  function tryUseSelectedSpawnEgg(state, tx, ty, layer = 1) {
     const slot = state.player.hotbar[state.player.selectedSlot];
     if (!slot || !slot.id || !isSpawnEgg(slot.id)) return false;
     const egg = EGG_MAP[slot.id];
-    const spot = findSpawnSpot(state, tx, ty, egg.wTiles || 1, egg.hTiles || 2);
+    const spot = findSpawnSpot(state, tx, ty, egg.wTiles || 1, egg.hTiles || 2, layer);
     if (!spot) {
       state.ui.noticeText = 'Нет места для призыва.';
       state.ui.noticeTimer = 2.5;
       return true;
     }
+    const before = new Set(Game.layers.arrays.flatMap(key => state[key] || []));
+    const bosses = Object.fromEntries(Game.layers.singles.map(key => [key, state[key]]));
     egg.spawn(state, tx, Math.floor(spot.y / TILE));
+    for (const key of Game.layers.arrays) for (const entity of state[key] || []) if (!before.has(entity)) entity.layer = layer;
+    for (const key of Game.layers.singles) if (state[key] && state[key] !== bosses[key]) state[key].layer = layer;
     if (!isCreativeLike(state)) removeFromSlot(slot, 1);
     state.ui.noticeText = 'Моб призван.';
     state.ui.noticeTimer = 2;
+    Game.layers.notify(state, layer, true);
     return true;
   }
 

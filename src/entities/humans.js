@@ -25,8 +25,14 @@
   };
 
   const MAX_HUMANS = 40;
+  const populationLimit = state => state.worldMeta?.worldType === 'infinite_village' ? 64 : MAX_HUMANS;
+
+  // Nested lookups during a tick share its already-normalized settlement data.
+  // Outside the tick (combat, trade, loading), validation remains independent.
+  const normalizedUpdates = new WeakSet();
 
   function ensureSettlements(state) {
+    if (normalizedUpdates.has(state)) return;
     if (!state.humanSettlements || typeof state.humanSettlements !== 'object') {
       state.humanSettlements = { villages: [], nodes: [], edges: [] };
     }
@@ -141,7 +147,7 @@
   }
 
   function spawnResident(state, house, village) {
-    if (state.humans.length >= MAX_HUMANS || house.residentId) return false;
+    if (state.humans.length >= populationLimit(state) || house.residentId) return false;
     const human = createHuman(house, village);
     house.residentId = human.id;
     state.humans.push(human);
@@ -309,6 +315,16 @@
 
   function updateHumans(state, dt) {
     ensureSettlements(state);
+    normalizedUpdates.add(state);
+    try {
+      updateHumansFrame(state, dt);
+    } finally {
+      normalizedUpdates.delete(state);
+    }
+  }
+
+  function updateHumansFrame(state, dt) {
+    ensureSettlements(state);
 
     for (const village of state.humanSettlements.villages) {
       village.alertTimer = Math.max(0, (village.alertTimer || 0) - dt);
@@ -319,7 +335,7 @@
       for (const house of village.houses || []) {
         if (house.residentId) continue;
         house.respawnTimer = Math.max(0, (house.respawnTimer || 0) - dt);
-        if (house.respawnTimer <= 0 && state.humans.length < MAX_HUMANS) spawnResident(state, house, village);
+        if (house.respawnTimer <= 0 && state.humans.length < populationLimit(state)) spawnResident(state, house, village);
       }
     }
 

@@ -1,7 +1,7 @@
 (() => {
   const Game = window.MC2D;
   const { BLOCK: B, SEASON_LEAVES } = Game.blocks;
-  const { WORLD_W, CYCLE } = Game.constants;
+  const { WORLD_W, WORLD_H, CYCLE } = Game.constants;
   const { getBlock, setBlock } = Game.world;
   const SPECIES = {
     maple: [B.MAPLE_WOOD, B.MAPLE_LEAF],
@@ -34,7 +34,7 @@
     }
     const tree = { id: key(x, groundY - 1), trunks: [], leaves: [], wood, greenLeaf };
     for (let y = groundY - height; y < groundY; y++) {
-      setBlock(state, x, y, wood);
+      setBlock(state, x, y, wood, 3);
       tree.trunks.push(key(x, y));
     }
     for (let dy = -2; dy <= 1; dy++) {
@@ -70,11 +70,14 @@
       if (getBlock(state, x, y) !== B.GRASS) continue;
       if (biome === 'autumn_forest') setBlock(state, x, y, B.AUTUMN_GRASS);
       if (getBlock(state, x, y - 1) !== B.AIR) continue;
+      if (biome === 'cherry_forest') {
+        setBlock(state, x, y - 1, B.PINK_FLOWERS);
+        continue;
+      }
       // Every eligible floor cell gets cover or a mushroom, with gaps inside the sprite.
-      const mushroomChance = biome === 'autumn_forest' ? 0.32 : 0.015;
       const roll = Math.random();
       const mushroom = roll < 0.48 ? B.SMALL_WHITE_MUSHROOM : roll < 0.86 ? B.CHANTERELLE : B.SMALL_FLY_AGARIC;
-      setBlock(state, x, y - 1, Math.random() < mushroomChance ? (biome === 'cherry_forest' ? B.SMALL_WHITE_MUSHROOM : mushroom) : biome === 'autumn_forest' ? B.LEAF_LITTER : B.PINK_FLOWERS);
+      setBlock(state, x, y - 1, Math.random() < 0.32 ? mushroom : B.LEAF_LITTER);
     }
   }
 
@@ -132,11 +135,24 @@
     }
   }
 
+  function trackGround(state,x,y) {
+    const data=state.seasons;
+    if (!data || !isSeasonWorld(state) || !inOverworld(state)) return;
+    if (state.biomeAt[x]==='field') return;
+    const id=getBlock(state,x,y);
+    if (id!==B.GRASS && id!==B.AUTUMN_GRASS) return;
+    const k=key(x,y);
+    if (!data.cells[k]) data.cells[k]={values:[B.GRASS,B.AUTUMN_GRASS,B.SNOW,B.GRASS],tree:null,cover:false};
+    state.world[y][x]=data.cells[k].values[data.index];
+  }
+
   function update(state) {
     const data = state.seasons;
     if (!isSeasonWorld(state) || !data || !inOverworld(state)) return;
     const next = Math.floor(Math.max(0, state.cycleTime) / (5 * CYCLE)) % 4;
     if (next === data.index) return;
+    // Include grass grown or placed since world creation, and older saves.
+    for(let y=0;y<WORLD_H;y++) for(let x=0;x<WORLD_W;x++) trackGround(state,x,y);
     for (const [k, cell] of Object.entries(data.cells)) {
       const [x,y] = k.split(',').map(Number);
       // Also respect edits from systems that write directly to the terrain grid.
@@ -157,5 +173,5 @@
     if (state.weather) state.weather.contextKey = '';
   }
 
-  Game.seasons = { plantTree, decorate, initialize, markChanged, update };
+  Game.seasons = { plantTree, decorate, initialize, markChanged, trackGround, update };
 })();

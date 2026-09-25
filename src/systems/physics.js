@@ -53,7 +53,7 @@
 
     ent.y += dy;
     if (dy > 0) {
-      if (isSolidAtPixel(state, ent.x + 1, ent.y + ent.h, ent) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y + ent.h, ent)) {
+      if (Game.layers ? (Game.layers.supportAt(state, ent.x + 1, ent.y + ent.h, ent) || Game.layers.supportAt(state, ent.x + ent.w - 1, ent.y + ent.h, ent)) : (isSolidAtPixel(state, ent.x + 1, ent.y + ent.h, ent) || isSolidAtPixel(state, ent.x + ent.w - 1, ent.y + ent.h, ent))) {
         ent.y = Math.floor((ent.y + ent.h) / TILE) * TILE - ent.h - 0.01;
         ent.vy = 0;
         ent.onGround = true;

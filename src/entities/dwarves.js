@@ -10,6 +10,7 @@
   const { isPlayerUndetectable } = Game.invisibilitySystem || {};
 
   const MAX_DWARVES = 24;
+  const populationLimit = state => state.worldMeta?.worldType === 'infinite_village' ? 120 : MAX_DWARVES;
   const DWARF_STATE = {
     IDLE: 'idle',
     ROAM: 'roam',
@@ -22,7 +23,12 @@
     return !!(state.worldMeta && (state.worldMeta.mode === 'creative' || state.worldMeta.mode === 'mobile' || state.worldMeta.mode === 'spectator' || state.worldMeta.mode === 'hardcore_spectator')) || !!(isPlayerUndetectable && isPlayerUndetectable(state));
   }
 
+  // Nested lookups during a tick share its already-normalized settlement data.
+  // Outside the tick (combat, trade, loading), validation remains independent.
+  const normalizedUpdates = new WeakSet();
+
   function ensureColony(state) {
+    if (normalizedUpdates.has(state)) return;
     if (!state.dwarfColony || typeof state.dwarfColony !== 'object') {
       state.dwarfColony = { homes: [], stockpiles: [], halls: [], shafts: [], worksites: [], nodes: [], edges: [], settlements: [] };
     }
@@ -87,7 +93,7 @@
   }
 
   function spawnHomeResident(state, home) {
-    if (state.dwarves.length >= MAX_DWARVES) return false;
+    if (state.dwarves.length >= populationLimit(state)) return false;
     if (home.residentId) return false;
     const dwarf = createDwarf(home);
     home.residentId = dwarf.id;
@@ -373,6 +379,16 @@
 
   function updateDwarves(state, dt) {
     ensureColony(state);
+    normalizedUpdates.add(state);
+    try {
+      updateDwarvesFrame(state, dt);
+    } finally {
+      normalizedUpdates.delete(state);
+    }
+  }
+
+  function updateDwarvesFrame(state, dt) {
+    ensureColony(state);
     const ignorePlayer = ignoresPlayer(state);
 
     for (const settlement of state.dwarfColony.settlements) {
@@ -383,7 +399,7 @@
     for (const home of state.dwarfColony.homes) {
       if (home.residentId) continue;
       home.respawnTimer = Math.max(0, (home.respawnTimer || 0) - dt);
-      if (home.respawnTimer <= 0 && state.dwarves.length < MAX_DWARVES) spawnHomeResident(state, home);
+      if (home.respawnTimer <= 0 && state.dwarves.length < populationLimit(state)) spawnHomeResident(state, home);
     }
 
     for (let i = state.dwarves.length - 1; i >= 0; i -= 1) {

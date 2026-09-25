@@ -1,6 +1,6 @@
 (() => {
   const Game = window.MC2D;
-  const { biomeLabel, getSelectableSingleBiomes } = Game.world;
+  const { biomeLabel, getSelectableSingleBiomes, getVillageBiomes } = Game.world;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -22,6 +22,7 @@
   }
 
   function worldTypeLabel(type) {
+    if (type === 'infinite_village') return 'Бесконечная деревня';
     if (type === 'flat') return 'Плоский';
     if (type === 'seasons') return 'Времена года';
     if (type === 'single_biome') return 'Один биом';
@@ -31,7 +32,8 @@
   }
 
   function renderBiomeButtons(model) {
-    return getSelectableSingleBiomes().map((biome) => `
+    const biomes = model.worldType === 'infinite_village' ? getVillageBiomes() : getSelectableSingleBiomes();
+    return biomes.map((biome) => `
       <button class="menu-mode-btn ${model.singleBiome === biome ? 'is-active' : ''}" data-menu-single-biome="${biome}">${biomeLabel(biome)}</button>
     `).join('');
   }
@@ -92,10 +94,11 @@
             <button class="menu-mode-btn ${model.worldType === 'normal' ? 'is-active' : ''}" data-menu-world-type="normal">Обычный</button>
             <button class="menu-mode-btn ${model.worldType === 'seasons' ? 'is-active' : ''}" data-menu-world-type="seasons">Времена года</button>
             <button class="menu-mode-btn ${model.worldType === 'flat' ? 'is-active' : ''}" data-menu-world-type="flat">Плоский</button>
+            <button class="menu-mode-btn ${model.worldType === 'infinite_village' ? 'is-active' : ''}" data-menu-world-type="infinite_village">Бесконечная деревня</button>
             <button class="menu-mode-btn ${model.worldType === 'single_biome' ? 'is-active' : ''}" data-menu-world-type="single_biome">Один биом</button>
           </div>
         </div>
-        ${model.worldType === 'single_biome' ? `
+        ${['single_biome', 'infinite_village'].includes(model.worldType) ? `
           <div class="menu-field">
             <span>Биом</span>
             <div class="menu-mode-row">
@@ -103,6 +106,7 @@
             </div>
           </div>
         ` : ''}
+        <label class="menu-field"><span><input type="checkbox" data-menu-input="landscape3d" ${model.landscape3d ? 'checked' : ''}> 3D-ландшафт</span><small>Дополнительные фоновые холмы из блоков местного биома.</small></label>
         <div class="menu-hint">${model.mode === 'spectator'
               ? 'В режиме спектатора игрок проходит сквозь блоки, не получает урон, не видит HUD и не может ни с чем взаимодействовать.'
           : model.mode === 'mobile'
@@ -113,6 +117,8 @@
               ? 'В творческом режиме игрок летает, не получает урон, не тратит сытость и дыхание, а hostile-мобы игнорируют игрока.'
               : model.worldType === 'seasons'
                 ? 'Равнина со сменой лета, осени, зимы и весны каждые 5 игровых дней. Деревья остаются на своих местах, постройки и добытые блоки сохраняются.'
+                : model.worldType === 'infinite_village'
+                  ? 'Огромная деревня с двумя крайними башнями и полями по краям. Под ней — поселение гномов на трёх пещерных уровнях. Для развлечения и испытаний NPC.'
                 : model.worldType === 'flat'
                 ? 'Плоский мир без пещер и ландшафта. Подходит для строительства и тестов.'
                 : model.worldType === 'single_biome'
@@ -138,7 +144,7 @@
         <div class="world-meta">
           <div class="world-name">${escapeHtml(world.name || 'Безымянный мир')}</div>
           <div class="world-line">Режим: ${modeLabel(world.mode)}</div>
-          <div class="world-line">Тип мира: ${worldTypeLabel(world.worldType || 'normal')}${world.worldType === 'single_biome' ? ` • ${biomeLabel(world.singleBiome || 'forest')}` : ''}</div>
+          <div class="world-line">Тип мира: ${worldTypeLabel(world.worldType || 'normal')}${['single_biome', 'infinite_village'].includes(world.worldType) ? ` • ${biomeLabel(world.singleBiome || 'forest')}` : ''}</div>
           <div class="world-line">Сид: ${escapeHtml(world.seed || 'случайный')}</div>
           <div class="world-line">Сохранён: ${new Date(world.updatedAt || world.createdAt || Date.now()).toLocaleString('ru-RU')}</div>
         </div>
@@ -202,7 +208,7 @@
     root.addEventListener('input', (event) => {
       const input = event.target.closest('[data-menu-input]');
       if (!input) return;
-      handlers.onInput(input.dataset.menuInput, input.value);
+      handlers.onInput(input.dataset.menuInput, input.type === 'checkbox' ? input.checked : input.value);
     });
 
     return { render };

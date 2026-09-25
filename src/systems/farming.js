@@ -23,16 +23,32 @@
   const data = state => state.farming || (state.farming = { plants: {}, covered: {} });
   const freeItems = state => ['creative','infinite_inventory'].includes(state.worldMeta?.mode);
 
-  function hasWater(state, x, y) {
+  function hasNearbyBlock(state, x, y, block) {
     for (let dy=-4; dy<=4; dy++) for (let dx=-4; dx<=4; dx++) {
-      if (dx*dx+dy*dy <= 16 && getBlock(state,x+dx,y+dy) === B.WATER) return true;
+      if (dx*dx+dy*dy <= 16 && getBlock(state,x+dx,y+dy) === block) return true;
     }
     return false;
+  }
+  const hasWater = (state,x,y) => hasNearbyBlock(state,x,y,B.WATER);
+  function growthMultiplier(state,x,y) {
+    return hasWater(state,x,y) ? 2 : hasNearbyBlock(state,x,y,B.SNOW) ? 1.5 : 1;
+  }
+  function normalizeFieldGround(state,x,y) {
+    if (state.biomeAt[x]!=='field') return false;
+    const id=getBlock(state,x,y);
+    if (!isGrass(id) && !isCrop(id)) return false;
+    const inVillage=(state.humanSettlements?.villages || []).some(({bounds}) =>
+      x>=bounds.x0 && x<=bounds.x1 && y>=bounds.y0 && y<=bounds.y1);
+    if (inVillage) setBlock(state,x,y,B.PATH);
+    else if (isGrass(id)) setBlock(state,x,y,Math.random()<0.5 ? B.WHEAT_FARMLAND : B.CARROT_FARMLAND);
+    else return false;
+    return true;
   }
   function soilChange(state,x,y,id) {
     // A biological soil change must not remove the plant/seasonal cover above it.
     state.world[y][x] = id;
     if (state.seasons?.cells) delete state.seasons.cells[key(x,y)];
+    if (!normalizeFieldGround(state,x,y) && Game.seasons) Game.seasons.trackGround(state,x,y);
   }
   function onBlockChanged(state,x,y,previous,id) {
     if (previous === id) return;
@@ -47,6 +63,7 @@
       if (runtime) { if (isSoil(cell)) runtime.cells.add(sk); else runtime.cells.delete(sk); }
       if (cell === B.DIRT && above === B.AIR) soilChange(state,x,yy,B.GRASS);
       if (!blocksGrassLight(above)) delete d.covered[sk];
+      normalizeFieldGround(state,x,yy);
     }
   }
   function tryPlant(state,x,y) {
@@ -98,7 +115,8 @@
       if(c.x===x && c.y===y) continue;
       if(getBlock(state,c.x,c.y)!==B.AIR) return false;
     }
-    for(const c of cells.values()) setBlock(state,c.x,c.y,c.block);
+    setBlock(state,x,y,B.AIR);
+    for(const c of cells.values()) setBlock(state,c.x,c.y,c.block,Game.layers?.isWood(c.block) ? 3 : undefined);
     return true;
   }
   function registerLeaves(state, keys, leaf) {
@@ -143,6 +161,7 @@
     if(!runtime) {
       runtime={cells:new Set()}; soilRuntime.set(state.world,runtime);
       for(let y=0;y<WORLD_H;y++) for(let x=0;x<WORLD_W;x++) {
+        normalizeFieldGround(state,x,y);
         const id=getBlock(state,x,y);
         if(isGrass(id) || (id===B.DIRT && getBlock(state,x,y-1)===B.AIR)) runtime.cells.add(key(x,y));
         if(isPlant(id) && !d.plants[key(x,y)]) d.plants[key(x,y)]={id,elapsed:0};
@@ -151,6 +170,11 @@
     for(const k of runtime.cells) {
       const [x,y]=k.split(',').map(Number), id=getBlock(state,x,y);
       if(!isSoil(id)) {runtime.cells.delete(k); delete d.covered[k];continue;}
+      if (normalizeFieldGround(state,x,y)) { runtime.cells.delete(k); continue; }
+      if (isGrass(id) && Game.seasons) {
+        Game.seasons.trackGround(state,x,y);
+        if (getBlock(state,x,y)===B.SNOW) { runtime.cells.delete(k); delete d.covered[k]; continue; }
+      }
       const above = getBlock(state,x,y-1);
       if(!blocksGrassLight(above)) {
         delete d.covered[k]; if(id===B.DIRT && above===B.AIR) soilChange(state,x,y,B.GRASS);
@@ -161,25 +185,29 @@
     }
     for(const [k,p] of Object.entries(d.plants)) {
       const [x,y]=k.split(',').map(Number);
+      normalizeFieldGround(state,x,y);
       if(getBlock(state,x,y)!==p.id) { delete d.plants[k];continue; }
       if(SAPLINGS.has(p.id) && ![B.DIRT,B.GRASS,B.AUTUMN_GRASS,B.MOSS].includes(getBlock(state,x,y+1))) {
         Game.animalsEntity.spawnFood(state,x*TILE,y*TILE,p.id); setBlock(state,x,y,B.AIR);continue;
       }
-      p.elapsed=Math.min(DURATION,p.elapsed+dt*(hasWater(state,x,y)?2:1));
+      p.elapsed=Math.min(DURATION,p.elapsed+dt*growthMultiplier(state,x,y));
       if(p.elapsed>=DURATION && SAPLINGS.has(p.id)) growTree(state,x,y,p.id);
     }
   }
-  function createField(state,x0,y,width=18) {
+  function createField(state,x0,y,width=18,channelBlock=B.WATER) {
     if(x0<2 || x0+width>=WORLD_W-2 || y<3 || y>=WORLD_H-2) return false;
     const natural = new Set([B.AIR,B.GRASS,B.DIRT,B.AUTUMN_GRASS,B.STONE,B.SNOW,B.SAND,B.SANDSTONE,
       B.WOOD,B.LEAF,B.SPRUCE_WOOD,B.SPRUCE_LEAF,B.SEQUOIA_WOOD,B.SEQUOIA_LEAF,
       ...Game.blocks.SEASON_WOODS,...Game.blocks.SEASON_LEAVES,...Game.blocks.GROUND_COVER,
-      B.DRY_BUSH,B.SMALL_WHITE_MUSHROOM,B.SMALL_FLY_AGARIC]);
+      B.MOSS,B.BLACKSTONE,B.DEEPSTONE,B.BASALT,B.DRY_BUSH,B.CACTUS,B.COAL_ORE,B.IRON_ORE,B.GOLD_ORE,B.SMALL_WHITE_MUSHROOM,B.SMALL_FLY_AGARIC]);
     // Prepare a modest flat field, including banks, without touching structures or lakes.
     for(let x=x0-1;x<=x0+width;x++) {
       const surface=state.surfaceAt[x];
-      if(!Number.isFinite(surface) || Math.abs(surface-y)>6 || state.biomeAt[x]==='lake') return false;
-      for(let yy=0;yy<=Math.max(surface,y)+1;yy++) if(!natural.has(getBlock(state,x,yy))) return false;
+      if(!Number.isFinite(surface) || Math.abs(surface-y)>12 || state.biomeAt[x]==='lake') return false;
+      for(let yy=0;yy<=Math.max(surface,y)+1;yy++) {
+        const block=getBlock(state,x,yy);
+        if(!natural.has(block) && !(state.biomeAt[x]==='field' && isCrop(block))) return false;
+      }
     }
     for(let x=x0-1;x<=x0+width;x++) {
       const surface=state.surfaceAt[x];
@@ -189,30 +217,54 @@
     }
     for(let x=x0;x<x0+width;x++) {
       state.biomeAt[x]='field'; state.surfaceAt[x]=y;
+      state.climateAt[x]=channelBlock===B.SNOW ? 'cold' : channelBlock===B.AIR ? 'warm' : 'temperate';
       // Channels every seven tiles reach every crop; dirt seals their bottoms.
       const channel=(x-x0)%7===3;
       setBlock(state,x,y+1,B.DIRT);
-      setBlock(state,x,y,channel ? B.WATER : Math.random()<0.5 ? B.WHEAT_FARMLAND : B.CARROT_FARMLAND);
+      setBlock(state,x,y,channel ? channelBlock : Math.random()<0.5 ? B.WHEAT_FARMLAND : B.CARROT_FARMLAND);
       if(!channel) data(state).plants[key(x,y)].elapsed=Math.floor(Math.random()*4)*30;
+    }
+    if (Math.random()<0.3) {
+      const cx=x0+Math.floor(width/2);
+      setBlock(state,cx,y,B.DIRT);
+      setBlock(state,cx,y-1,B.PILLAR);
+      setBlock(state,cx,y-2,B.WOOD);
+      setBlock(state,cx-1,y-2,B.PLANK);
+      setBlock(state,cx+1,y-2,B.PLANK);
+      setBlock(state,cx,y-3,B.SCARECROW_HEAD);
     }
     return true;
   }
   function generateFields(state) {
     for(const village of state.humanSettlements?.villages || []) {
-      if(Math.random()>=0.5) continue;
+      if(village.field) continue;
+      const channelBlock=village.type==='winter_village' ? B.SNOW : village.type==='desert_village' ? B.AIR : B.WATER;
       const width=18;
       const starts=[village.bounds.x1+2,village.bounds.x0-width-1];
       if(Math.random()<0.5) starts.reverse();
       for(const start of starts) {
         let placed=false;
-        for(let offset=0;offset<24;offset++) {
+        for(let offset=0;offset<80;offset++) {
           const x=start+(start>village.bounds.x1?offset:-offset);
           if((state.humanSettlements.villages || []).some(v=>x<=v.bounds.x1 && x+width>v.bounds.x0)) continue;
-          if(createField(state,x,state.surfaceAt[x],width)) { village.field={x,y:state.surfaceAt[x],width};placed=true;break; }
+          if(createField(state,x,state.surfaceAt[x],width,channelBlock)) { village.field={x,y:state.surfaceAt[x],width};placed=true;break; }
         }
         if(placed) break;
       }
     }
   }
-  Game.farming={registerLeaves,invalidateSoil,SPECIES,isCrop,hasWater,onBlockChanged,tryPlant,stageAt,getDrop,update,createField,generateFields};
+  function refreshFieldGround(state) {
+    for(let x=0;x<WORLD_W;x++) {
+      if(state.biomeAt[x]!=='field') continue;
+      for(let y=0;y<WORLD_H;y++) normalizeFieldGround(state,x,y);
+    }
+  }
+  function generateFieldBiome(state) {
+    for(let x=3;x<WORLD_W-20;x+=20) {
+      const width=18;
+      if((state.humanSettlements?.villages || []).some(v=>x-1<=Math.max(v.bounds.x1,v.field ? v.field.x+v.field.width : v.bounds.x1) && x+width>=v.bounds.x0)) continue;
+      createField(state,x,state.surfaceAt[x],width);
+    }
+  }
+  Game.farming={registerLeaves,invalidateSoil,SPECIES,isCrop,hasWater,onBlockChanged,tryPlant,stageAt,getDrop,update,createField,generateFields,generateFieldBiome,refreshFieldGround};
 })();

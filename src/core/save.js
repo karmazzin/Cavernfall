@@ -76,7 +76,7 @@
   }
 
   function snapshotState(state) {
-    return {
+    const snapshot = {
       worldMeta: state.worldMeta,
       world: state.world,
       seasons: state.seasons,
@@ -146,6 +146,43 @@
       settings: state.settings,
       achievements: state.achievements,
     };
+    Object.assign(snapshot, Game.state.captureDimensionState(state));
+    // Active dimension already lives at the root; do not write its entire grid twice.
+    snapshot.dimensions = { ...state.dimensions, [state.activeDimension]: null };
+    return snapshot;
+  }
+
+  function encodeSnapshot(snapshot) {
+    return JSON.stringify(snapshot, (key, value) => {
+      if (key === 'background') return undefined;
+      if (key === 'world' && Array.isArray(value)) {
+        return { gridRle: value.map(row => {
+          const runs = [];
+          for (let i = 0; i < row.length;) {
+            const id = row[i]; let end = i + 1;
+            while (end < row.length && row[end] === id) end++;
+            runs.push(id, end - i); i = end;
+          }
+          return runs;
+        }) };
+      }
+      return value;
+    });
+  }
+
+  function decodeSnapshot(raw) {
+    return JSON.parse(raw, (key, value) => {
+      if (key === 'background') return undefined;
+      if (value && Array.isArray(value.gridRle)) return value.gridRle.map(runs => {
+        const row = [];
+        for (let i = 0; i < runs.length; i += 2) {
+          if (!Number.isInteger(runs[i + 1]) || runs[i + 1] < 1 || row.length + runs[i + 1] > Game.constants.WORLD_W) throw new Error('Invalid saved grid');
+          for (let n = 0; n < runs[i + 1]; n++) row.push(runs[i]);
+        }
+        return row;
+      });
+      return value;
+    });
   }
 
   function worldStorageKey(id) {
@@ -181,6 +218,7 @@
       worldType: data.worldType || 'normal',
       singleBiome: data.singleBiome || 'forest',
       cavernBiome: data.cavernBiome || 'mix',
+      landscape3d: !!data.landscape3d,
       createdAt: now,
       updatedAt: now,
       preview: data.preview || null,
@@ -205,11 +243,22 @@
   }
 
   function listWorlds() {
-    return readIndex().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const worlds = new Map(readIndex().map(meta => [meta.id, meta]));
+    for (const meta of Game.worldStorage.list()) worlds.set(meta.id, meta);
+    return [...worlds.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  }
+
+  function savingFailed(state, error) {
+    state.saveError = error?.name === 'QuotaExceededError'
+      ? 'Недостаточно места для сохранения в браузере.'
+      : `Ошибка сохранения: ${error?.message || error?.name || 'хранилище недоступно'}`;
+    return false;
   }
 
   function saveWorld(state, preview = null) {
     if (!state.worldMeta || !state.worldMeta.id) return false;
+    const storage = Game.worldStorage;
+    if (!storage.initialized) return storage.ready.then(() => saveWorld(state, preview));
     try {
       ensureDimensions(state);
       syncActiveDimension(state);
@@ -219,19 +268,31 @@
         preview: preview ?? state.worldMeta.preview ?? null,
       };
       state.worldMeta = nextMeta;
-      localStorage.setItem(worldStorageKey(nextMeta.id), JSON.stringify(snapshotState(state)));
-      upsertIndexMeta(nextMeta);
-      return true;
-    } catch (error) {
-      return false;
-    }
+      const raw = encodeSnapshot(snapshotState(state));
+      const writeDatabase = () => storage.write({ id: nextMeta.id, meta: nextMeta, raw })
+        .then(() => { state.saveError = null; return true; })
+        .catch(error => savingFailed(state, error));
+      // Once a world moves to IndexedDB, keep writing to that authoritative copy.
+      if (storage.get(nextMeta.id)) return writeDatabase();
+      try {
+        localStorage.setItem(worldStorageKey(nextMeta.id), raw);
+        upsertIndexMeta(nextMeta);
+        state.saveError = null;
+        return true;
+      } catch (error) {
+        if (storage.available) return writeDatabase();
+        return savingFailed(state, error);
+      }
+    } catch (error) { return savingFailed(state, error); }
   }
 
   function loadWorld(worldId) {
+    const storage = Game.worldStorage;
+    if (!storage.initialized) return storage.ready.then(() => loadWorld(worldId));
     try {
-      const raw = localStorage.getItem(worldStorageKey(worldId));
+      const raw = storage.get(worldId)?.raw || localStorage.getItem(worldStorageKey(worldId));
       if (!raw) return null;
-      const data = JSON.parse(raw);
+      const data = decodeSnapshot(raw);
       const state = createGameState(data.worldMeta || { id: worldId });
 
       state.worldMeta = {
@@ -242,6 +303,10 @@
       delete state.worldMeta.modId;
       delete state.worldMeta.modName;
       delete state.worldMeta.modSummary;
+      state.blockLayers = data.blockLayers || {};
+      state.backdrop = data.backdrop || null;
+      state.layersVersion = data.layersVersion || 0;
+      state.greatTrees = data.greatTrees || [];
       state.farming = data.farming && typeof data.farming === 'object' ? data.farming : null;
       state.seasons = data.seasons && typeof data.seasons === 'object' ? data.seasons : null;
       state.world = Array.isArray(data.world) ? data.world : state.world;
@@ -441,8 +506,12 @@
       state.pause.statusText = '';
       state.autosaveTick = 0;
       ensureDimensions(state);
-      if (!data.dimensions) syncActiveDimension(state);
+      if (!data.dimensions || !state.dimensions[state.activeDimension]) syncActiveDimension(state);
       else if (state.dimensions[state.activeDimension]) Game.state.applyDimensionState(state, state.dimensions[state.activeDimension]);
+      Game.generation.retrofitVillageBackWalls(state);
+      Game.generation.retrofitVillageWorkyards(state);
+      Game.layers.initialize(state);
+      syncActiveDimension(state);
       return state;
     } catch (error) {
       return null;
@@ -450,14 +519,18 @@
   }
 
   function deleteWorld(worldId) {
+    const storage = Game.worldStorage;
+    if (!storage.initialized) return storage.ready.then(() => deleteWorld(worldId));
     try {
       localStorage.removeItem(worldStorageKey(worldId));
       const nextIndex = readIndex().filter((entry) => entry && entry.id !== worldId);
       writeIndex(nextIndex);
-      return true;
     } catch (error) {
-      return false;
+      // A full local index does not prevent deleting a database-only world.
+      if (!storage.get(worldId)) return false;
     }
+    if (storage.get(worldId)) return storage.remove(worldId).catch(() => false);
+    return true;
   }
 
   function migrateLegacySave() {

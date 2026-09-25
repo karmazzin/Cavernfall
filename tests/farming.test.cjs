@@ -134,7 +134,7 @@ test('village fields actually generate on natural uneven terrain',()=>{
     const s=G.state.createGameState({seed:'farm'+i});G.random.withSeed('farm'+i,()=>G.generation.generateWorld(s));
     villages+=s.humanSettlements.villages.length;fields+=s.humanSettlements.villages.filter(v=>v.field).length;
   }
-  assert.ok(fields>0,`${fields} fields in ${villages} villages`);assert.ok(fields<villages);
+  assert.ok(fields>0,`${fields} fields in ${villages} villages`);assert.equal(fields,villages);
 });
 test('season changes retain the field biome and autumn leaves remember their species after trunk removal',()=>{
   const G=loadGame(),s=fixture(G),B=G.blocks.BLOCK;
@@ -194,5 +194,130 @@ test('cherry flowers and leaves preserve grass and reset the covering timer',()=
     G.world.setBlock(s,20,49,B.PLANK);G.farming.update(s,4.9);
     assert.equal(s.world[50][20],B.GRASS);
     G.farming.update(s,0.1);assert.equal(s.world[50][20],B.DIRT);
+  }
+});
+
+test('snow within four blocks gives 1.5x growth; water takes priority without stacking',()=>{
+  const G=loadGame(), B=G.blocks.BLOCK;
+  for(const [dx,dy,water,want] of [[4,0,false,15],[0,-4,false,15],[4,1,false,10],[5,0,false,10],[4,0,true,20]]) {
+    const s=fixture(G);
+    G.world.setBlock(s,20,50,B.WHEAT_FARMLAND);
+    G.world.setBlock(s,20+dx,50+dy,B.SNOW);
+    if(water) G.world.setBlock(s,19,50,B.WATER);
+    G.farming.update(s,10);
+    assert.equal(s.farming.plants['20,50'].elapsed,want);
+  }
+});
+
+test('every village receives a field with climate-appropriate channels',()=>{
+  const G=loadGame(),B=G.blocks.BLOCK;
+  const s=fixture(G);
+  s.humanSettlements={villages:['plains_village','mountain_village','winter_village','desert_village'].map((type,i)=>({type,bounds:{x0:60+i*100,x1:90+i*100}}))};
+  G.random.withSeed('all-fields',()=>G.farming.generateFields(s));
+  for(const [i,v] of s.humanSettlements.villages.entries()) {
+    assert.ok(v.field,`${v.type} needs a field`);
+    const {x,y,width}=v.field;
+    assert.equal(s.world[y][x+3],[B.WATER,B.WATER,B.SNOW,B.AIR][i]);
+    for(let xx=x;xx<x+width;xx++) assert.equal(s.biomeAt[xx],'field');
+  }
+});
+
+test('single field biome grows crops across the world and generates plains villages and scarecrows',()=>{
+  const G=loadGame(),B=G.blocks.BLOCK;
+  assert.ok(G.world.getSelectableSingleBiomes().includes('field'));
+  const s=G.state.createGameState({id:'field-save',worldType:'single_biome',singleBiome:'field'});
+  G.random.withSeed('field-world',()=>G.generation.generateWorld(s));
+  assert.ok(s.biomeAt.every(b=>b==='field'));
+  assert.ok(s.humanSettlements.villages.length>0);
+  assert.ok(s.humanSettlements.villages.every(v=>v.type==='plains_village' && v.field));
+  assert.ok(s.world.flat().filter(id=>G.farming.isCrop(id)).length>G.constants.WORLD_W/2);
+  const heads=[];
+  s.world.forEach((row,y)=>row.forEach((id,x)=>{if(id===B.SCARECROW_HEAD) heads.push({x,y});}));
+  assert.ok(heads.length>0);
+  for(const {x,y} of heads) {
+    assert.equal(s.world[y+1][x],B.WOOD);
+    assert.equal(s.world[y+1][x-1],B.PLANK);
+    assert.equal(s.world[y+1][x+1],B.PLANK);
+    assert.equal(s.world[y+2][x],B.PILLAR);
+  }
+  assert.equal(G.saveSystem.saveWorld(s),true);
+  const loaded=G.saveSystem.loadWorld('field-save');
+  assert.equal(JSON.stringify(loaded.world),JSON.stringify(s.world));
+});
+
+
+test('each village keeps a field on mixed terrain, including moss and dark stone',()=>{
+  const G=loadGame();
+  for(const seed of [7,21,27,63,66,68,71,78,86,95,107,199]) {
+    const s=G.state.createGameState({worldType:'normal'});
+    G.random.withSeed('field-check-'+seed,()=>G.generation.generateWorld(s));
+    assert.ok(s.humanSettlements.villages.length>0);
+    for(const village of s.humanSettlements.villages) {
+      assert.ok(village.field,`${seed}: ${village.type}`);
+      const {x,y,width}=village.field, B=G.blocks.BLOCK;
+      const channel=village.type==='winter_village' ? B.SNOW : village.type==='desert_village' ? B.AIR : B.WATER;
+      for(let xx=x;xx<x+width;xx++) {
+        assert.equal(s.biomeAt[xx],'field');
+        if((xx-x)%7===3) assert.equal(s.world[y][xx],channel);
+      }
+    }
+  }
+});
+
+test('all field grass becomes random farmland, including placed and regrown grass',()=>{
+  const G=loadGame(),s=fixture(G),B=G.blocks.BLOCK;
+  for(let x=20;x<40;x++) s.biomeAt[x]='field';
+  G.random.withSeed('field-conversion',()=>G.farming.update(s,0));
+  const crops=new Set();
+  for(let x=20;x<40;x++) {assert.ok(G.farming.isCrop(s.world[50][x]));crops.add(s.world[50][x]);}
+  assert.equal(crops.size,2);
+  assert.equal(s.world[50][40],B.GRASS,'other biomes keep their grass');
+  G.world.setBlock(s,20,50,B.DIRT);
+  assert.ok(G.farming.isCrop(s.world[50][20]),'regrown grass becomes farmland');
+  G.world.setBlock(s,21,50,B.GRASS);
+  assert.ok(G.farming.isCrop(s.world[50][21]),'placed grass becomes farmland immediately');
+  assert.equal(s.farming.plants['21,50'].elapsed,0);
+  G.world.setBlock(s,22,50,B.AUTUMN_GRASS);
+  assert.ok(G.farming.isCrop(s.world[50][22]));
+});
+
+test('generated field worlds have no grass left in the field biome',()=>{
+  const G=loadGame(),s=G.state.createGameState({worldType:'single_biome',singleBiome:'field'}),B=G.blocks.BLOCK;
+  G.random.withSeed('field-no-grass',()=>G.generation.generateWorld(s));
+  assert.ok(!s.world.flat().some(id=>id===B.GRASS || id===B.AUTUMN_GRASS));
+});
+
+test('field village bounds turn existing and new crops into paths without affecting the outside field',()=>{
+  const G=loadGame(),s=fixture(G),B=G.blocks.BLOCK;
+  s.biomeAt.fill('field');
+  s.humanSettlements={villages:[{bounds:{x0:20,x1:30,y0:40,y1:53}}]};
+  // Existing crops from a saved world, including one below the village footprint.
+  s.world[50][20]=B.WHEAT_FARMLAND;
+  s.world[50][30]=B.CARROT_FARMLAND;
+  s.world[54][25]=B.CARROT_FARMLAND;
+  G.farming.update(s,0);
+  assert.equal(s.world[50][20],B.PATH);
+  assert.equal(s.world[50][30],B.PATH);
+  assert.ok(G.farming.isCrop(s.world[50][19]));
+  assert.ok(G.farming.isCrop(s.world[50][31]));
+  assert.equal(s.world[54][25],B.CARROT_FARMLAND);
+  G.world.setBlock(s,25,50,B.WHEAT_FARMLAND);
+  assert.equal(s.world[50][25],B.PATH);
+  assert.equal(s.farming.plants['25,50'],undefined);
+  G.world.setBlock(s,26,50,B.GRASS);
+  assert.equal(s.world[50][26],B.PATH);
+  s.biomeAt[27]='plains';
+  G.world.setBlock(s,27,50,B.CARROT_FARMLAND);
+  assert.equal(s.world[50][27],B.CARROT_FARMLAND);
+});
+
+test('single field world villages have paths instead of crops within their structure bounds',()=>{
+  const G=loadGame(),s=G.state.createGameState({worldType:'single_biome',singleBiome:'field'});
+  G.random.withSeed('field-village-paths',()=>G.generation.generateWorld(s));
+  for(const v of s.humanSettlements.villages) {
+    for(let y=v.bounds.y0;y<=v.bounds.y1;y++) for(let x=v.bounds.x0;x<=v.bounds.x1;x++) {
+      assert.equal(G.farming.isCrop(s.world[y][x]),false,`${x},${y}`);
+    }
+    assert.ok(G.farming.isCrop(s.world[v.field.y][v.field.x]));
   }
 });

@@ -8,7 +8,7 @@
   const { countItem, selectedItemId, selectedPlaceableId } = Game.inventory;
   const { phaseInfo } = Game.dayCycle;
   const { getWeatherState, WEATHER } = Game.weatherSystem;
-  const { drawBlock, drawDoor, drawDungeonSeal } = Game.worldRenderer;
+  const { drawBlock, drawDoor, drawDungeonSeal, drawSecondLayerBlock } = Game.worldRenderer;
   const { drawItem } = Game.itemRenderer;
   const { drawPlayer, drawZombie, drawSpider, drawSheep, drawHuman, drawDwarf, drawFireGuard, drawFireBoss, drawFireKing, drawFriendlyFireKing, drawKraken, drawWaterfolk, drawWindfolk, drawUndergroundKing, drawUndergroundKeeper, drawGoldenFlowerGuardian, drawAirGuardian, drawAirThief, drawEvilTrunk, drawBossHealthBar } = Game.entityRenderer;
   const { drawUI } = Game.uiRenderer;
@@ -836,12 +836,18 @@
     const startY = Math.max(0, Math.floor(renderCamera.y / TILE));
     const endY = Math.min(WORLD_H - 1, Math.ceil((renderCamera.y + view.height) / TILE) + 1);
 
+    Game.backgroundRenderer.draw(ctx, state.backdrop, renderCamera, startX, startY, endX, endY);
+
     for (let y = startY; y <= endY; y += 1) {
       for (let x = startX; x <= endX; x += 1) {
         const id = getVisibleBlockId(state, x, y, getBlock(state, x, y));
         if (id === BLOCK.AIR) continue;
         const sx = x * TILE - renderCamera.x;
         const sy = y * TILE - renderCamera.y;
+        const secondLayer = Game.layers.at(state, x, y) === 2;
+        if (secondLayer && drawSecondLayerBlock(ctx, id, sx, sy)) continue;
+        ctx.save();
+        if (secondLayer) ctx.filter = 'brightness(0.65)';
         if (
           id === BLOCK.FIRE_SEAL &&
           state.activeDimension === 'fire' &&
@@ -856,6 +862,7 @@
         } else {
           drawBlock(ctx, id, sx, sy, time, state.farming?.plants?.[`${x},${y}`]?.elapsed || 0);
         }
+        ctx.restore();
       }
     }
 

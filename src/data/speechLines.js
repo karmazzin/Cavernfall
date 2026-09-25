@@ -12,7 +12,7 @@
     { id: 'human_greet_friendly_1', group: 'human', event: 'greet_player', tags: ['friendly', 'known'], text: 'Для тебя у нас всегда найдется спокойная дорога.', weight: 1.2, cooldown: 120 },
     { id: 'human_greet_grateful_1', group: 'human', event: 'greet_player', tags: ['grateful', 'known'], text: 'После твоей помощи двери для тебя открываются легче.', weight: 1.2, cooldown: 120 },
     { id: 'human_greet_wary_1', group: 'human', event: 'greet_player', tags: ['wary'], text: 'Мы тебя видим. Веди себя тихо.', weight: 1.2, cooldown: 120 },
-    { id: 'human_greet_hostile_1', group: 'human', event: 'greet_player', tags: ['hostile'], text: 'Тебе здесь не рады. Не испытывай стражу.', weight: 1.4, cooldown: 120 },
+    { id: 'human_greet_hostile_1', group: 'human', event: 'greet_player', tags: ['hostile'], text: 'Мы здесь рады, только не разочаруй нас.', weight: 1.4, cooldown: 120 },
     { id: 'human_guard_greet_1', group: 'human', event: 'greet_player', kind: 'guard', tags: ['neutral'], text: 'У ворот не задерживайся, если стемнеет.', weight: 1, cooldown: 130 },
     { id: 'human_guard_greet_2', group: 'human', event: 'greet_player', kind: 'guard', tags: ['neutral'], text: 'Смотри под ноги и не лезь на стены.', weight: 1, cooldown: 130 },
     { id: 'human_farmer_greet_1', group: 'human', event: 'greet_player', profession: 'farmer', tags: ['day'], text: 'Если увидишь ровную землю, береги ее. Урожай сам не растет.', weight: 1, cooldown: 120 },

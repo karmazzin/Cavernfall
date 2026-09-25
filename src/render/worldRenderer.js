@@ -73,6 +73,14 @@
   }
 
   function drawBlock(ctx, id, x, y, time = 0, growth = 0) {
+    if (id === BLOCK.SCARECROW_HEAD) {
+      ctx.fillStyle = '#c99b51'; ctx.fillRect(x+3,y+4,10,11);
+      ctx.fillStyle = '#e6c47c'; ctx.fillRect(x+4,y+5,8,7);
+      ctx.fillStyle = '#513921'; ctx.fillRect(x+5,y+7,2,2); ctx.fillRect(x+10,y+7,2,2);
+      ctx.fillRect(x+6,y+11,5,1); ctx.fillRect(x+7,y+10,1,3); ctx.fillRect(x+9,y+10,1,3);
+      ctx.fillStyle = '#86612f'; ctx.fillRect(x+1,y+3,14,3); ctx.fillRect(x+4,y,8,4);
+      return;
+    }
     const stage = Math.min(3, Math.floor(growth / 30));
     if (Game.blocks.SAPLINGS.has(id)) {
       const species = Game.farming.SPECIES.find(s => s.id === id);
@@ -957,5 +965,29 @@
     }
   }
 
-  Game.worldRenderer = { drawBlock, drawDoor, drawDungeonSeal };
+  // Only static, tile-sized materials belong here: doors, plants and animated
+  // blocks must keep their state-dependent drawing path. Cache size is bounded
+  // by this material list, independent of world size and number of houses.
+  const secondLayerMaterials = new Set([BLOCK.PLANK, BLOCK.SANDSTONE, BLOCK.STONE]);
+  const secondLayerSprites = new Map();
+  function drawSecondLayerBlock(ctx, id, x, y) {
+    if (!secondLayerMaterials.has(id)) return false;
+    let sprite = secondLayerSprites.get(id);
+    if (!sprite) {
+      sprite = document.createElement('canvas');
+      sprite.width = TILE;
+      sprite.height = TILE;
+      const tileCtx = sprite.getContext('2d');
+      if (!tileCtx) return false;
+      drawBlock(tileCtx, id, 0, 0);
+      tileCtx.globalCompositeOperation = 'source-atop';
+      tileCtx.fillStyle = 'rgba(0,0,0,0.35)';
+      tileCtx.fillRect(0, 0, TILE, TILE);
+      secondLayerSprites.set(id, sprite);
+    }
+    ctx.drawImage(sprite, x, y);
+    return true;
+  }
+
+  Game.worldRenderer = { drawBlock, drawDoor, drawDungeonSeal, drawSecondLayerBlock };
 })();

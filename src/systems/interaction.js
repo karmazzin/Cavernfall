@@ -198,10 +198,10 @@
     };
   }
 
-  function canPlaceBlock(state, tx, ty, id) {
+  function canPlaceBlock(state, tx, ty, id, layer = 1) {
     if (!PLACEABLE.has(id) && !(hasCreativePlacement(state) && typeof id === 'number' && id !== BLOCK.AIR && id !== BLOCK.BEDROCK)) return false;
     const targetBlock = getBlock(state, tx, ty);
-    if (targetBlock !== BLOCK.AIR && targetBlock !== BLOCK.WATER && targetBlock !== BLOCK.LAVA) return false;
+    if (targetBlock !== BLOCK.AIR) return false;
     if (id === BLOCK.GOLDEN_FLOWER) {
       const below = getBlock(state, tx, ty + 1);
       if (below !== BLOCK.GRASS && below !== BLOCK.DIRT) return false;
@@ -209,7 +209,7 @@
 
     const blockPx = tx * TILE;
     const blockPy = ty * TILE;
-    if (aabb(blockPx, blockPy, TILE, TILE, state.player.x, state.player.y, state.player.w, state.player.h)) return false;
+    if (layer === 1 && aabb(blockPx, blockPy, TILE, TILE, state.player.x, state.player.y, state.player.w, state.player.h)) return false;
 
     return true;
   }
@@ -544,6 +544,7 @@
       return;
     }
 
+    const placementLayer = Game.layers.selected(state, input);
     const pointer = resolvePointerTarget(state, input, camera);
     const { tx, ty } = pointer;
     const wx = pointer.wx;
@@ -560,6 +561,7 @@
       return;
     }
 
+    // Direct player attacks can target mobs on any foreground layer.
     if (state.fireBoss && wx >= state.fireBoss.x && wx <= state.fireBoss.x + state.fireBoss.w && wy >= state.fireBoss.y && wy <= state.fireBoss.y + state.fireBoss.h) {
       if (!rightClick && input.mouse.justPressed && Game.firePyramidSystem && Game.firePyramidSystem.hitFireBoss(state)) {
         audio.playHit();
@@ -686,7 +688,7 @@
     for (let i = state.animals.length - 1; i >= 0; i -= 1) {
       const animal = state.animals[i];
       if (wx >= animal.x && wx <= animal.x + animal.w && wy >= animal.y && wy <= animal.y + animal.h) {
-        if (selectedItemId(state) === ITEM.WHEAT) {
+        if (Game.layers.same(state.player, animal) && selectedItemId(state) === ITEM.WHEAT) {
           if (input.mouse.justPressed && dist <= 110) Game.animalsEntity.feedSheep(state, animal);
           state.breaking = null;
           input.mouse.justPressed = false;
@@ -729,7 +731,7 @@
           input.mouse.justPressed = false;
           return;
         }
-        if (input.mouse.justPressed && settlement && !settlement.hostileToPlayer && (settlement.alertLevel || 0) === 0) {
+        if (Game.layers.same(state.player, dwarf) && input.mouse.justPressed && settlement && !settlement.hostileToPlayer && (settlement.alertLevel || 0) === 0) {
           Game.crafting.openTrade(state, dwarf.settlementId);
           input.mouse.justPressed = false;
           return;
@@ -748,6 +750,7 @@
 
     for (let i = state.humans.length - 1; i >= 0; i -= 1) {
       const human = state.humans[i];
+      if (!Game.layers.same(state.player, human)) continue;
       if (wx >= human.x && wx <= human.x + human.w && wy >= human.y && wy <= human.y + human.h) {
         if (rightClick) {
           input.mouse.justPressed = false;
@@ -800,19 +803,19 @@
       return;
     }
 
-    if (block === BLOCK.DOOR && input.mouse.justPressed) {
+    if (Game.layers.at(state, tx, ty) === 1 && block === BLOCK.DOOR && input.mouse.justPressed) {
       toggleDoor(state, tx, ty);
       state.breaking = null;
       input.mouse.justPressed = false;
       return;
     }
 
-    if (block === BLOCK.CHEST && guardAshCache(state, tx, ty)) {
+    if (Game.layers.at(state, tx, ty) === 1 && block === BLOCK.CHEST && guardAshCache(state, tx, ty)) {
       input.mouse.justPressed = false;
       return;
     }
 
-    if (block === BLOCK.CHEST && input.mouse.justPressed) {
+    if (Game.layers.at(state, tx, ty) === 1 && block === BLOCK.CHEST && input.mouse.justPressed) {
       Game.crafting.openChest(state, tx, ty);
       state.breaking = null;
       input.mouse.justPressed = false;
@@ -829,15 +832,16 @@
           input.mouse.justPressed = false;
           return;
         }
-        if (Game.spawnEggSystem && Game.spawnEggSystem.tryUseSelectedSpawnEgg(state, tx, ty)) {
+        if (Game.spawnEggSystem && Game.spawnEggSystem.tryUseSelectedSpawnEgg(state, tx, ty, placementLayer)) {
           input.mouse.justPressed = false;
           return;
         }
         const id = hasCreativePlacement(state) ? selectedItemId(state) : selectedPlaceableId(state);
-        if (id && canPlaceBlock(state, tx, ty, id)) {
+        if (id && canPlaceBlock(state, tx, ty, id, placementLayer)) {
           const used = hasCreativePlacement(state) ? id : consumeSelectedPlaceable(state);
           if (used) {
-            setBlock(state, tx, ty, used);
+            Game.layers.place(state, tx, ty, used, placementLayer);
+            Game.layers.notify(state, placementLayer);
             if (used === BLOCK.FURNACE) ensureFurnaceAt(state, tx, ty);
           }
         }

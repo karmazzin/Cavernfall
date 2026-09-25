@@ -43,7 +43,7 @@
     lake: 'Озеро',
     void: 'Пустота',
   };
-  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing', 'field']);
+  const SINGLE_BIOME_EXCLUDED = new Set(['lake', 'void', 'end_great_tree', 'forest_clearing']);
   const SINGLE_BIOME_CAVE_SET = new Set(['cave', 'dwarf_caves', 'deep', 'fire_caves', 'water_caves', 'air_caves']);
   const SINGLE_BIOME_FIRE_SET = new Set(['red_land', 'lava_lake', 'ash_fields', 'blazing_gardens']);
   const SINGLE_BIOME_WATER_SET = new Set(['water_surface', 'water_floor', 'golden_garden', 'coral_gardens', 'glow_kelp_fields']);
@@ -62,6 +62,10 @@
     return BIOME_LABELS[biome] || biome;
   }
 
+  function getVillageBiomes() {
+    return ['plains', 'mountains', 'snow_plains', 'desert'];
+  }
+
   function getSelectableSingleBiomes() {
     return Object.keys(BIOME_LABELS).filter((biome) => !SINGLE_BIOME_EXCLUDED.has(biome));
   }
@@ -72,16 +76,13 @@
 
   function blockSolid(id) {
     if (Game.blocks.SAPLINGS.has(id)) return false;
-    if (Game.blocks.SEASON_WOODS.has(id) || Game.blocks.SEASON_LEAVES.has(id) || Game.blocks.GROUND_COVER.has(id)) return false;
+    if (Game.blocks.SEASON_LEAVES.has(id) || Game.blocks.GROUND_COVER.has(id)) return false;
     if (id === BLOCK.DOOR) return true;
     return (
       id !== BLOCK.AIR &&
       id !== BLOCK.WATER &&
       id !== BLOCK.LAVA &&
       id !== BLOCK.COBWEB &&
-      id !== BLOCK.WOOD &&
-      id !== BLOCK.SPRUCE_WOOD &&
-      id !== BLOCK.SEQUOIA_WOOD &&
       id !== BLOCK.LEAF &&
       id !== BLOCK.SPRUCE_LEAF &&
       id !== BLOCK.SEQUOIA_LEAF &&
@@ -128,23 +129,34 @@
     return id === BLOCK.WATER || id === BLOCK.LAVA;
   }
 
-  function getBlock(state, tx, ty) {
+  function getBlock(state, tx, ty, layer = state._interactionLayer) {
     if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) return BLOCK.BEDROCK;
+    if (layer != null && Game.layers && Game.layers.at(state, tx, ty) !== layer) return BLOCK.AIR;
     return state.world[ty][tx];
   }
 
-  function setBlock(state, tx, ty, id) {
+  function setBlock(state, tx, ty, id, layer = state._interactionLayer) {
     if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) return;
+    const key = `${tx},${ty}`;
+    if (layer != null && state.world[ty][tx] !== BLOCK.AIR && Game.layers.at(state, tx, ty) !== layer) return false;
+    state.blockLayers ||= {};
+    if (id === BLOCK.AIR) delete state.blockLayers[key];
+    else if (layer != null) {
+      if (layer === 1) delete state.blockLayers[key];
+      else state.blockLayers[key] = layer;
+    } else if (state.world[ty][tx] === BLOCK.AIR) delete state.blockLayers[key];
     if (Game.seasons) Game.seasons.markChanged(state, tx, ty, id);
     const previous = state.world[ty][tx];
     state.world[ty][tx] = id;
     if (Game.farming) Game.farming.onBlockChanged(state, tx, ty, previous, id);
+    if (Game.seasons) Game.seasons.trackGround(state, tx, ty);
+    return true;
   }
 
   function isSolidAtPixel(state, px, py, ent = null) {
     const tx = Math.floor(px / TILE);
     const ty = Math.floor(py / TILE);
-    const block = getBlock(state, tx, ty);
+    const block = getBlock(state, tx, ty, ent ? (ent.layer || 1) : (state._interactionLayer || 1));
     if (block === BLOCK.DOOR) return !isOpenDoorAt(state, tx, ty);
     if (block === BLOCK.INVISIBLE_BLOCK && ent === state.player && Game.invisibilitySystem && Game.invisibilitySystem.canPhaseInvisibleBlocks(state)) return false;
     return blockSolid(block);
@@ -358,6 +370,7 @@
     BIOME_LABELS,
     biomeLabel,
     getSelectableSingleBiomes,
+    getVillageBiomes,
     createGrid,
     blockSolid,
     liquid,

@@ -76,6 +76,7 @@
   function biomeLabel(biomeKey) {
     if (biomeKey === 'autumn_forest') return 'Осенний лес';
     if (biomeKey === 'cherry_forest') return 'Вишнёвый лес';
+    if (biomeKey === 'field') return 'Поле';
     if (biomeKey === 'forest') return 'Лес';
     if (biomeKey === 'forest_clearing') return 'Лесная поляна';
     if (biomeKey === 'sequoia_forest') return 'Секвойный лес';

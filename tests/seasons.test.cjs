@@ -20,7 +20,7 @@ test('new woods are placeable, harvestable and craft ordinary planks', () => {
     assert.equal(typeof B[name], 'number', name);
     assert.ok(G.blocks.PLACEABLE.has(B[name]));
     assert.ok(Number.isFinite(G.tools.getBreakTime(B[name], null)));
-    assert.equal(G.world.blockSolid(B[name]), false);
+    assert.equal(G.world.blockSolid(B[name]), true);
     assert.ok(G.craftingRecipes.RECIPES.some(r => r.pattern.length === 1 && r.pattern[0][0] === B[name] && r.result.id === B.PLANK));
   }
 });
@@ -97,6 +97,9 @@ for (const biome of ['autumn_forest','cherry_forest']) {
     } else {
       for(const id of [B.CHERRY_WOOD,B.CHERRY_LEAF,B.PINK_FLOWERS]) assert.ok(all.includes(id));
       assert.ok(!all.includes(B.AUTUMN_GRASS));
+      for(const id of [B.SMALL_WHITE_MUSHROOM,B.CHANTERELLE,B.SMALL_FLY_AGARIC]) {
+        assert.ok(!all.includes(id),`cherry forest must not generate mushroom ${id}`);
+      }
     }
   });
 }
@@ -178,4 +181,29 @@ test('loading a seasonal world never retrofits terrain over existing edits', () 
   const before=JSON.stringify(s.world);
   G.random.withSeed('load-retrofit',()=>G.generation.retrofitWorldFeatures(s));
   assert.ok(JSON.stringify(s.world)===before,'load-time compatibility code must not regenerate seasonal terrain');
+});
+
+test('winter covers regrown and newly placed grass with snow and restores it in spring',()=>{
+  const G=loadGame(),s=seasonFixture(G),B=G.blocks.BLOCK;
+  // This floor loses its original seasonal registration through a player edit.
+  G.world.setBlock(s,60,30,B.DIRT);
+  s.cycleTime=10*G.constants.CYCLE; G.seasons.update(s);
+  assert.equal(s.world[30][60],B.SNOW);
+  G.world.setBlock(s,61,30,B.DIRT);
+  G.world.setBlock(s,62,30,B.GRASS);
+  G.farming.update(s,1); G.seasons.update(s);
+  assert.equal(s.world[30][61],B.SNOW);
+  assert.equal(s.world[30][62],B.SNOW);
+  s.cycleTime=15*G.constants.CYCLE; G.seasons.update(s);
+  for(const x of [60,61,62]) assert.equal(s.world[30][x],B.GRASS);
+});
+
+
+test('loading an old winter world also covers untracked grass',()=>{
+  const G=loadGame(),s=seasonFixture(G),B=G.blocks.BLOCK;
+  s.cycleTime=10*G.constants.CYCLE; G.seasons.update(s);
+  delete s.seasons.cells['60,30'];
+  s.world[30][60]=B.GRASS;
+  G.farming.update(s,0.1);
+  assert.equal(s.world[30][60],B.SNOW);
 });

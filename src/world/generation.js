@@ -136,7 +136,7 @@
   function climateForBiome(biome) {
     if (biome === 'mountains' || biome === 'snow_plains') return CLIMATE.COLD;
     if (biome === 'desert' || biome === 'volcano') return CLIMATE.WARM;
-    if (biome === 'autumn_forest' || biome === 'cherry_forest' || biome === 'plains' || biome === 'forest' || biome === 'sequoia_forest') return CLIMATE.TEMPERATE;
+    if (biome === 'autumn_forest' || biome === 'cherry_forest' || biome === 'field' || biome === 'plains' || biome === 'forest' || biome === 'sequoia_forest') return CLIMATE.TEMPERATE;
     return CLIMATE.ANY;
   }
 
@@ -812,19 +812,21 @@
     let centerX = anchorX;
     let centerY = anchorY;
     let connectorY = anchorY;
+    const topAt = x => settlement.verticalRange ? settlement.verticalRange.top : dwarfStartAt(x);
+    const bottomAt = x => settlement.verticalRange ? settlement.verticalRange.bottom - 6 : dwarfEndAt(x);
 
     if (side === 'below') {
-      centerY = clamp(anchorY + Math.floor(rand(7, 11)), dwarfStartAt(anchorX) + 5, dwarfEndAt(anchorX) + 6);
+      centerY = clamp(anchorY + Math.floor(rand(7, 11)), topAt(anchorX) + 5, bottomAt(anchorX) + 6);
       carveLadderShaft(state, anchorX, anchorY, centerY + roomHalfH);
     } else if (side === 'above') {
-      centerY = clamp(anchorY - Math.floor(rand(7, 10)), dwarfStartAt(anchorX) + 4, dwarfEndAt(anchorX) - 6);
+      centerY = clamp(anchorY - Math.floor(rand(7, 10)), topAt(anchorX) + 4, bottomAt(anchorX) - 6);
       carveLadderShaft(state, anchorX, centerY - roomHalfH, anchorY);
     } else {
       centerX = clamp(anchorX + (side === 'left' ? -Math.floor(rand(8, 13)) : Math.floor(rand(8, 13))), 10, WORLD_W - 11);
-      centerY = clamp(anchorY + Math.floor(rand(-2, 3)), dwarfStartAt(centerX) + 4, dwarfEndAt(centerX) - 4);
-      connectorY = clamp(anchorY + Math.floor(rand(-3, 4)), dwarfStartAt(anchorX) + 4, dwarfEndAt(anchorX) - 4);
+      centerY = clamp(anchorY + Math.floor(rand(-2, 3)), topAt(centerX) + 4, bottomAt(centerX) - 4);
+      connectorY = clamp(anchorY + Math.floor(rand(-3, 4)), topAt(anchorX) + 4, bottomAt(anchorX) - 4);
       carveLadderShaft(state, anchorX, Math.min(anchorY, connectorY) - 1, Math.max(anchorY, connectorY) + 2);
-      carveDwarfCorridor(state, anchorX, connectorY, centerX, centerY);
+      carveDwarfCorridor(state, anchorX, connectorY, centerX, centerY, settlement.verticalRange);
     }
 
     carveRect(state, centerX - roomHalfW, centerY - roomHalfH, centerX + roomHalfW, centerY + roomHalfH, BLOCK.AIR);
@@ -883,7 +885,7 @@
     }
   }
 
-  function createDwarfWorksites(state, settlement, hall) {
+  function createDwarfWorksites(state, settlement, hall, anchorNode = null) {
     const leftTx = hall.x - hall.halfW - 3;
     const rightTx = hall.x + hall.halfW + 3;
     const workY = hall.y + hall.halfH - 1;
@@ -909,9 +911,9 @@
     };
     state.dwarfColony.worksites.push(leftSite);
     state.dwarfColony.worksites.push(rightSite);
-    const hallNode = findNearestSettlementNode(state, settlement.id, hall.x, hall.y, 'hall');
-    const leftNode = addDwarfNode(state, settlement.id, 'worksite', leftSite.x, leftSite.y, { worksiteIndex: state.dwarfColony.worksites.length - 2 });
-    const rightNode = addDwarfNode(state, settlement.id, 'worksite', rightSite.x, rightSite.y, { worksiteIndex: state.dwarfColony.worksites.length - 1 });
+    const hallNode = anchorNode || findNearestSettlementNode(state, settlement.id, hall.x, hall.y, 'hall');
+    const leftNode = addDwarfNode(state, settlement.id, 'worksite', leftSite.x, leftSite.y, { worksiteIndex: settlement.verticalRange ? 0 : state.dwarfColony.worksites.length - 2 });
+    const rightNode = addDwarfNode(state, settlement.id, 'worksite', rightSite.x, rightSite.y, { worksiteIndex: settlement.verticalRange ? 1 : state.dwarfColony.worksites.length - 1 });
     if (hallNode) {
       addDwarfEdge(state, hallNode, leftNode, 'walk');
       addDwarfEdge(state, hallNode, rightNode, 'walk');
@@ -919,9 +921,10 @@
   }
 
   function buildDwarfSettlement(state, hall, index, groupId) {
-    const shaftX = clamp(hall.x + Math.floor(rand(-2, 3)), hall.x - hall.halfW + 2, hall.x + hall.halfW - 2);
-    const shaftTop = clamp(hall.y - hall.halfH - Math.floor(rand(4, 7)), dwarfStartAt(shaftX) + 3, hall.y - 1);
-    const shaftBottom = clamp(hall.y + hall.halfH + Math.floor(rand(6, 10)), hall.y + 4, dwarfEndAt(shaftX) + 8);
+    const range = hall.verticalRange;
+    const shaftX = range ? hall.x : clamp(hall.x + Math.floor(rand(-2, 3)), hall.x - hall.halfW + 2, hall.x + hall.halfW - 2);
+    const shaftTop = clamp(hall.y - hall.halfH - Math.floor(rand(4, 7)), (range ? range.top : dwarfStartAt(shaftX)) + 3, hall.y - 1);
+    const shaftBottom = clamp(hall.y + hall.halfH + Math.floor(rand(6, 10)), hall.y + 4, range ? range.bottom : dwarfEndAt(shaftX) + 8);
     carveLadderShaft(state, shaftX, shaftTop, shaftBottom);
     for (let ty = shaftTop; ty <= shaftBottom; ty += 1) {
       if ((ty - shaftTop) % 5 === 0) {
@@ -935,6 +938,7 @@
     const settlement = {
       id: `dwarf-settlement-${index}`,
       groupId,
+      ...(range ? { verticalRange: range } : {}),
       clothes: DWARF_COLORS[index % DWARF_COLORS.length],
       hallX: hall.x,
       hallY: hall.y,
@@ -970,13 +974,28 @@
     }
 
     const roomSides = ['below', 'above', 'left', 'right', 'below', 'above'];
-    const homeCount = Math.floor(rand(4, 7));
+    const homeCount = range ? 2 : Math.floor(rand(4, 7));
     for (let i = 0; i < homeCount; i += 1) {
       const side = roomSides[i % roomSides.length];
       const anchorY = side === 'below' ? hall.y + hall.halfH : side === 'above' ? hall.y - hall.halfH : hall.y + Math.floor(rand(-2, 3));
       carveDwarfBranchRoom(state, shaftX, anchorY, side, 'home', settlement);
     }
 
+    if (range) {
+      // Put storage above the gallery, beside the homes, so the through-road
+      // cannot cut away chests or their floors.
+      carveDwarfBranchRoom(state,shaftX+18,hall.y,'above','storage',settlement);
+      const stockNode=getSettlementNodes(state,settlement.id,'stock')[0];
+      state.dwarfColony.edges=state.dwarfColony.edges.filter(e=>e.from!==stockNode.id && e.to!==stockNode.id);
+      const landing=addDwarfNode(state,settlement.id,'shaft',shaftX+18,hall.y+1);
+      addDwarfEdge(state,hallNode,landing,'walk');
+      addDwarfEdge(state,landing,stockNode,'ladder');
+      // Miners work in the walls of the lower room, off the main gallery.
+      const home=state.dwarfColony.homes.find(h=>h.settlementId===settlement.id);
+      const homeNode=state.dwarfColony.nodes.find(n=>n.id===home.nodeId);
+      createDwarfWorksites(state,settlement,home,homeNode);
+      return settlement;
+    }
     const storageSide = Math.random() < 0.5 ? 'left' : 'right';
     carveDwarfBranchRoom(state, shaftX, hall.y + Math.floor(rand(-2, 3)), storageSide, 'storage', settlement);
     if (Math.random() < 0.2) {
@@ -987,7 +1006,7 @@
     return settlement;
   }
 
-  function carveDwarfCorridor(state, x0, y0, x1, y1) {
+  function carveDwarfCorridor(state, x0, y0, x1, y1, verticalRange = null) {
     let x = x0;
     let y = y0;
     let steps = 0;
@@ -998,7 +1017,7 @@
         placeTorchPair(state, x - 3, y - 1, 0.7);
         placeTorchPair(state, x + 3, y - 1, 0.7);
       }
-      if (steps > 0 && steps % 11 === 0 && Math.random() < 0.28) {
+      if (!verticalRange && steps > 0 && steps % 11 === 0 && Math.random() < 0.28) {
         y = clamp(y + (Math.random() < 0.5 ? -1 : 1), dwarfStartAt(x) + 4, dwarfEndAt(x) - 4);
       }
       x += Math.sign(x1 - x);
@@ -1619,9 +1638,11 @@
   }
 
   function retrofitWorldFeatures(state) {
+    retrofitVillageBackWalls(state);
+    retrofitVillageWorkyards(state);
     // This world type is generated with current features from the start.
     // Legacy retrofits must never replace a seasonal player's terrain on reload.
-    if (state.worldMeta && state.worldMeta.worldType === 'seasons') return;
+    if (state.worldMeta && ['seasons', 'infinite_village'].includes(state.worldMeta.worldType)) return;
     if (!('airCaves' in state)) state.airCaves = null;
     if (!('airGuardian' in state)) state.airGuardian = null;
     const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
@@ -1829,7 +1850,7 @@
 
   function plantSpruceTree(state, tx, s) {
     const height = Math.floor(rand(5, 8));
-    for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.SPRUCE_WOOD);
+    for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.SPRUCE_WOOD, 3);
     const topY = s - height;
     for (let yy = -4; yy <= 0; yy += 1) {
       const width = yy <= -3 ? 1 : yy === -2 ? 2 : 3;
@@ -1866,7 +1887,7 @@
 
     for (let ty = s - 1; ty >= topY; ty -= 1) {
       for (let xx = tx - radius; xx <= tx + radius; xx += 1) {
-        setBlock(state, xx, ty, BLOCK.SEQUOIA_WOOD);
+        setBlock(state, xx, ty, BLOCK.SEQUOIA_WOOD, 3);
       }
     }
 
@@ -1879,7 +1900,7 @@
         if (Math.abs(rs - s) > 3) break;
         const ry = rs - 1;
         if (getBlock(state, rx, ry) === BLOCK.AIR || getBlock(state, rx, ry) === BLOCK.GRASS || getBlock(state, rx, ry) === BLOCK.MOSS) {
-          setBlock(state, rx, ry, BLOCK.SEQUOIA_WOOD);
+          setBlock(state, rx, ry, BLOCK.SEQUOIA_WOOD, 3);
         }
       }
     }
@@ -1902,7 +1923,7 @@
       for (const dir of [-1, 1]) {
         const branchLen = Math.floor(rand(radius + 3, radius + 7));
         for (let step = radius + 1; step <= branchLen; step += 1) {
-          setBlock(state, tx + dir * step, levelY, BLOCK.SEQUOIA_WOOD);
+          setBlock(state, tx + dir * step, levelY, BLOCK.SEQUOIA_WOOD, 3);
           placeSequoiaLeaf(state, tx + dir * step, levelY - 1, 0.75);
           placeSequoiaLeaf(state, tx + dir * step, levelY + 1, 0.65);
         }
@@ -1927,7 +1948,7 @@
     for (let step = 0; step < length; step += 1) {
       const xx = tx + dir * step;
       const yy = state.surfaceAt[xx] - 1;
-      if (getBlock(state, xx, yy) === BLOCK.AIR || getBlock(state, xx, yy) === BLOCK.SEQUOIA_LEAF) setBlock(state, xx, yy, BLOCK.SEQUOIA_WOOD);
+      if (getBlock(state, xx, yy) === BLOCK.AIR || getBlock(state, xx, yy) === BLOCK.SEQUOIA_LEAF) setBlock(state, xx, yy, BLOCK.SEQUOIA_WOOD, 3);
       if (step % 5 === 0 && getBlock(state, xx, yy - 1) === BLOCK.AIR) setBlock(state, xx, yy - 1, BLOCK.SEQUOIA_LEAF);
     }
   }
@@ -1967,7 +1988,7 @@
       if (surfaceBlock !== BLOCK.GRASS || getBlock(state, tx, s - 1) !== BLOCK.AIR) return false;
       if (Math.abs(state.surfaceAt[tx - 1] - s) > 1 || Math.abs(state.surfaceAt[tx + 1] - s) > 1) return false;
       const height = Math.floor(rand(3, 6));
-      for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD);
+      for (let i = 1; i <= height; i += 1) setBlock(state, tx, s - i, BLOCK.WOOD, 3);
       const topY = s - height;
       for (let yy = -2; yy <= 1; yy += 1) {
         for (let xx = -2; xx <= 2; xx += 1) {
@@ -2298,6 +2319,7 @@
 
   function generateWaterWell(state) {
     state.waterWell = null;
+    if (state.worldMeta?.worldType === 'infinite_village') return;
     const candidates = [];
     for (let tx = 12; tx < WORLD_W - 12; tx += 1) {
       if (!canHostWaterWell(state, tx)) continue;
@@ -2505,6 +2527,56 @@
     return { baseNode, topNode };
   }
 
+  function retrofitVillageWorkyards(state) {
+    const villages = state.humanSettlements?.villages || [];
+    const nodes = new Map((state.humanSettlements?.nodes || []).map(node => [node.id, node]));
+    const inBuilding = (x, y) => villages.some(village =>
+      (village.houses || []).some(h => x >= h.x0 && x <= h.x1 && y >= h.groundY - h.height - 1 && y <= h.groundY)
+      || (village.towers || []).some(t => x >= t.x - 2 && x <= t.x + 2 && y >= t.groundY - 10 && y <= t.groundY));
+    state.blockLayers ||= {};
+    for (const village of villages) for (const house of village.houses || []) {
+      if (house.workyardLayersVersion === 1) continue;
+      const node = nodes.get(house.workNodeId);
+      if (!node || !Number.isFinite(house.x) || !Number.isFinite(house.groundY)) continue;
+      const side = Math.sign(node.x - house.x);
+      const x = side < 0 ? house.x0 - 5 : house.x1 + 5;
+      const y = house.groundY - 1;
+      const wood = village.type === 'winter_village' ? BLOCK.SPRUCE_WOOD : BLOCK.WOOD;
+      let piles = [];
+      if (house.profession === 'lumber') piles = [[-1, wood], [0, wood], [1, BLOCK.PLANK]];
+      else if (house.profession === 'mason') piles = [[-1, BLOCK.STONE], [0, BLOCK.DEEPSTONE], [2, BLOCK.STONE]];
+      else if (house.profession === 'miner') piles = [[1, BLOCK.COAL_ORE], [2, BLOCK.GOLD_ORE]];
+      else if (house.profession === 'merchant') piles = [[0, village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK]];
+      else if (!['farmer', 'shepherd'].includes(house.profession)) {
+        if (village.type === 'desert_village') piles = [[-1, BLOCK.SANDSTONE], [0, BLOCK.CACTUS]];
+        else if (village.type === 'winter_village') piles = [[-1, BLOCK.SPRUCE_WOOD], [0, BLOCK.PLANK]];
+      }
+      for (const [dx, id] of piles) {
+        const tx = x + dx;
+        if (!inBuilding(tx, y) && getBlock(state, tx, y, null) === id) state.blockLayers[`${tx},${y}`] = 2;
+      }
+      house.workyardLayersVersion = 1;
+    }
+  }
+
+  function retrofitVillageBackWalls(state) {
+    for (const village of state.humanSettlements?.villages || []) {
+      const material = village.type === 'desert_village' ? BLOCK.SANDSTONE : BLOCK.PLANK;
+      for (const house of village.houses || []) {
+        if (house.backWallsVersion === 1) continue;
+        const { x0, x1, groundY, height } = house;
+        if (![x0, x1, groundY, height].every(Number.isFinite)) continue;
+        for (let ty = Math.max(0, groundY - height + 1); ty < Math.min(WORLD_H, groundY); ty++) {
+          for (let tx = Math.max(0, x0 + 1); tx < Math.min(WORLD_W, x1); tx++) {
+            // Layers 1–3 share a cell: keep furnishings and player-built blocks.
+            if (getBlock(state, tx, ty, null) === BLOCK.AIR) setBlock(state, tx, ty, material, 2);
+          }
+        }
+        house.backWallsVersion = 1;
+      }
+    }
+  }
+
   function buildVillageHouse(state, village, cx, groundY, profession, role = 'villager', options = {}) {
     const style = getVillageStyle(village.type);
     const wallBlock = style.wall;
@@ -2616,8 +2688,26 @@
     const maxCount = Math.max(minCount, Math.floor((segmentWidth - 32) / spacing) + 1);
     const houseCount = Math.max(minCount, Math.min(desiredCount, maxCount));
     const totalWidth = (houseCount - 1) * spacing;
-    const startX = clamp(segment.center - Math.floor(totalWidth / 2), segment.start + 16, segment.end - 16);
-    const groundY = state.surfaceAt[segment.center];
+    // Reserve the village and its field together, including at world edges.
+    // Keep neighbouring villages out of that footprint before placing any blocks.
+    const preferredStart = segment.center - Math.floor(totalWidth / 2);
+    const candidates = [];
+    for (let candidate = 23; candidate + totalWidth + 42 < WORLD_W - 2; candidate++) {
+      const center = candidate + Math.floor(totalWidth / 2);
+      if (center < segment.start || center > segment.end) continue;
+      const x0 = candidate - 20, x1 = candidate + totalWidth + 42;
+      if (state.humanSettlements.villages.some(v => x0 <= v.field.x + v.field.width + 1 && x1 >= v.bounds.x0)) continue;
+      candidates.push(candidate);
+    }
+    if (!candidates.length) return;
+    candidates.sort((a,b) => Math.abs(a-preferredStart)-Math.abs(b-preferredStart));
+    const startX = candidates[0];
+    const well = state.waterWell && state.waterWell.bounds;
+    // The well owns its terrain first. Cancel the whole planned village,
+    // including its reserved field, before placing houses or NPC metadata.
+    if (well && startX - 20 <= well.x1 + 1 && startX + totalWidth + 42 >= well.x0 - 1) return;
+    village.centerX = startX + Math.floor(totalWidth / 2);
+    const groundY = state.surfaceAt[village.centerX];
     const centerNodes = [];
     const roadX0 = startX - 12;
     const roadX1 = startX + totalWidth + 12;
@@ -2653,12 +2743,21 @@
     }
 
     village.bounds = { x0: roadX0 - 8, x1: roadX1 + 8, y0: groundY - 12, y1: groundY + 3 };
+    const fieldX = village.bounds.x1 + 3, fieldWidth = 18;
+    prepareVillageGround(state, fieldX - 1, fieldX + fieldWidth, groundY, type);
+    for (let x = fieldX - 1; x <= fieldX + fieldWidth; x++) {
+      // This plot belongs to the new settlement, even if the old terrain was a lake.
+      state.biomeAt[x] = 'field';
+      for (let y = 0; y < groundY; y++) setBlock(state,x,y,BLOCK.AIR);
+    }
+    const channel = type === 'winter_village' ? BLOCK.SNOW : type === 'desert_village' ? BLOCK.AIR : BLOCK.WATER;
+    if (Game.farming.createField(state,fieldX,groundY,fieldWidth,channel)) village.field = {x:fieldX,y:groundY,width:fieldWidth};
     state.humanSettlements.villages.push(village);
   }
 
   function generateVillages(state) {
     state.humanSettlements = { villages: [], nodes: [], edges: [] };
-    const plains = findBiomeSegments(state, 'plains').filter((segment) => segment.end - segment.start >= 120);
+    const plains = [...findBiomeSegments(state, 'plains'), ...findBiomeSegments(state, 'field')].filter((segment) => segment.end - segment.start >= 120);
     const snowPlains = findBiomeSegments(state, 'snow_plains').filter((segment) => segment.end - segment.start >= 96);
     const mountains = findBiomeSegments(state, 'mountains').filter((segment) => segment.end - segment.start >= 72);
     const deserts = findBiomeSegments(state, 'desert').filter((segment) => segment.end - segment.start >= 72);
@@ -2704,7 +2803,7 @@
       }
     }
     for (let x = 0; x < WORLD_W; x += 1) {
-      let target = biome === 'plains' || biome === 'desert' || biome === 'snow_plains'
+      let target = biome === 'field' || biome === 'plains' || biome === 'desert' || biome === 'snow_plains'
         ? SURFACE_BASE + rand(-0.6, 0.6)
         : SURFACE_BASE + rand(-1.2, 1.2);
       if (biome === 'mountains') {
@@ -3143,8 +3242,8 @@
           const rootStart = vaultTop + 1;
           const rootLen = 6 + Math.abs(Math.round(Math.sin(tx / 6) * 5));
           for (let step = 0; step < rootLen; step += 1) {
-            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD);
-            if (step > 2 && step % 3 === 0) setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD, 3);
+            if (step > 2 && step % 3 === 0) setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD, 3);
           }
         }
       }
@@ -3214,7 +3313,7 @@
 
       if (biome === 'great_tree_garden' && tx % 18 === 0) {
         const trunkTop = terrainTop - 8;
-        for (let ty = trunkTop; ty < terrainTop; ty += 1) setBlock(state, tx, ty, BLOCK.WOOD);
+        for (let ty = trunkTop; ty < terrainTop; ty += 1) setBlock(state, tx, ty, BLOCK.WOOD, 3);
         for (let lx = tx - 2; lx <= tx + 2; lx += 1) {
           for (let ly = trunkTop - 3; ly <= trunkTop; ly += 1) {
             if (Math.abs(lx - tx) + Math.abs(ly - (trunkTop - 1)) <= 3) setBlock(state, lx, ly, BLOCK.LEAF);
@@ -3230,8 +3329,8 @@
           for (let step = 0; step < rootLen; step += 1) {
             const yy = state.surfaceAt[tx] + 2 + step;
             if (yy >= WORLD_H) break;
-            setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD);
-            if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD);
+            setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD, 3);
+            if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD, 3);
           }
         }
       }
@@ -3568,6 +3667,115 @@
     return 20;
   }
 
+  function generateInfiniteDwarfComplex(state) {
+    const levels = [
+      { y: 52, top: 36, bottom: 65 },
+      { y: 83, top: 69, bottom: 96 },
+      { y: 112, top: 100, bottom: 123 },
+    ];
+    const rows = [];
+    let index = 0;
+    for (const level of levels) {
+      const halls = [];
+      for (let x = 44; x < WORLD_W - 30; x += 56) {
+        const hall = { x, y: level.y, halfW: 10, halfH: 2, verticalRange: { top: level.top, bottom: level.bottom } };
+        carveDwarfHall(state,x,hall.y,hall.halfW,hall.halfH);
+        decorateDwarfHall(state,hall);
+        const settlement = buildDwarfSettlement(state,hall,index++,0);
+        halls.push({hall,settlement});
+      }
+      rows.push(halls);
+    }
+    // Continuous galleries are carved after rooms so no later room wall seals them.
+    for (const row of rows) {
+      for (let i = 1; i < row.length; i++) {
+        const a=row[i-1].hall, b=row[i].hall;
+        carveDwarfCorridor(state,a.x,a.y,b.x,b.y,a.verticalRange);
+      }
+      for (const {settlement} of row) {
+        carveDwarfCorridor(state,settlement.hallX,settlement.hallY,settlement.shaftX+18,settlement.hallY,settlement.verticalRange);
+        // Reopen the ladder itself through the gallery floor without blocking
+        // the horizontal passage with the shaft's original side walls.
+        const homes=state.dwarfColony.homes.filter(h=>h.settlementId===settlement.id);
+        const top=Math.min(settlement.shaftTop,...homes.map(h=>h.spawnY));
+        const bottom=Math.max(settlement.shaftBottom,...homes.map(h=>h.spawnY));
+        settlement.shaftTop=top; settlement.shaftBottom=bottom;
+        const shaft=state.dwarfColony.shafts.find(sh=>sh.settlementId===settlement.id);
+        shaft.topY=top; shaft.bottomY=bottom;
+        for(let y=top;y<=bottom;y++) setBlock(state,settlement.shaftX,y,BLOCK.LADDER);
+        for(const room of state.dwarfColony.stockpiles.filter(r=>r.settlementId===settlement.id)) {
+          for(let y=room.y+room.halfH;y<=settlement.hallY+2;y++) setBlock(state,room.x,y,BLOCK.LADDER);
+        }
+      }
+    }
+    // Shared shafts let players travel between all three cave layers.
+    for(let x=72;x<WORLD_W-40;x+=168) {
+      for(let y=levels[0].y-1;y<=levels[2].y+1;y++) setBlock(state,x,y,BLOCK.LADDER);
+    }
+  }
+
+  function generateInfiniteVillageWorld(state, requestedBiome) {
+    const biome = Game.world.getVillageBiomes().includes(requestedBiome) ? requestedBiome : 'plains';
+    state.worldMeta.singleBiome = biome;
+    const type = {plains:'plains_village',mountains:'mountain_village',snow_plains:'winter_village',desert:'desert_village'}[biome];
+    const groundY = Math.round(SURFACE_BASE);
+    state.biomeAt = Array(WORLD_W).fill(biome);
+    state.climateAt = Array(WORLD_W).fill(climateForBiome(biome));
+    state.surfaceAt = Array(WORLD_W).fill(groundY);
+    fillTerrain(state);
+    generateCoalOre(state);
+    generateIronOre(state);
+    generateGoldOre(state);
+    generateDeepOre(state);
+    generateInfiniteDwarfComplex(state);
+
+    const leftX=32, rightX=WORLD_W-33;
+    const village={id:'human-village-infinite',type,centerX:Math.floor(WORLD_W/2),
+      alertLevel:0,alertTimer:0,palette:VILLAGER_PALETTES[0],houses:[],towers:[],
+      bounds:{x0:leftX-4,x1:rightX+4,y0:groundY-12,y1:groundY+3}};
+    state.humanSettlements.villages.push(village);
+    prepareVillageGround(state,village.bounds.x0,village.bounds.x1,groundY,type);
+    decorateVillageRoad(state,leftX,rightX,groundY);
+    const towers=[buildVillageTower(state,village,leftX,groundY,1),buildVillageTower(state,village,rightX,groundY,-1)];
+    for(let i=0;i<2;i++) {
+      const tower=towers[i],x=i===0?leftX:rightX,inward=i===0?1:-1;
+      const guard=buildGuardHut(state,village,{...tower,x,groundY},inward,i);
+      addHumanEdge(state,guard.houseNode,tower.baseNode,'walk');
+      addHumanEdge(state,guard.workNode,tower.baseNode,'walk');
+    }
+    let previous=towers[0].baseNode;
+    for(let x=leftX+28;x<=rightX-28;x+=18) {
+      const road=addHumanNode(state,village.id,'center',x,groundY-1);
+      addHumanEdge(state,previous,road,'walk');
+      const house=buildVillageHouse(state,village,x,groundY,chooseVillageProfession(type));
+      addHumanEdge(state,road,house.houseNode,'walk');
+      addHumanEdge(state,road,house.workNode,'walk');
+      previous=road;
+    }
+    addHumanEdge(state,previous,towers[1].baseNode,'walk');
+    const channel=biome==='snow_plains'?BLOCK.SNOW:biome==='desert'?BLOCK.AIR:BLOCK.WATER;
+    village.fields=[];
+    for(const x of [3,WORLD_W-22]) {
+      const width=18;
+      prepareVillageGround(state,x-1,x+width,groundY,type);
+      if(Game.farming.createField(state,x,groundY,width,channel)) village.fields.push({x,y:groundY,width});
+    }
+    village.field=village.fields[1];
+    // Entrances sit in the gaps between the guard huts and the first houses.
+    for(const x of [leftX+18,rightX-18]) {
+      for(let y=groundY-1;y<=53;y++) setBlock(state,x,y,BLOCK.LADDER);
+    }
+    for(let x=0;x<WORLD_W;x++) setBlock(state,x,WORLD_H-1,BLOCK.BEDROCK);
+    // Choose a clear two-block-high spawn inside the village, near its centre.
+    let spawnX=village.centerX;
+    for(let offset=0;offset<36;offset++) {
+      const x=village.centerX+offset;
+      if(!Game.world.blockSolid(getBlock(state,x,groundY-2)) && !Game.world.blockSolid(getBlock(state,x,groundY-3))) {spawnX=x;break;}
+    }
+    state.player.x=spawnX*TILE+2;
+    state.player.y=(groundY-3)*TILE;
+  }
+
   function generateWorld(state) {
     const worldType = state.worldMeta && state.worldMeta.worldType ? state.worldMeta.worldType : 'normal';
     const singleBiome = state.worldMeta && state.worldMeta.singleBiome ? state.worldMeta.singleBiome : 'forest';
@@ -3599,6 +3807,11 @@
       edges: [],
       settlements: [],
     };
+
+    if (worldType === 'infinite_village') {
+      generateInfiniteVillageWorld(state, singleBiome);
+      return;
+    }
 
     if (worldType === 'seasons') {
       generateSingleBiomeWorld(state, 'plains');
@@ -3692,8 +3905,8 @@
     removeFloatingDebris(state);
     reinforceSurfaceLayer(state, surfaceFluidColumns);
     carveCaveEntrances(state, surfaceFluidColumns, Math.floor(rand(6, 10)));
-    generateVillages(state);
     generateWaterWell(state);
+    generateVillages(state);
     generateFirePyramid(state);
     plantDesertFlora(state, surfaceFluidColumns);
 
@@ -4236,7 +4449,9 @@
 
   function generateFireDimensionBundle(worldMeta, seed) {
     const temp = createGameState(worldMeta);
+    temp._newLayerWorld = true;
     withSeed(`${seed || ''}:fire`, () => generateFireDimension(temp));
+    Game.layers.initialize(temp);
     return captureDimensionState(temp);
   }
 
@@ -4892,7 +5107,9 @@
 
   function generateWaterDimensionBundle(worldMeta, seed) {
     const temp = createGameState(worldMeta);
+    temp._newLayerWorld = true;
     withSeed(`${seed || ''}:water`, () => generateWaterDimension(temp));
+    Game.layers.initialize(temp);
     return captureDimensionState(temp);
   }
 
@@ -5244,9 +5461,9 @@
           const rootStart = vaultTop + 1;
           const rootLen = 6 + Math.abs(Math.round(Math.sin(tx / 6) * 5));
           for (let step = 0; step < rootLen; step += 1) {
-            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+            setBlock(state, tx, rootStart + step, BLOCK.GREAT_TREE_WOOD, 3);
             if (step > 2 && step % 3 === 0) {
-              setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD);
+              setBlock(state, tx + 1, rootStart + step, BLOCK.GREAT_TREE_WOOD, 3);
             }
           }
         }
@@ -5315,13 +5532,13 @@
         for (let step = 0; step < rootLen; step += 1) {
           const yy = terrainTop + 2 + step;
           if (yy >= WORLD_H) break;
-          setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD);
-          if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD);
+          setBlock(state, tx, yy, BLOCK.GREAT_TREE_WOOD, 3);
+          if (step > 1 && step % 4 === 0) setBlock(state, tx + (tx % 12 === 0 ? 1 : -1), yy, BLOCK.GREAT_TREE_WOOD, 3);
         }
       }
       if (inGarden && tx % 18 === 0) {
         const trunkTop = terrainTop - 8;
-        for (let ty = trunkTop; ty < terrainTop; ty += 1) setBlock(state, tx, ty, BLOCK.WOOD);
+        for (let ty = trunkTop; ty < terrainTop; ty += 1) setBlock(state, tx, ty, BLOCK.WOOD, 3);
         for (let lx = tx - 2; lx <= tx + 2; lx += 1) {
           for (let ly = trunkTop - 3; ly <= trunkTop; ly += 1) {
             if (Math.abs(lx - tx) + Math.abs(ly - (trunkTop - 1)) <= 3) setBlock(state, lx, ly, BLOCK.LEAF);
@@ -5753,13 +5970,17 @@
 
   function generateAirDimensionBundle(worldMeta, seed) {
     const temp = createGameState(worldMeta);
+    temp._newLayerWorld = true;
     withSeed(`${seed || ''}:air`, () => generateAirDimension(temp));
+    Game.layers.initialize(temp);
     return captureDimensionState(temp);
   }
 
   function generateUndergroundDimensionBundle(worldMeta, seed) {
     const temp = createGameState(worldMeta);
+    temp._newLayerWorld = true;
     withSeed(`${seed || ''}:underground`, () => generateUndergroundDimension(temp));
+    Game.layers.initialize(temp);
     return captureDimensionState(temp);
   }
 
@@ -5770,7 +5991,7 @@
       const baseWidth = halfWidth + Math.max(0, swell) + (ty > bottomY - 26 ? 1 : 0);
       const curve = Math.round(Math.sin(ty / 23) * 0.9);
       for (let tx = centerX - baseWidth + curve; tx <= centerX + baseWidth + curve; tx += 1) {
-        setBlock(state, tx, ty, BLOCK.GREAT_TREE_WOOD);
+        setBlock(state, tx, ty, BLOCK.GREAT_TREE_WOOD, 3);
       }
       if (ty % 26 === 9 || ty % 26 === 17) {
         const branchDir = ty % 44 < 22 ? -1 : 1;
@@ -5780,9 +6001,9 @@
         for (let step = 1; step <= branchLen; step += 1) {
           const bx = branchStartX + step * branchDir;
           const by = ty - Math.floor(step / 3) * branchRise;
-          setBlock(state, bx, by, BLOCK.GREAT_TREE_WOOD);
+          setBlock(state, bx, by, BLOCK.GREAT_TREE_WOOD, 3);
           if (step >= branchLen - 2) {
-            setBlock(state, bx, by - 1, BLOCK.GREAT_TREE_WOOD);
+            setBlock(state, bx, by - 1, BLOCK.GREAT_TREE_WOOD, 3);
           }
         }
       }
@@ -5798,7 +6019,7 @@
       for (let ty = y - 2; ty <= y + 2; ty += 1) {
         setBlock(state, tx, ty, BLOCK.AIR);
       }
-      setBlock(state, tx, y + 3, BLOCK.GREAT_TREE_WOOD);
+      setBlock(state, tx, y + 3, BLOCK.GREAT_TREE_WOOD, 3);
     }
     for (let tx = roomEdgeX; tx !== roomEdgeX + dir * roomDepth; tx += dir) {
       for (let ty = y - 1; ty <= y + 1; ty += 1) setBlock(state, tx, ty, BLOCK.AIR);
@@ -5806,8 +6027,8 @@
     for (let step = 1; step <= width - 2; step += 1) {
       const bx = roomEdgeX + dir * (roomDepth + step);
       const by = y - Math.floor(step / 4);
-      setBlock(state, bx, by, BLOCK.GREAT_TREE_WOOD);
-      setBlock(state, bx, by + 1, BLOCK.GREAT_TREE_WOOD);
+      setBlock(state, bx, by, BLOCK.GREAT_TREE_WOOD, 3);
+      setBlock(state, bx, by + 1, BLOCK.GREAT_TREE_WOOD, 3);
     }
   }
 
@@ -5977,16 +6198,85 @@
 
   function generateEndDimensionBundle(worldMeta, seed) {
     const temp = createGameState(worldMeta);
+    temp._newLayerWorld = true;
     withSeed(`${seed || ''}:end`, () => generateEndDimension(temp));
+    Game.layers.initialize(temp);
     return captureDimensionState(temp);
+  }
+
+  function placePlayerAtWorldCenter(state) {
+    const player = state.player;
+    const centerX = WORLD_W * TILE / 2;
+    const left = Math.floor((centerX - player.w / 2) / TILE);
+    const right = Math.floor((centerX + player.w / 2 - 0.01) / TILE);
+    const meta = state.worldMeta;
+    const specialBiome = meta.worldType === 'single_biome' && [SINGLE_BIOME_CAVE_SET, SINGLE_BIOME_UNDERGROUND_SET, SINGLE_BIOME_FIRE_SET, SINGLE_BIOME_WATER_SET, SINGLE_BIOME_AIR_SET].some(set => set.has(meta.singleBiome));
+    const surfaceWorld = !specialBiome && !['cavern','floating_islands'].includes(meta.worldType);
+    const surfaceFloor = Math.min(state.surfaceAt[left], state.surfaceAt[right]);
+    const preferredFloor = clamp(surfaceWorld ? surfaceFloor : Math.ceil((player.y + player.h) / TILE), 3, WORLD_H - 2);
+    const waterWorld = state.worldMeta.worldType === 'single_biome' && SINGLE_BIOME_WATER_SET.has(state.worldMeta.singleBiome);
+    const clearBody = floor => {
+      const top = Math.floor((floor * TILE - player.h) / TILE);
+      for (let x = left; x <= right; x++) for (let y = top; y < floor; y++) {
+        const id = getBlock(state,x,y,1);
+        if (Game.world.blockSolid(id) || id === BLOCK.LAVA || (!waterWorld && id === BLOCK.WATER)) return false;
+      }
+      return true;
+    };
+    const hasSupport = floor => {
+      let supported = false;
+      for (let x = left; x <= right; x++) {
+        const id = getBlock(state,x,floor,1);
+        if (id === BLOCK.CACTUS) return false;
+        if (Game.world.blockSolid(id) || (waterWorld && id === BLOCK.WATER)) supported = true;
+      }
+      return supported;
+    };
+    let floor = null;
+    const candidates = [];
+    const lastFloor = surfaceWorld ? Math.min(WORLD_H - 2, surfaceFloor + 1) : WORLD_H - 2;
+    for (let y = 3; y <= lastFloor; y++) candidates.push(y);
+    candidates.sort((a,b) => Math.abs(a-preferredFloor)-Math.abs(b-preferredFloor));
+    for (const y of candidates) {
+      if (clearBody(y) && hasSupport(y)) { floor = y; break; }
+    }
+    if (floor == null) {
+      // A central void or solid cavern still needs a small safe landing.
+      floor = preferredFloor;
+      // In a surface lake/crater, keep the landing above the liquid rather
+      // than creating an air pocket that would immediately flood again.
+      if (surfaceWorld) {
+        for (let x = left - 1; x <= right + 1; x++) for (let y = 3; y < floor; y++) {
+          if (getBlock(state,x,y) === BLOCK.WATER || getBlock(state,x,y) === BLOCK.LAVA) { floor = y; break; }
+        }
+      }
+      // Bridge above the surface instead of replacing crops or irrigation.
+      if (surfaceWorld) floor = Math.max(3, floor - 1);
+      const top = Math.floor((floor * TILE - player.h) / TILE);
+      for (let x = left - 1; x <= right + 1; x++) {
+        for (let y = top - 1; y < floor; y++) setBlock(state,x,y,BLOCK.AIR);
+        setBlock(state,x,floor,BLOCK.STONE);
+      }
+    }
+    player.x = centerX - player.w / 2;
+    player.y = floor * TILE - player.h;
+    player.vx = 0;
+    player.vy = 0;
   }
 
   Game.generation = {
     generateWorld(state) {
+      state._newLayerWorld = true;
       generateWorld(state);
       Game.farming.generateFields(state);
+      if (state.worldMeta.worldType === 'single_biome' && state.worldMeta.singleBiome === 'field') Game.farming.generateFieldBiome(state);
+      Game.farming.refreshFieldGround(state);
       Game.seasons.decorate(state);
       if (state.worldMeta.worldType === 'seasons') Game.seasons.initialize(state);
+      retrofitVillageBackWalls(state);
+      retrofitVillageWorkyards(state);
+      Game.layers.initialize(state);
+      placePlayerAtWorldCenter(state);
     },
     generateFireDimensionBundle,
     generateWaterDimensionBundle,
@@ -5994,6 +6284,8 @@
     generateUndergroundDimensionBundle,
     generateEndDimensionBundle,
     retrofitWorldFeatures,
+    retrofitVillageBackWalls,
+    retrofitVillageWorkyards,
     checkFireShrineActivation,
     stampMainWell,
     stampAirEntrance,
